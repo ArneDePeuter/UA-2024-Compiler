@@ -6,14 +6,14 @@ expr = BinaryArithmetic(
     BinaryArithmetic(
         INT(3),
         INT(4),
-        BinaryArithmetic.Operator.plus
+        BinaryArithmetic.Operator.PLUS
     ),
     BinaryArithmetic(
         INT(5),
         INT(6),
-        BinaryArithmetic.Operator.minus
+        BinaryArithmetic.Operator.MINUS
     ),
-    BinaryArithmetic.Operator.mul
+    BinaryArithmetic.Operator.MUL
 )
 visitor.visit_ast(expr)
 visitor.output("dot_test.dot")

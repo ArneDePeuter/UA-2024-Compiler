@@ -19,11 +19,11 @@ class BinaryOperation(Expression):
 
 class BinaryArithmetic(BinaryOperation):
     class Operator(Enum):
-        plus = "+"
-        minus = "-"
-        mul = "*"
-        div = "-"
-        mod = "%"
+        PLUS = "+"
+        MINUS = "-"
+        MUL = "*"
+        DIV = "-"
+        MOD = "%"
 
     def __init__(self, left: Expression, right: Expression, operator: Operator) -> None:
         super().__init__(left, right)
