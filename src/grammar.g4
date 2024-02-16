@@ -1,4 +1,4 @@
-grammar SimpleMath;
+grammar grammar;
 
 // Parser rules
 program : (expression ';')+ ;
