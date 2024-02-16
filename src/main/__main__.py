@@ -1,9 +1,10 @@
 import antlr4
 from src.antlr_files.GrammarLexer import GrammarLexer
 from src.antlr_files.GrammarParser import GrammarParser
+import argparse
 
 
-def parse_input(input_stream):
+def parse_input(input_stream: antlr4.InputStream) -> None:
     # Create a stream from the input
     lexer = GrammarLexer(input_stream)  # Make sure this matches the generated Lexer name
     stream = antlr4.CommonTokenStream(lexer)
@@ -17,12 +18,18 @@ def parse_input(input_stream):
 
 
 if __name__ == "__main__":
-    # Read from an input file or use a string
-    # For file input, uncomment the following lines:
-    # with open('your_input_file.txt', 'r') as file:
-    #     input_stream = antlr4.InputStream(file.read())
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--input', dest="filename", help='the input file to compile')
+    parser.add_argument('--render_ast', dest="render_ast", help='the input file to compile')
+    parser.add_argument('--render_symb', dest="render_symb", help='the input file to compile')
+    parser.add_argument('--target_llvm', dest="target_llvm", help='the input file to compile')
+    parser.add_argument('--target_mips', dest="target_mips", help='the input file to compile')
 
-    # For direct string input, uncomment this line:
-    input_stream = antlr4.InputStream("1+1")
+    args = parser.parse_args()
+    if not args.filename:
+        raise RuntimeError("You didn't specify a file to compile")
+
+    with open(args.filename, 'r') as file:
+        input_stream = antlr4.InputStream(file.read())
 
     parse_input(input_stream)
