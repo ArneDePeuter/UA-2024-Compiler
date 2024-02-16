@@ -39,7 +39,7 @@ class DotVisitor(Visitor):
 
     def visit_unary_expression(self, expr: EXPR.UnaryExpression) -> Any:
         node_name = id(expr)
-        self.total += f"{node_name} [label=\"{expr.operator.value.value}\"];\n"
+        self.total += f"{node_name} [label=\"{expr.operator.value}\"];\n"
         child_name = id(expr.value)
         self.total += f"{node_name} -> {child_name};\n"
         self.visit_ast(expr.value)
