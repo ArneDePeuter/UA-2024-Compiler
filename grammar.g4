@@ -1,6 +1,6 @@
-// Arithmetic.g4
+// Grammar.g4
 
-grammar Arithmetic;
+grammar Grammar;
 
 // Parser Rules
 expression : additiveExpression ;
