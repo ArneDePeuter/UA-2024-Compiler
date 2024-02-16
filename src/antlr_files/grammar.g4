@@ -2,23 +2,19 @@
 
 grammar Grammar;
 
-// Parser Rules
-expression : additiveExpression ;
+// Parser rules
+expression : (expressionSequence ';')+ ;
+expressionSequence : logicalExpression ;
+atom : NUMBER | '(' expressionSequence ')' ;
+logicalExpression : comparisonExpression ( ('&&' | '||') comparisonExpression )* ;
+comparisonExpression : additiveExpression ( ('>' | '<' | '==' | '>=' | '<=' | '!=') additiveExpression )* ;
+additiveExpression : multiplicativeExpression ( ('+' | '-') multiplicativeExpression )* ;
+multiplicativeExpression : unaryExpression ( ('*' | '/' | '%') unaryExpression )* ;
+unaryExpression : ('+' | '-' | '!') unaryExpression | primary ;
+primary : NUMBER | '(' expressionSequence ')' ;
 
-additiveExpression
-    : multiplicativeExpression ( ('+' | '-') multiplicativeExpression )*
-    ;
-
-multiplicativeExpression
-    : atom ( ('*' | '/') atom )*
-    ;
-
-atom
-    : NUMBER
-    | '(' expression ')'
-    ;
-
-// Lexer Rules
+// Lexer rules
 NUMBER : [0-9]+ ;
-
 WS : [ \t\r\n]+ -> skip ;
+
+
