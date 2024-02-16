@@ -1,9 +1,8 @@
 # CustomAstVisitor.py
 
-from antlr4 import *
-from GrammarParser import GrammarParser
-from GrammarVisitor import GrammarVisitor
-from AstNodes import *  # Make sure this matches the name of the file where your AST nodes are defined
+from src.antlr_files.GrammarParser import GrammarParser
+from src.antlr_files.GrammarVisitor import GrammarVisitor
+from src.parser.AstNodes import *  # Make sure this matches the name of the file where your AST nodes are defined
 
 class CustomAstVisitor(GrammarVisitor):
     def visitExpressionSequence(self, ctx:GrammarParser.ExpressionSequenceContext):
