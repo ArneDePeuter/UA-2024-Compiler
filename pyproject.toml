@@ -6,7 +6,7 @@ authors = ["ArneDePeuter <107651037+ArneDePeuter@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10.8"
 antlr4-python3-runtime = "^4.13.1"
 
 
