@@ -1,14 +1,14 @@
 import antlr4
-from GrammarLexer import GrammarLexer
-from GrammarParser import GrammarParser
-from GrammarVisitor import GrammarVisitor  # Replace with your visitor, if you have one
+from src.antlr_files.GrammarLexer import GrammarLexer
+from src.antlr_files.GrammarParser import GrammarParser
+
 
 def parse_input(input_stream):
     # Create a stream from the input
     lexer = GrammarLexer(input_stream)  # Make sure this matches the generated Lexer name
     stream = antlr4.CommonTokenStream(lexer)
     parser = GrammarParser(stream)  # Make sure this matches the generated Parser name
-    
+
     # Parse the input and get the parse tree
     tree = parser.expression()  # This now correctly refers to the 'expression' rule
 

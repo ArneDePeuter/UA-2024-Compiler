@@ -6,11 +6,7 @@ authors = ["ArneDePeuter <107651037+ArneDePeuter@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-<<<<<<< HEAD
 python = "^3.8"
-=======
-python = "^3.10.8"
->>>>>>> eae52ab16e14418fb4d16a985c4d2759152d046a
 antlr4-python3-runtime = "^4.13.1"
 
 
