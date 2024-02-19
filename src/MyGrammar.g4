@@ -1,4 +1,4 @@
-grammar grammar;
+grammar MyGrammar;
 
 // Parser rules
 program : (expression ';')+ ;
