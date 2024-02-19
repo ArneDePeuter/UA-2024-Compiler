@@ -1,7 +1,7 @@
 import antlr4
 from src.antlr_files.GrammarLexer import GrammarLexer
 from src.antlr_files.GrammarParser import GrammarParser
-from src.parser.CustomAstVisitor import CustomAstVisitor  # This will be your custom visitor for AST construction
+from src.parser.visitor.concretevisitor import ConcreteVisitor as CustomASTVisitor  # This will be your custom visitor for AST construction
 import argparse
 
 def print_ast(node, level=0):
@@ -37,9 +37,9 @@ def main():
     token_stream = antlr4.CommonTokenStream(lexer)
     parser = GrammarParser(token_stream)
     
-    tree = parser.expression()  # Adjust if different
+    tree = parser.expression()
     
-    visitor = CustomAstVisitor()
+    visitor = CustomASTVisitor()
     ast = visitor.visit(tree)
     
     if ast:
