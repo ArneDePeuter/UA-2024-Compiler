@@ -1,6 +1,6 @@
 import antlr4
-from src.antlr_files.GrammarLexer import GrammarLexer
-from src.antlr_files.GrammarParser import GrammarParser
+from src.antlr_files.MyGrammarLexer import MyGrammarLexer
+from src.antlr_files.MyGrammarParser import MyGrammarParser
 from src.parser.visitor.concretevisitor import ConcreteVisitor as CustomASTVisitor  # This will be your custom visitor for AST construction
 import argparse
 
@@ -33,9 +33,9 @@ def main():
     with open(args.filename, 'r') as file:
         input_stream = antlr4.InputStream(file.read())
 
-    lexer = GrammarLexer(input_stream)
+    lexer = MyGrammarLexer(input_stream)
     token_stream = antlr4.CommonTokenStream(lexer)
-    parser = GrammarParser(token_stream)
+    parser = MyGrammarParser(token_stream)
     
     tree = parser.expression()
     
