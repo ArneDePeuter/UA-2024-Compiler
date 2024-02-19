@@ -2,6 +2,7 @@ import antlr4
 from src.antlr_files.MyGrammarLexer import MyGrammarLexer
 from src.antlr_files.MyGrammarParser import MyGrammarParser
 from src.parser.visitor.concretevisitor import ConcreteVisitor as CustomASTVisitor  # This will be your custom visitor for AST construction
+from src.parser.visitor.dotvisitor import DotVisitor
 import argparse
 
 def print_ast(node, level=0):
@@ -45,6 +46,9 @@ def main():
     if ast:
         print("AST generated:")
         print_ast(ast)
+        dot_visitor = DotVisitor()
+        dot_visitor.gen_binary_dot(ast)
+        dot_visitor.output("output.dot")
     else:
         print("No AST generated.")
 

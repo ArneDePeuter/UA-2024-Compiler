@@ -22,7 +22,7 @@ class BinaryArithmetic(BinaryOperation):
         PLUS = "+"
         MINUS = "-"
         MUL = "*"
-        DIV = "-"
+        DIV = "/"
         MOD = "%"
 
     def __init__(self, left: Expression, right: Expression, operator: Operator) -> None:
@@ -76,6 +76,17 @@ class UnaryExpression(Expression):
         self.value = value
         self.operator = operator
 
+class BitwiseExpression(BinaryOperation):
+    class Operator(Enum):
+        BITAND = "&"
+        BITOR = "|"
+        BITXOR = "^"
+        BITNOT = "~"
+
+    def __init__(self, left, op, right):
+        self.left = left  # The left operand
+        self.op = op      # The operator ('&', '|', '^')
+        self.right = right  # The right operand
 
 class ShiftExpression(Expression):
     class Operator(Enum):

@@ -15,11 +15,11 @@ class DotVisitor(Visitor):
             file.write(self.total)
             file.write("}\n")
 
-    def gen_binary_dot(self, me: EXPR.BinaryOperation, op_str: str) -> None:
-        node_name = id(me)
-        self.total += f"{node_name} [label=\"{op_str}\"];\n"
-        left_node_name = id(me.left)
-        right_node_name = id(me.right)
+    def gen_binary_dot(self, me: EXPR.BinaryOperation) -> None:
+        node_name = str(id(me))
+        self.total += f"{node_name} [label=\"{me.operator.value}\"];\n"
+        left_node_name = str(id(me.left))
+        right_node_name = str(id(me.right))
         self.total += f"{node_name} -> {left_node_name};\n"
         self.total += f"{node_name} -> {right_node_name};\n"
         self.visit_ast(me.left)
