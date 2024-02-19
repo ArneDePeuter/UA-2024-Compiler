@@ -42,13 +42,13 @@ def main():
     
     visitor = CustomASTVisitor()
     ast = visitor.visit(tree)
-    
+
     if ast:
         print("AST generated:")
         print_ast(ast)
         dot_visitor = DotVisitor()
-        dot_visitor.gen_binary_dot(ast)
-        dot_visitor.output("output.dot")
+        dot_visitor.gen_binary_dot(ast, "root")
+        dot_visitor.output("temp/ast_proj1_man_pass_constantFolding_firstexpres.dot")
     else:
         print("No AST generated.")
 
