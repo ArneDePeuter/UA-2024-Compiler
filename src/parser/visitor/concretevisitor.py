@@ -48,8 +48,8 @@ class ConcreteVisitor(MyGrammarVisitor):
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
         right = self.visit(ctx.getChild(2))
-        op = ctx.getChild(1)  # '&', '|', '^'
-        return BitwiseExpression(left, right, op)  # Assuming a class BitwiseOperation
+        op = ctx.getChild(1)
+        return BitwiseExpression(left, right, op)
 
     # TODO: handle ShiftExpression properly
     def visitShiftExpression(self, ctx:MyGrammarParser.ShiftExpressionContext):
@@ -58,10 +58,10 @@ class ConcreteVisitor(MyGrammarVisitor):
         value = self.visit(ctx.shiftExpression())
         direction = ctx.getChild(0).getText()
         shiftBy = self.visit(ctx.primary())
-        return ShiftExpression(value, direction, shiftBy)  # Assuming a class ShiftExpression
+        return ShiftExpression(value, direction, shiftBy)
 
     def visitPrimary(self, ctx:MyGrammarParser.PrimaryContext):
         if ctx.NUMBER() is not None:
-            return INT(int(ctx.NUMBER().getText()))  # Assuming a class NumberNode for numeric literals
+            return INT(int(ctx.NUMBER().getText()))
         elif ctx.expression() is not None:
-            return self.visit(ctx.expression())  # Parenthesized expression
+            return self.visit(ctx.expression())
