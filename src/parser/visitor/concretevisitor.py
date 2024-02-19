@@ -23,39 +23,40 @@ class ConcreteVisitor(MyGrammarVisitor):
     def visitLogicalExpression(self, ctx:MyGrammarParser.LogicalExpressionContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
-        left = self.visit(ctx.left)
-        right = self.visit(ctx.right)
-        op = ctx.op.text
+        left = self.visit(ctx.getChild(0))
+        right = self.visit(ctx.getChild(2))
+        op = ctx.getChild(1)
         return BinaryLogicalOperation(left, right, op)
 
     def visitComparisonExpression(self, ctx:MyGrammarParser.ComparisonExpressionContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
-        left = self.visit(ctx.left)
-        right = self.visit(ctx.right)
-        op = ctx.op.text
+        left = self.visit(ctx.getChild(0))
+        right = self.visit(ctx.getChild(2))
+        op = ctx.getChild(1)
         return ComparisonOperation(left, right, op)
 
     def visitUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.bitwiseExpression())
-        op = ctx.op.text
+        op = ctx.getChild(0)
         expr = self.visit(ctx.unaryExpression())
         return UnaryExpression(expr, op)
 
     def visitBitwiseExpression(self, ctx:MyGrammarParser.BitwiseExpressionContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
-        left = self.visit(ctx.left)
-        right = self.visit(ctx.right)
-        op = ctx.op.text  # '&', '|', '^'
+        left = self.visit(ctx.getChild(0))
+        right = self.visit(ctx.getChild(2))
+        op = ctx.getChild(1)  # '&', '|', '^'
         return BitwiseExpression(left, right, op)  # Assuming a class BitwiseOperation
 
+    # TODO: handle ShiftExpression properly
     def visitShiftExpression(self, ctx:MyGrammarParser.ShiftExpressionContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
         value = self.visit(ctx.shiftExpression())
-        direction = ctx.op.text  # '<<' or '>>'
+        direction = ctx.getChild(0).getText()
         shiftBy = self.visit(ctx.primary())
         return ShiftExpression(value, direction, shiftBy)  # Assuming a class ShiftExpression
 

@@ -4,6 +4,7 @@ from src.antlr_files.MyGrammarParser import MyGrammarParser
 from src.parser.visitor.concretevisitor import ConcreteVisitor as CustomASTVisitor  # This will be your custom visitor for AST construction
 from src.parser.visitor.dotvisitor import DotVisitor
 import argparse
+import subprocess
 
 def print_ast(node, level=0):
     if node is None:
@@ -38,7 +39,8 @@ def main():
     token_stream = antlr4.CommonTokenStream(lexer)
     parser = MyGrammarParser(token_stream)
     
-    tree = parser.expression()
+    tree = parser.expression() # Only one expression
+    #tree = parser.program() # The complete program
     
     visitor = CustomASTVisitor()
     ast = visitor.visit(tree)
@@ -48,7 +50,9 @@ def main():
         print_ast(ast)
         dot_visitor = DotVisitor()
         dot_visitor.gen_binary_dot(ast, "root")
-        dot_visitor.output("temp/ast_proj1_man_pass_constantFolding_firstexpres.dot")
+        dotfile = "temp/ast_proj1"
+        dot_visitor.output(dotfile+".dot")
+
     else:
         print("No AST generated.")
 
