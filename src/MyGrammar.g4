@@ -21,12 +21,7 @@ additiveExpression
     ;
 
 multiplicativeExpression
-    : multiplicativeExpression ('*' | '/' | '%') unaryExpression
-    | unaryExpression
-    ;
-
-unaryExpression
-    : ('+' | '-' | '!') unaryExpression
+    : multiplicativeExpression ('*' | '/' | '%') bitwiseExpression
     | bitwiseExpression
     ;
 
@@ -36,7 +31,12 @@ bitwiseExpression
     ;
 
 shiftExpression
-    : shiftExpression ('<<' | '>>') primary
+    : shiftExpression ('<<' | '>>') unaryExpression
+    | unaryExpression
+    ;
+
+unaryExpression
+    : ('+' | '-' | '!') unaryExpression
     | primary
     ;
 
@@ -44,6 +44,7 @@ primary
     : NUMBER
     | '(' expression ')'
     ;
+
 
 // Lexer rules
 NUMBER : [0-9]+ ;

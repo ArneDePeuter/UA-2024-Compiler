@@ -37,19 +37,32 @@ class DotVisitor(Visitor):
     def visit_comparison_operation(self, expr: EXPR.ComparisonOperation) -> Any:
         self.gen_binary_dot(expr, expr.operator)
 
-    def visit_unary_expression(self, expr: EXPR.UnaryExpression) -> Any:
-        node_name = id(expr)
-        self.total += f"{node_name} [label=\"{expr.operator}\"];\n"
-        child_name = id(expr.value)
-        self.total += f"{node_name} -> {child_name};\n"
+    def visit_shift_expression(self, expr: EXPR.ShiftExpression) -> Any:
+        node_name = str(id(expr))
+        label = f"{expr.operator.value}"
+        self.total += f"{node_name} [label=\"{label}\"];\n"
+
+        # Visit and connect the value being shifted
+        value_node_name = str(id(expr.value))
+        self.total += f"{node_name} -> {value_node_name} [label=\"value\"];\n"
         self.visit_ast(expr.value)
 
-    def visit_shift_expression(self, expr: EXPR.ShiftExpression) -> Any:
-        node_name = id(expr)
-        self.total += f"{node_name} [label=\"{expr.operator}{expr.shamt}\"];\n"
-        child_name = id(expr.value)
-        self.total += f"{node_name} -> {child_name};\n"
+        # Visit and connect the shift amount (even if it's a unary expression)
+        shamt_node_name = str(id(expr.shamt))
+        self.total += f"{node_name} -> {shamt_node_name} [label=\"shamt\"];\n"
+        self.visit_ast(expr.shamt)
+
+    def visit_unary_expression(self, expr: EXPR.UnaryExpression) -> Any:
+        node_name = str(id(expr))
+        label = f"{expr.operator.value}"
+        self.total += f"{node_name} [label=\"{label}\"];\n"
+
+        # Visit and connect the operand
+        operand_node_name = str(id(expr.value))
+        self.total += f"{node_name} -> {operand_node_name};\n"
         self.visit_ast(expr.value)
+
+
 
     def visit_int(self, expr: EXPR.INT) -> Any:
         node_name = id(expr)

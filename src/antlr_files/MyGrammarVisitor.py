@@ -39,11 +39,6 @@ class MyGrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MyGrammarParser#unaryExpression.
-    def visitUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MyGrammarParser#bitwiseExpression.
     def visitBitwiseExpression(self, ctx:MyGrammarParser.BitwiseExpressionContext):
         return self.visitChildren(ctx)
@@ -51,6 +46,11 @@ class MyGrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MyGrammarParser#shiftExpression.
     def visitShiftExpression(self, ctx:MyGrammarParser.ShiftExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MyGrammarParser#unaryExpression.
+    def visitUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
         return self.visitChildren(ctx)
 
 

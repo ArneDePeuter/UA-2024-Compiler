@@ -62,15 +62,6 @@ class MyGrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MyGrammarParser#unaryExpression.
-    def enterUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
-        pass
-
-    # Exit a parse tree produced by MyGrammarParser#unaryExpression.
-    def exitUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
-        pass
-
-
     # Enter a parse tree produced by MyGrammarParser#bitwiseExpression.
     def enterBitwiseExpression(self, ctx:MyGrammarParser.BitwiseExpressionContext):
         pass
@@ -86,6 +77,15 @@ class MyGrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by MyGrammarParser#shiftExpression.
     def exitShiftExpression(self, ctx:MyGrammarParser.ShiftExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by MyGrammarParser#unaryExpression.
+    def enterUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
+        pass
+
+    # Exit a parse tree produced by MyGrammarParser#unaryExpression.
+    def exitUnaryExpression(self, ctx:MyGrammarParser.UnaryExpressionContext):
         pass
 
 

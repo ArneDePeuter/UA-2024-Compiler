@@ -39,8 +39,8 @@ def main():
     token_stream = antlr4.CommonTokenStream(lexer)
     parser = MyGrammarParser(token_stream)
     
-    tree = parser.expression() # Only one expression
-    #tree = parser.program() # The complete program
+    #tree = parser.expression() # Only one expression
+    tree = parser.program() # The complete program
     
     visitor = CustomASTVisitor()
     ast = visitor.visit(tree)
@@ -49,7 +49,7 @@ def main():
         print("AST generated:")
         print_ast(ast)
         dot_visitor = DotVisitor()
-        dot_visitor.visit_ast(ast)
+        dot_visitor.gen_binary_dot(ast, "root")
         dotfile = "temp/ast_proj1"
         dot_visitor.output(dotfile+".dot")
 
