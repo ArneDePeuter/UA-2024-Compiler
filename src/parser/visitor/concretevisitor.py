@@ -3,8 +3,19 @@ from src.antlr_files.MyGrammarLexer import MyGrammarLexer
 from src.antlr_files.MyGrammarParser import MyGrammarParser
 from src.antlr_files.MyGrammarVisitor import MyGrammarVisitor
 from ..ast.expression import *
+from ..ast.program import Program
 
 class ConcreteVisitor(MyGrammarVisitor):
+    def visitProgram(self, ctx):
+        statements = []
+
+        for child in ctx.getChildren():
+            if isinstance(child, TerminalNode):
+                continue
+            statement = self.visit(child)  # Visit each child and get the AST node
+            statements.append(statement)
+        return Program(statements)
+
     def visitAdditiveExpression(self, ctx:MyGrammarParser.AdditiveExpressionContext):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
@@ -61,9 +72,8 @@ class ConcreteVisitor(MyGrammarVisitor):
         left = self.visit(ctx.getChild(0))
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1)
-        return BitwiseExpression(left, right, op)
+        return BinaryBitwiseArithmetic(left, right, op)
 
-    # TODO: handle ShiftExpression properly
     def visitShiftExpression(self, ctx:MyGrammarParser.ShiftExpressionContext):
         if ctx.getChildCount() == 1:
             # If there's no shift operation (i.e., it's just a unary expression)
