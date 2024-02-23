@@ -1,12 +1,12 @@
-from .ast import AST
+from .statement import Statement
 from enum import Enum
 
 
-class Expression(AST):
+class Expression(Statement):
     pass
 
 
-class INT(AST):
+class INT(Expression):
     def __init__(self, value: int) -> None:
         self.value = value
 
