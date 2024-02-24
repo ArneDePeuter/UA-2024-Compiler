@@ -15,7 +15,15 @@ class DotVisitor(Visitor):
             file.write(self.total)
             file.write("}\n")
 
-    def gen_binary_dot(self, me: EXPR.BinaryOperation, operator: str) -> None:
+    def visit_program(self, program):
+        program_node_name = str(id(program))
+        self.total += f'{program_node_name} [label="Program"];\n'
+        for statement in program.statements:
+            statement_node_name = str(id(statement))
+            self.total += f'{program_node_name} -> {statement_node_name};\n'
+            self.visit_ast(statement)  # Assuming visit_ast can dispatch to the correct visit method
+
+    def gen_binary_dot(self, me: EXPR.BinaryOperation) -> None:
         node_name = str(id(me))
         self.total += f"{node_name} [label=\"{me.operator}\"];\n"
         left_node_name = str(id(me.left))
@@ -26,16 +34,16 @@ class DotVisitor(Visitor):
         self.visit_ast(me.right)
 
     def visit_binary_arithmetic(self, expr: EXPR.BinaryArithmetic) -> Any:
-        self.gen_binary_dot(expr, expr.operator)
+        self.gen_binary_dot(expr)
 
     def visit_binary_bitwise_arithmetic(self, expr: EXPR.BinaryBitwiseArithmetic) -> Any:
-        self.gen_binary_dot(expr, expr.operator)
+        self.gen_binary_dot(expr)
 
     def visit_binary_logical_operation(self, expr: EXPR.BinaryLogicalOperation) -> Any:
-        self.gen_binary_dot(expr, expr.operator)
+        self.gen_binary_dot(expr)
 
     def visit_comparison_operation(self, expr: EXPR.ComparisonOperation) -> Any:
-        self.gen_binary_dot(expr, expr.operator)
+        self.gen_binary_dot(expr)
 
     def visit_shift_expression(self, expr: EXPR.ShiftExpression) -> Any:
         node_name = str(id(expr))
