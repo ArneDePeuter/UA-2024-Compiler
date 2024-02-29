@@ -27,7 +27,6 @@ class Visitor(ABC):
         else:
             raise NotImplementedError(f"No handler found for ast: {ast_type}")
 
-
     @abstractmethod
     def visit_program(self, program: Program) -> Any:
         pass
