@@ -24,6 +24,11 @@ class ConcreteVisitor(MyGrammarVisitor):
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
         right = self.visit(ctx.getChild(2))
+
+        # Constant folding
+        if isinstance(left, INT) and isinstance(right, INT):
+            return INT(left.value + right.value)
+
         return BinaryArithmetic(
             left=left,
             operator=BinaryArithmetic.Operator.PLUS,
@@ -35,6 +40,11 @@ class ConcreteVisitor(MyGrammarVisitor):
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
         right = self.visit(ctx.getChild(2))
+
+        # Constant folding
+        if isinstance(left, INT) and isinstance(right, INT):
+            return INT(left.value * right.value)
+
         return BinaryArithmetic(
             left=left,
             operator=BinaryArithmetic.Operator.MUL,
@@ -47,6 +57,7 @@ class ConcreteVisitor(MyGrammarVisitor):
         left = self.visit(ctx.getChild(0))
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
+
         op = BinaryLogicalOperation.Operator(op)
         return BinaryLogicalOperation(
             left=left,
@@ -85,6 +96,7 @@ class ConcreteVisitor(MyGrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
         op = BinaryBitwiseArithmetic.Operator(op)
+
         return BinaryBitwiseArithmetic(
             left=left,
             operator=op,
