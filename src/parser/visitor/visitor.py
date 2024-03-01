@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from ..ast.program import Program
 from ..ast import expression as EXPR
 from ..ast import ast as AST
 
@@ -8,6 +9,7 @@ from ..ast import ast as AST
 class Visitor(ABC):
     def __init__(self):
         self.forward_dict: Dict[type, Any] = {
+            Program: self.visit_program,
             EXPR.INT: self.visit_int,
             EXPR.BinaryArithmetic: self.visit_binary_arithmetic,
             EXPR.BinaryBitwiseArithmetic: self.visit_binary_bitwise_arithmetic,
@@ -24,6 +26,10 @@ class Visitor(ABC):
             return handler(ast)
         else:
             raise NotImplementedError(f"No handler found for ast: {ast_type}")
+
+    @abstractmethod
+    def visit_program(self, program: Program) -> Any:
+        pass
 
     @abstractmethod
     def visit_binary_arithmetic(self, expr: EXPR.BinaryArithmetic) -> Any:

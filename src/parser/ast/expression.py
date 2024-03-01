@@ -1,22 +1,26 @@
-from .ast import AST
 from enum import Enum
+from dataclasses import dataclass
+
+from .statement import Statement
 
 
-class Expression(AST):
+@dataclass
+class Expression(Statement):
     pass
 
 
-class INT(AST):
-    def __init__(self, value: int) -> None:
-        self.value = value
+@dataclass
+class INT(Expression):
+    value: int
 
 
+@dataclass
 class BinaryOperation(Expression):
-    def __init__(self, left: Expression, right: Expression) -> None:
-        self.left = left
-        self.right = right
+    left: Expression
+    right: Expression
 
 
+@dataclass
 class BinaryArithmetic(BinaryOperation):
     class Operator(Enum):
         PLUS = "+"
@@ -25,32 +29,34 @@ class BinaryArithmetic(BinaryOperation):
         DIV = "/"
         MOD = "%"
 
-    def __init__(self, left: Expression, right: Expression, operator: Operator) -> None:
-        super().__init__(left, right)
-        self.operator = operator
+    left: Expression
+    operator: Operator
+    right: Expression
 
 
+@dataclass
 class BinaryBitwiseArithmetic(BinaryOperation):
     class Operator(Enum):
         AND = "&"
         OR = "|"
         XOR = "^"
 
-    def __init__(self, left: Expression, right: Expression, operator: Operator) -> None:
-        super().__init__(left, right)
-        self.operator = operator
+    left: Expression
+    operator: Operator
+    right: Expression
 
 
+@dataclass
 class BinaryLogicalOperation(BinaryOperation):
     class Operator(Enum):
         AND = "&&"
         OR = "||"
 
-    def __init__(self, left: Expression, right: Expression, operator: Operator) -> None:
-        super().__init__(left, right)
-        self.operator = operator
+    left: Expression
+    operator: Operator
+    right: Expression
 
-
+@dataclass
 class ComparisonOperation(BinaryOperation):
     class Operator(Enum):
         GT = ">"
@@ -60,11 +66,12 @@ class ComparisonOperation(BinaryOperation):
         EQ = "=="
         NEQ = "!="
 
-    def __init__(self, left: Expression, right: Expression, operator: Operator) -> None:
-        super().__init__(left, right)
-        self.operator = operator
+    left: Expression
+    operator: Operator
+    right: Expression
 
 
+@dataclass
 class UnaryExpression(Expression):
     class Operator(Enum):
         POSITIVE = "+"
@@ -72,10 +79,11 @@ class UnaryExpression(Expression):
         ONESCOMPLEMENT = "~"
         LOGICALNEGATION = "!"
 
-    def __init__(self, value: Expression, operator: Operator) -> None:
-        self.value = value
-        self.operator = operator
+    value: Expression
+    operator: Operator
 
+
+@dataclass
 class BitwiseExpression(BinaryOperation):
     class Operator(Enum):
         BITAND = "&"
@@ -83,17 +91,17 @@ class BitwiseExpression(BinaryOperation):
         BITXOR = "^"
         BITNOT = "~"
 
-    def __init__(self, left, op, right):
-        self.left = left  # The left operand
-        self.op = op      # The operator ('&', '|', '^')
-        self.right = right  # The right operand
+    left: Expression
+    operator: Operator
+    right: Expression
 
+
+@dataclass
 class ShiftExpression(Expression):
     class Operator(Enum):
         LEFT = "<<"
         RIGHT = ">>"
 
-    def __init__(self, value: Expression, operator: Operator, shamt: int) -> None:
-        self.value = value
-        self.operator = operator
-        self.shamt = shamt
+    value: Expression
+    operator: Operator
+    amount: Expression

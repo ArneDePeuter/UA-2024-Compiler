@@ -1,8 +1,8 @@
-from abc import ABC
 from dataclasses import dataclass
+
+from .ast import AST
 
 
 @dataclass
-class AST(ABC):
+class Statement(AST):
     pass
-
