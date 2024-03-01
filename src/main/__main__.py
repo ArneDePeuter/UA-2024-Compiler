@@ -3,6 +3,7 @@ from src.antlr_files.MyGrammarLexer import MyGrammarLexer
 from src.antlr_files.MyGrammarParser import MyGrammarParser
 from src.parser.visitor.concretevisitor import ConcreteVisitor as CustomASTVisitor  # This will be your custom visitor for AST construction
 from src.parser.visitor.dotvisitor import DotVisitor
+from src.parser.visitor.optimizervisitor import OptimizerVisitor
 import argparse
 import subprocess
 
@@ -39,11 +40,14 @@ def main():
     token_stream = antlr4.CommonTokenStream(lexer)
     parser = MyGrammarParser(token_stream)
     
-    #tree = parser.expression() # Only one expression
-    tree = parser.program() # The complete program
+    tree = parser.expression() # Only one expression
+    #tree = parser.program() # The complete program
     
     visitor = CustomASTVisitor()
     ast = visitor.visit(tree)
+
+    optimizer = OptimizerVisitor()
+    ast = optimizer.visit_ast(ast)
 
     if ast:
         print("AST generated:")
