@@ -1,12 +1,12 @@
 from antlr4 import *
-from src.antlr_files.MyGrammarParser import MyGrammarParser
-from src.antlr_files.MyGrammarVisitor import MyGrammarVisitor
+from src.antlr_files.project_1.MyGrammarParser import MyGrammarParser
+from src.antlr_files.project_1.MyGrammarVisitor import MyGrammarVisitor
 
-from ..ast.expression import *
-from ..ast.program import Program
+from .ast.expression import *
+from .ast.program import Program
 
 
-class ConcreteVisitor(MyGrammarVisitor):
+class CSTVisitor(MyGrammarVisitor):
     def visitProgram(self, ctx):
         statements = []
 

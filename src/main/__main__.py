@@ -1,8 +1,10 @@
 import argparse
 
-from src.parser.visitor.concretevisitor import ConcreteVisitor as CustomASTVisitor
-from src.parser.visitor.dotvisitor import DotVisitor
+from src.parser.cst_visitor import CSTVisitor
+from src.parser.ast_visitor.dotvisitor import DotVisitor
 from src.parser.tree_creation import tree_from_file
+from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
+from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
 
 
 def main():
@@ -17,10 +19,14 @@ def main():
     if not args.filename:
         raise RuntimeError("You didn't specify a file to compile")
 
-    tree = tree_from_file(filename=args.filename)
+    tree = tree_from_file(
+        filename=args.filename,
+        lexer_class=MyGrammarLexer,
+        parser_class=MyGrammarParser
+    )
     
-    visitor = CustomASTVisitor()
-    ast = visitor.visit(tree)
+    cst_visitor = CSTVisitor()
+    ast = cst_visitor.visit(tree)
 
     if ast:
         print("AST generated:")

@@ -3,7 +3,7 @@
 You might need to recompile the ANTLR classes using java:
 
 ```bash
-java -jar antlr-4.13.1-complete.jar -Dlanguage=Python3 MyGrammar.g4 -visitor
+java -jar ../../antlr-4.13.1-complete.jar -Dlanguage=Python3 MyGrammar.g4 -visitor   
 ```
 
 In order to compile C using our program:
