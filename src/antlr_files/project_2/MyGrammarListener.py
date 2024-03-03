@@ -44,6 +44,15 @@ class MyGrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MyGrammarParser#castExpression.
+    def enterCastExpression(self, ctx:MyGrammarParser.CastExpressionContext):
+        pass
+
+    # Exit a parse tree produced by MyGrammarParser#castExpression.
+    def exitCastExpression(self, ctx:MyGrammarParser.CastExpressionContext):
+        pass
+
+
     # Enter a parse tree produced by MyGrammarParser#statement.
     def enterStatement(self, ctx:MyGrammarParser.StatementContext):
         pass
