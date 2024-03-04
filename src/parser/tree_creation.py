@@ -10,8 +10,13 @@ class MyErrorListener(ErrorListener):
 
 def tree_from_file(filename: str, lexer_class, parser_class):
     with open(filename, 'r') as file:
-        input_stream = antlr4.InputStream(file.read())
+        data = file.read()
 
+    return tree_from_str(data, lexer_class, parser_class)
+
+
+def tree_from_str(data: str, lexer_class, parser_class):
+    input_stream = antlr4.InputStream(data)
     my_listener = MyErrorListener()
     lexer = lexer_class(input_stream)
     lexer.removeErrorListeners()

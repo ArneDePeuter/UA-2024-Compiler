@@ -23,11 +23,12 @@ class CSTVisitor(MyGrammarVisitor):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
+        op = ctx.getChild(1).getText()
         right = self.visit(ctx.getChild(2))
 
         return BinaryArithmetic(
             left=left,
-            operator=BinaryArithmetic.Operator.PLUS,
+            operator=BinaryArithmetic.Operator(op),
             right=right
         )
 
@@ -35,11 +36,12 @@ class CSTVisitor(MyGrammarVisitor):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
+        op = ctx.getChild(1).getText()
         right = self.visit(ctx.getChild(2))
 
         return BinaryArithmetic(
             left=left,
-            operator=BinaryArithmetic.Operator.MUL,
+            operator=BinaryArithmetic.Operator(op),
             right=right
         )
 
