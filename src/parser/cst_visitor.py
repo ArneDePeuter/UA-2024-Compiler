@@ -23,10 +23,12 @@ class CSTVisitor(MyGrammarVisitor):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
+        op = ctx.getChild(1).getText()
         right = self.visit(ctx.getChild(2))
+
         return BinaryArithmetic(
             left=left,
-            operator=BinaryArithmetic.Operator.PLUS,
+            operator=BinaryArithmetic.Operator(op),
             right=right
         )
 
@@ -34,10 +36,12 @@ class CSTVisitor(MyGrammarVisitor):
         if ctx.getChildCount() == 1:
             return self.visit(ctx.getChild(0))
         left = self.visit(ctx.getChild(0))
+        op = ctx.getChild(1).getText()
         right = self.visit(ctx.getChild(2))
+
         return BinaryArithmetic(
             left=left,
-            operator=BinaryArithmetic.Operator.MUL,
+            operator=BinaryArithmetic.Operator(op),
             right=right
         )
 
@@ -48,6 +52,7 @@ class CSTVisitor(MyGrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
         op = BinaryLogicalOperation.Operator(op)
+
         return BinaryLogicalOperation(
             left=left,
             operator=op,
@@ -61,6 +66,7 @@ class CSTVisitor(MyGrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
         op = ComparisonOperation.Operator(op)
+
         return ComparisonOperation(
             left=left,
             operator=op,
@@ -73,6 +79,7 @@ class CSTVisitor(MyGrammarVisitor):
         expr = self.visit(ctx.unaryExpression())
         op = ctx.getChild(0).getText()
         op = UnaryExpression.Operator(op)
+
         return UnaryExpression(
             value=expr,
             operator=op
@@ -85,6 +92,7 @@ class CSTVisitor(MyGrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
         op = BinaryBitwiseArithmetic.Operator(op)
+
         return BinaryBitwiseArithmetic(
             left=left,
             operator=op,
