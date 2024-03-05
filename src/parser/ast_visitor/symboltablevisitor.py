@@ -4,7 +4,7 @@ from .visitor import Visitor
 from ..ast import ast as AST, expression as EXPR
 
 
-class SemanticAnalysisVisitor(Visitor):
+class SymbolTableVisitor(Visitor):
     def __init__(self):
         self.current_scope = None  # Keep track of the current scope's symbol table
 
