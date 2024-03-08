@@ -1,7 +1,13 @@
+from typing import Any
 from .visitor import Visitor
 from ..ast import expression as EXPR
-from ..ast.expression import INT
+from ..ast.expression import INT, CastExpression, Assignment
 from ..ast.program import Program
+from ..ast.main_function import MainFunction
+from ..ast.compound_statement import CompoundStatement
+from ..ast.declaration import Declaration
+from ..ast.type import Type
+from ..ast.variable import Variable
 from ..ast import ast as AST
 
 
@@ -9,13 +15,50 @@ class OptimizerVisitor(Visitor):
     def __init__(self):
         super().__init__()
 
-    def visit_ast(self, ast: AST.AST):
-        return super().visit_ast(ast)
+    def visit_ast(self, ast: AST.AST) -> Any:
+        try:
+            return super().visit_ast(ast)
+        except NotImplementedError as e:
+            print(f"Error visiting AST node: {ast}")
+            raise e
 
     def visit_program(self, program: Program):
         for i, statement in enumerate(program.statements):
             program.statements[i] = self.visit_ast(statement)
         return program  # Return the optimized program
+
+    def visit_main_function(self, main_function: MainFunction):
+        # Optimize the compound statement (function body)
+        main_function.body = self.visit_ast(main_function.body)
+        return main_function
+
+    def visit_compound_statement(self, compound_statement: CompoundStatement):
+        for i, statement in enumerate(compound_statement.statements):
+            compound_statement.statements[i] = self.visit_ast(statement)
+        return compound_statement
+
+    def visit_declaration(self, declaration: Declaration):
+        declaration.var_type = self.visit_ast(declaration.var_type)
+        declaration.variables = [self.visit_ast(var) for var in declaration.variables]
+        return declaration
+
+    def visit_assignment(self, expr: Assignment) -> Any:
+        expr.left = self.visit_ast(expr.left)
+        expr.right = self.visit_ast(expr.right)
+        return expr
+
+    def visit_type(self, type_node: Type):
+        return type_node
+
+    def visit_variable(self, variable: Variable):
+        if variable.initializer is not None:
+            variable.initializer = self.visit_ast(variable.initializer)
+        return variable
+
+    def visit_cast_expression(self, cast_expression: CastExpression):
+        cast_expression.cast_type = self.visit_ast(cast_expression.cast_type)
+        cast_expression.expression = self.visit_ast(cast_expression.expression)
+        return cast_expression
 
     def visit_binary_arithmetic(self, expr: EXPR.BinaryArithmetic) -> any:
         # Visit left and right operands to potentially simplify them first
@@ -148,3 +191,15 @@ class OptimizerVisitor(Visitor):
     def visit_int(self, expression):
         # Literal expressions are already constant, so no folding needed
         return expression
+
+    def visit_float(self, expr: EXPR.FLOAT) -> Any:
+        # Literal expressions are already constant, so no folding needed
+        return expr
+
+    def visit_char(self, expr: EXPR.CHAR) -> Any:
+        # Literal expressions are already constant, so no folding needed
+        return expr
+
+    def visit_variable_reference(self, expr: EXPR.VariableReference) -> Any:
+        # Variable references cannot be folded, so return the expression as is
+        return expr
