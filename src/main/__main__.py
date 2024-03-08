@@ -6,6 +6,7 @@ from src.parser.tree_creation import tree_from_file
 from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
 from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
 from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
+from src.parser.ast_visitor.astprintvisitor import ASTPrintVisitor
 
 
 def main():
@@ -31,6 +32,9 @@ def main():
 
     optimizer_visitor = OptimizerVisitor()
     ast = optimizer_visitor.visit_ast(ast)
+
+    #ast_print_visitor = ASTPrintVisitor()
+    #ast_print_visitor.visit_ast(ast)
 
     dot_visitor = DotVisitor()
     dot_visitor.visit_ast(ast)
