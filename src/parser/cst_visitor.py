@@ -245,6 +245,7 @@ class CSTVisitor(MyGrammarVisitor):
 
     def visitPrimary(self, ctx: MyGrammarParser.PrimaryContext):
         if ctx.NUMBER() is not None:
+            str =  int(ctx.NUMBER().getText())
             return INT(int(ctx.NUMBER().getText()))
         elif ctx.expression() is not None:
             return self.visit(ctx.expression())

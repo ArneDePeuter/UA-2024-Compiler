@@ -49,7 +49,6 @@ class SymbolTableVisitor(Visitor):
 
     def visit_type(self, type_node: Type) -> Any:
         pass
-
     def visit_variable(self, variable: Variable) -> Any:
         if self.current_scope.lookup(variable.identifier, current_scope_only=True):
             raise Exception(f"Redeclaration of variable: {variable.identifier}")

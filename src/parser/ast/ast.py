@@ -5,4 +5,5 @@ from ..symbol_table.symboltable import SymbolTable
 
 @dataclass
 class AST(ABC):
-    symbol_table: SymbolTable(parent=None)
+    # symbol_table: SymbolTable(parent=None)
+    pass
