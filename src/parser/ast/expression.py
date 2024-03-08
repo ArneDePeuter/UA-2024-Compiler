@@ -1,17 +1,38 @@
 from enum import Enum
-from dataclasses import dataclass
-
 from .statement import Statement
+from dataclasses import dataclass
+from .type import Type
 
 
 @dataclass
 class Expression(Statement):
     pass
 
+@dataclass
+class Assignment(Expression):
+    left: Expression
+    right: Expression
+
+@dataclass
+class CastExpression(Expression):
+    cast_type: Type
+    expression: Expression
 
 @dataclass
 class INT(Expression):
     value: int
+
+@dataclass
+class FLOAT(Expression):
+    value: float
+
+@dataclass
+class CHAR(Expression):
+    value: str
+
+@dataclass
+class VariableReference(Expression):
+    identifier: str
 
 
 @dataclass
@@ -78,9 +99,14 @@ class UnaryExpression(Expression):
         NEGATIVE = "-"
         ONESCOMPLEMENT = "~"
         LOGICALNEGATION = "!"
+        ADDRESSOF = "&"
+        DEREFERENCE = "*"
+        INCREMENT = "++"
+        DECREMENT = "--"
 
     value: Expression
     operator: Operator
+    prefix: bool
 
 
 @dataclass

@@ -4,12 +4,24 @@ from typing import Any, Dict
 from ..ast.program import Program
 from ..ast import expression as EXPR
 from ..ast import ast as AST
+from ..ast.main_function import MainFunction
+from ..ast.compound_statement import CompoundStatement
+from ..ast.expression import CastExpression
+from ..ast.type import Type
+from ..ast.declaration import Declaration
+from ..ast.variable import Variable
 
 
 class Visitor(ABC):
     def __init__(self):
         self.forward_dict: Dict[type, Any] = {
             Program: self.visit_program,
+            MainFunction: self.visit_main_function,
+            CompoundStatement: self.visit_compound_statement,
+            Declaration: self.visit_declaration,
+            Type: self.visit_type,
+            Variable: self.visit_variable,
+            CastExpression: self.visit_cast_expression,
             EXPR.INT: self.visit_int,
             EXPR.BinaryArithmetic: self.visit_binary_arithmetic,
             EXPR.BinaryBitwiseArithmetic: self.visit_binary_bitwise_arithmetic,
@@ -17,6 +29,10 @@ class Visitor(ABC):
             EXPR.ComparisonOperation: self.visit_comparison_operation,
             EXPR.UnaryExpression: self.visit_unary_expression,
             EXPR.ShiftExpression: self.visit_shift_expression,
+            EXPR.FLOAT: self.visit_float,
+            EXPR.CHAR: self.visit_char,
+            EXPR.VariableReference: self.visit_variable_reference,
+            EXPR.Assignment: self.visit_assignment,
         }
 
     def visit_ast(self, ast: AST.AST) -> Any:
@@ -29,6 +45,30 @@ class Visitor(ABC):
 
     @abstractmethod
     def visit_program(self, program: Program) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_main_function(self, main_function: MainFunction) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_compound_statement(self, compound_statement: CompoundStatement) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_declaration(self, declaration: Declaration) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_type(self, type_node: Type) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_variable(self, variable: Variable) -> Any:
+        pass
+
+    @abstractmethod
+    def visit_cast_expression(self, cast_expression: CastExpression) -> Any:
         pass
 
     @abstractmethod
