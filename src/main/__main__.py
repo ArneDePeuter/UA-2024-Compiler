@@ -6,23 +6,20 @@ from src.parser.tree_creation import tree_from_file
 from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
 from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
 from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
-from src.parser.ast_visitor.astprintvisitor import ASTPrintVisitor
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--input', dest="filename", help='the input file to compile')
-    parser.add_argument('--render_ast', dest="render_ast", help='the input file to compile')
-    parser.add_argument('--render_symb', dest="render_symb", help='the input file to compile')
-    parser.add_argument('--target_llvm', dest="target_llvm", help='the input file to compile')
-    parser.add_argument('--target_mips', dest="target_mips", help='the input file to compile')
+    parser = argparse.ArgumentParser(description='Compiler options.')
+    parser.add_argument('--input', required=True, help='The input file to compile')
+    parser.add_argument('--render_ast', action='store_true', help='Render the AST of the input file.')
+    parser.add_argument('--render_symb', action='store_true', help='Render the symbol table of the input file.')
+    parser.add_argument('--target_llvm', action='store_true', help='Generate LLVM code for the input file.')
+    parser.add_argument('--target_mips', action='store_true', help='Generate MIPS code for the input file.')
 
     args = parser.parse_args()
-    if not args.filename:
-        raise RuntimeError("You didn't specify a file to compile")
 
     tree = tree_from_file(
-        filename=args.filename,
+        filename=args.input,
         lexer_class=MyGrammarLexer,
         parser_class=MyGrammarParser
     )
@@ -33,13 +30,18 @@ def main():
     optimizer_visitor = OptimizerVisitor()
     ast = optimizer_visitor.visit_ast(ast)
 
-    #ast_print_visitor = ASTPrintVisitor()
-    #ast_print_visitor.visit_ast(ast)
-
-    dot_visitor = DotVisitor()
-    dot_visitor.visit_ast(ast)
-    dotfile = "temp/ast_proj1"
-    dot_visitor.output(dotfile+".dot")
+    # Perform actions based on the command line arguments
+    if args.render_ast:
+        dot_visitor = DotVisitor()
+        dot_visitor.visit_ast(ast)
+        dotfile = "temp/ast_output"+args.input
+        dot_visitor.output(dotfile + ".dot")
+    if args.render_symb:
+        pass
+    if args.target_llvm:
+        pass
+    if args.target_mips:
+        pass
 
 
 if __name__ == "__main__":
