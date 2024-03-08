@@ -1,35 +1,48 @@
-import antlr4
-from src.antlr_files.GrammarLexer import GrammarLexer
-from src.antlr_files.GrammarParser import GrammarParser
 import argparse
 
+from src.parser.cst_visitor import CSTVisitor
+from src.parser.ast_visitor.dotvisitor import DotVisitor
+from src.parser.tree_creation import tree_from_file
+from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
+from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
+from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
 
-def parse_input(input_stream: antlr4.InputStream) -> None:
-    # Create a stream from the input
-    lexer = GrammarLexer(input_stream)  # Make sure this matches the generated Lexer name
-    stream = antlr4.CommonTokenStream(lexer)
-    parser = GrammarParser(stream)  # Make sure this matches the generated Parser name
 
-    # Parse the input and get the parse tree
-    tree = parser.expression()  # This now correctly refers to the 'expression' rule
+def main():
+    parser = argparse.ArgumentParser(description='Compiler options.')
+    parser.add_argument('--input', required=True, help='The input file to compile')
+    parser.add_argument('--render_ast', action='store_true', help='Render the AST of the input file.')
+    parser.add_argument('--render_symb', action='store_true', help='Render the symbol table of the input file.')
+    parser.add_argument('--target_llvm', action='store_true', help='Generate LLVM code for the input file.')
+    parser.add_argument('--target_mips', action='store_true', help='Generate MIPS code for the input file.')
 
-    # Print the tree (or process it further if you have a visitor)
-    print(tree.toStringTree(recog=parser))
+    args = parser.parse_args()
+
+    tree = tree_from_file(
+        filename=args.input,
+        lexer_class=MyGrammarLexer,
+        parser_class=MyGrammarParser
+    )
+
+    cst_visitor = CSTVisitor()
+    ast = cst_visitor.visit(tree)
+
+    optimizer_visitor = OptimizerVisitor()
+    ast = optimizer_visitor.visit_ast(ast)
+
+    # Perform actions based on the command line arguments
+    if args.render_ast:
+        dot_visitor = DotVisitor()
+        dot_visitor.visit_ast(ast)
+        dotfile = "temp/ast_output"+args.input
+        dot_visitor.output(dotfile + ".dot")
+    if args.render_symb:
+        pass
+    if args.target_llvm:
+        pass
+    if args.target_mips:
+        pass
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--input', dest="filename", help='the input file to compile')
-    parser.add_argument('--render_ast', dest="render_ast", help='the input file to compile')
-    parser.add_argument('--render_symb', dest="render_symb", help='the input file to compile')
-    parser.add_argument('--target_llvm', dest="target_llvm", help='the input file to compile')
-    parser.add_argument('--target_mips', dest="target_mips", help='the input file to compile')
-
-    args = parser.parse_args()
-    if not args.filename:
-        raise RuntimeError("You didn't specify a file to compile")
-
-    with open(args.filename, 'r') as file:
-        input_stream = antlr4.InputStream(file.read())
-
-    parse_input(input_stream)
+    main()
