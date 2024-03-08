@@ -246,14 +246,14 @@ class CSTVisitor(MyGrammarVisitor):
     def visitPrimary(self, ctx: MyGrammarParser.PrimaryContext):
         if ctx.NUMBER() is not None:
             return INT(int(ctx.NUMBER().getText()))
+        elif ctx.expression() is not None:
+            return self.visit(ctx.expression())
         elif ctx.FLOAT() is not None:
             return FLOAT(float(ctx.FLOAT().getText()))
         elif ctx.CHAR() is not None:
             return CHAR(ctx.CHAR().getText()[1:-1])  # Remove the surrounding single quotes
         elif ctx.ID() is not None:
             return VariableReference(ctx.ID().getText())
-        elif ctx.expression() is not None:
-            return self.visit(ctx.expression())
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
         else:
