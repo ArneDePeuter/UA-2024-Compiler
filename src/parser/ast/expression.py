@@ -100,6 +100,7 @@ class UnaryExpression(Expression):
         ONESCOMPLEMENT = "~"
         LOGICALNEGATION = "!"
         ADDRESSOF = "&"
+        DEREFERENCE = "*"
         INCREMENT = "++"
         DECREMENT = "--"
 

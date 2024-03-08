@@ -205,7 +205,7 @@ class CSTVisitor(MyGrammarVisitor):
                     prefix=False
                 )
             else:
-                # Handle prefix operators
+                # Handle prefix operators, including the dereference operator
                 op = UnaryExpression.Operator(op)
                 return UnaryExpression(
                     value=expr,
