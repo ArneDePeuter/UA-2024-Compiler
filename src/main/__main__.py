@@ -5,8 +5,8 @@ import subprocess
 from src.parser.cst_visitor import CSTVisitor
 from src.parser.ast_visitor.dotvisitor import DotVisitor
 from src.parser.tree_creation import tree_from_file
-from src.antlr_files.project_1.MyGrammarLexer import MyGrammarLexer
-from src.antlr_files.project_1.MyGrammarParser import MyGrammarParser
+from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
+from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
 from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
 from src.parser.ast_visitor.symboltablevisitor import SymbolTableVisitor
 #from src.parser.ast_visitor.llvmvisitor import LLVMVisitor
