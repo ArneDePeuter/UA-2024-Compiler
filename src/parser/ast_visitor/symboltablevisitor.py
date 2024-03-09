@@ -114,8 +114,7 @@ class SymbolTableVisitor(Visitor):
 
         # Here you would include logic to ensure the assignment is semantically valid
         # For example, check that the rhs value is compatible with the type of lhs_symbol
-        #if lhs_symbol.type != rhs_value.type:
-        #     raise Exception(f"Type mismatch in assignment to '{lhs_symbol.name}'.")
-
-
+        if lhs_symbol is not None and rhs_value is not None:
+            if lhs_symbol.type != rhs_value.type:
+                raise Exception(f"Type mismatch in assignment to '{lhs_symbol.name}'.")
 
