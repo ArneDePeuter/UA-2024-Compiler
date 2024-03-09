@@ -87,8 +87,8 @@ class SymbolTableVisitor(Visitor):
     def visit_unary_expression(self, expr: EXPR.UnaryExpression):
         pass
     def visit_shift_expression(self, expr: EXPR.ShiftExpression):
-        self.visit_ast(expr.left)
-        self.visit_ast(expr.right)
+        self.visit_ast(expr.value)
+        self.visit_ast(expr.amount)
 
     def visit_int(self, expr: EXPR.INT):
         pass
