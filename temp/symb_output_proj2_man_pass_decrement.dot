@@ -1,9 +1,0 @@
-digraph ExpressionGraph {
-symbol_table_4341335376 [label="SymbolTable: global (Level: 0)", shape=box];
-symbol_table_4341339360 [label="SymbolTable: main_function (Level: 1)", shape=box];
-symbol_table_4341335376 -> symbol_table_4341339360;
-symbol_4341344496 [label="x (Type: INT(value=5), Level: 1)", shape=ellipse];
-symbol_table_4341339360 -> symbol_4341344496;
-symbol_4341345072 [label="z (Type: VariableReference(identifier='x'), Level: 1)", shape=ellipse];
-symbol_table_4341339360 -> symbol_4341345072;
-}

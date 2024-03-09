@@ -3,7 +3,7 @@ class Symbol:
         self.name = name
         self.type = type
         self.scope_level = scope_level
-        self.line = line  # Useful for error reporting
+        self.line = line  # Useful for error reporting, currently not used
         self.additional_info = additional_info  # For any additional symbol-related information
 
 class SymbolTable:
