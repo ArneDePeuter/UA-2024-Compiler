@@ -6,9 +6,6 @@ class Symbol:
         self.line = line  # Useful for error reporting
         self.additional_info = additional_info  # For any additional symbol-related information
 
-    def __str__(self):
-        return f"Symbol(name={self.name}, type={self.type}, scope_level={self.scope_level}, line={self.line}, additional_info={self.additional_info})"
-
 class SymbolTable:
     def __init__(self, parent=None, scope_name=None, scope_level=0):
         self.symbols = {}
@@ -32,13 +29,8 @@ class SymbolTable:
         new_child = SymbolTable(parent=self, scope_name=scope_name, scope_level=self.scope_level + 1)
         self.children.append(new_child)  # Track the new child
         return new_child
-    def __str__(self):
-        return f"SymbolTable(scope_name={self.scope_name}, scope_level={self.scope_level}, symbols={list(self.symbols.keys())})"
 
 """"
-Example usage:
-    global_table = SymbolTable(scope_name="global")
-    function_table = global_table.enter_new_scope("function")
 source: https://www.geeksforgeeks.org/symbol-table-compiler/
 """
 
