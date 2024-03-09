@@ -43,13 +43,14 @@ def main():
     if args.render_ast:
         dot_visitor = DotVisitor()
         dot_visitor.visit_ast(ast)
-        base_filename = os.path.splitext(os.path.basename(args.input))[0]
-        dotfile = "temp/ast_output_"+base_filename
-        dot_visitor.output(dotfile + ".dot")
 
-        output_png = dotfile.replace(".dot", ".png")  # Construct the output PNG filename
-        command = ["dot", "-Tpng", f"-o{output_png}", dotfile]
-        subprocess.run(command, check=True)
+        base_filename = os.path.splitext(os.path.basename(args.input))[0]
+        file_name = "temp/ast_output_"+base_filename
+
+        dot_visitor.output(file_name + ".dot")
+
+        command = "dot -Tpng -o" + file_name + ".png " + file_name + ".dot"
+        subprocess.run(command, shell=True, check=True)
 
     if args.render_symb:
         dot_visitor = DotVisitor()
@@ -57,7 +58,6 @@ def main():
         base_filename = os.path.splitext(os.path.basename(args.input))[0]
         file_name = "temp/symb_output_"+base_filename
         dot_visitor.output(file_name + ".dot")
-
         command = "dot -Tpng -o"+file_name+".png "+file_name+".dot"
         subprocess.run(command, shell=True, check=True)
 
