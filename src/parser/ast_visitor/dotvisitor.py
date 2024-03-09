@@ -155,3 +155,26 @@ class DotVisitor(Visitor):
     def visit_variable_reference(self, expr: EXPR.VariableReference) -> Any:
         node_name = id(expr)
         self.total += f"{node_name} [label=\"{expr.identifier}\"];\n"
+
+    def visit_symbol_table(self, symbol_table, parent_id=None):
+        # Generate a unique identifier for the symbol table node
+        table_node_id = f"symbol_table_{id(symbol_table)}"
+
+        # Label the node with the scope name and level
+        label = f"SymbolTable: {symbol_table.scope_name} (Level: {symbol_table.scope_level})"
+        self.total += f'{table_node_id} [label="{label}", shape=box];\n'
+
+        # If there's a parent symbol table, add an edge from the parent to this symbol table
+        if parent_id is not None:
+            self.total += f'{parent_id} -> {table_node_id};\n'
+
+        # Visit symbols within this symbol table
+        for symbol_name, symbol in symbol_table.symbols.items():
+            symbol_node_id = f"symbol_{id(symbol)}"
+            symbol_label = f"{symbol_name} (Type: {symbol.type}, Level: {symbol.scope_level})"
+            self.total += f'{symbol_node_id} [label="{symbol_label}", shape=ellipse];\n'
+            self.total += f'{table_node_id} -> {symbol_node_id};\n'
+
+        # Recursively visit child symbol tables
+        for child in symbol_table.children:
+            self.visit_symbol_table(child, table_node_id)

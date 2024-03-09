@@ -17,32 +17,39 @@ from ..symbol_table.symboltable import SymbolTable, Symbol
 class SymbolTableVisitor(Visitor):
     def __init__(self):
         super().__init__()
-        self.current_scope = SymbolTable(scope_name="global", scope_level=0)
+        # Initialize the root symbol table with the global scope
+        self.root_symbol_table = SymbolTable(scope_name="global", scope_level=0)
+        # The current_scope starts as the root symbol table and will change as we enter/exit scopes
+        self.current_scope = self.root_symbol_table
 
-    def enter_scope(self, scope_name):
+    def enter_scope(self, scope_name, node=None):
         self.current_scope = self.current_scope.enter_new_scope(scope_name)
+        if node is not None:
+            node.symbol_table = self.current_scope
 
     def exit_scope(self):
         if self.current_scope.parent is not None:
             self.current_scope = self.current_scope.parent
+
+    def get_symbol_table_tree(self):
+        # Return the root symbol table, which represents the complete symbol table tree
+        return self.root_symbol_table
 
     def visit_program(self, program: Program):
         for statement in program.statements:
             self.visit_ast(statement)
 
     def visit_main_function(self, main_function: MainFunction):
-        self.enter_scope("main_function") # Main Function scope
-        # Visit children nodes
+        self.enter_scope("main_function", main_function)  # Pass the node to enter_scope
         for statement in main_function.body.statements:
             self.visit_ast(statement)
         self.exit_scope()
 
     def visit_compound_statement(self, compound_statement: CompoundStatement):
-        self.enter_scope("compound") # Compound statements (e.g., blocks) introduce a new scope
-        # Visit children nodes
+        self.enter_scope("compound", compound_statement)
         for statement in compound_statement.statements:
             self.visit_ast(statement)
-        self.exit_scope() # Exit the scope
+        self.exit_scope()
 
     def visit_declaration(self, declaration: Declaration):
         for variable in declaration.variables:
@@ -62,8 +69,8 @@ class SymbolTableVisitor(Visitor):
         self.visit(cast_expression.expr)
 
     def visit_binary_arithmetic(self, expr: EXPR.BinaryArithmetic):
-        self.visit(expr.left)
-        self.visit(expr.right)
+        self.visit_ast(expr.left)
+        self.visit_ast(expr.right)
 
     def visit_binary_bitwise_arithmetic(self, expr: EXPR.BinaryBitwiseArithmetic):
         self.visit_ast(expr.left)
@@ -74,15 +81,14 @@ class SymbolTableVisitor(Visitor):
         self.visit_ast(expr.right)
 
     def visit_comparison_operation(self, expr: EXPR.ComparisonOperation):
-        self.visit(expr.left)
-        self.visit(expr.right)
+        self.visit_ast(expr.left)
+        self.visit_ast(expr.right)
 
     def visit_unary_expression(self, expr: EXPR.UnaryExpression):
-        self.visit(expr.expr)
-
+        pass
     def visit_shift_expression(self, expr: EXPR.ShiftExpression):
-        self.visit(expr.left)
-        self.visit(expr.right)
+        self.visit_ast(expr.left)
+        self.visit_ast(expr.right)
 
     def visit_int(self, expr: EXPR.INT):
         pass
@@ -108,8 +114,8 @@ class SymbolTableVisitor(Visitor):
 
         # Here you would include logic to ensure the assignment is semantically valid
         # For example, check that the rhs value is compatible with the type of lhs_symbol
-        if lhs_symbol.type != rhs_value.type:
-             raise Exception(f"Type mismatch in assignment to '{lhs_symbol.name}'.")
+        #if lhs_symbol.type != rhs_value.type:
+        #     raise Exception(f"Type mismatch in assignment to '{lhs_symbol.name}'.")
 
 
 

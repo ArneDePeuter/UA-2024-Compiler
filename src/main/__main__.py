@@ -1,4 +1,6 @@
 import argparse
+import os
+import subprocess
 
 from src.parser.cst_visitor import CSTVisitor
 from src.parser.ast_visitor.dotvisitor import DotVisitor
@@ -35,19 +37,30 @@ def main():
 
     symbol_table_visitor = SymbolTableVisitor()
     symbol_table_visitor.visit_ast(ast)
+    symbol_table_tree = symbol_table_visitor.get_symbol_table_tree()
 
     # Perform actions based on the command line arguments
     if args.render_ast:
         dot_visitor = DotVisitor()
         dot_visitor.visit_ast(ast)
-        dotfile = "temp/ast_output"+args.input
+        base_filename = os.path.splitext(os.path.basename(args.input))[0]
+        dotfile = "temp/ast_output_"+base_filename
         dot_visitor.output(dotfile + ".dot")
+
+        output_png = dotfile.replace(".dot", ".png")  # Construct the output PNG filename
+        command = ["dot", "-Tpng", f"-o{output_png}", dotfile]
+        subprocess.run(command, check=True)
+
     if args.render_symb:
         dot_visitor = DotVisitor()
-        dot_visitor.visit_ast(ast)
-        dotfile = "temp/symb_output"+args.input
-        dot_visitor.output(dotfile + ".dot")
-        pass
+        dot_visitor.visit_symbol_table(symbol_table_tree)
+        base_filename = os.path.splitext(os.path.basename(args.input))[0]
+        file_name = "temp/symb_output_"+base_filename
+        dot_visitor.output(file_name + ".dot")
+
+        command = "dot -Tpng -o"+file_name+".png "+file_name+".dot"
+        subprocess.run(command, shell=True, check=True)
+
     if args.target_llvm:
         pass
     if args.target_mips:

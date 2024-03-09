@@ -1,6 +1,8 @@
 from enum import Enum
-from .statement import Statement
+
 from dataclasses import dataclass
+
+from .statement import Statement
 from .type import Type
 
 
