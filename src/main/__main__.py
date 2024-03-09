@@ -5,8 +5,8 @@ import subprocess
 from src.parser.cst_visitor import CSTVisitor
 from src.parser.ast_visitor.dotvisitor import DotVisitor
 from src.parser.tree_creation import tree_from_file
-from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
-from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
+from src.antlr_files.project_1.MyGrammarLexer import MyGrammarLexer
+from src.antlr_files.project_1.MyGrammarParser import MyGrammarParser
 from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
 from src.parser.ast_visitor.symboltablevisitor import SymbolTableVisitor
 #from src.parser.ast_visitor.llvmvisitor import LLVMVisitor
@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--render_symb', action='store_true', help='Render the symbol table of the input file.')
     parser.add_argument('--target_llvm', action='store_true', help='Generate LLVM code for the input file.')
     parser.add_argument('--target_mips', action='store_true', help='Generate MIPS code for the input file.')
+    parser.add_argument('--constant_folding', action='store_true', help='Perform constant folding on the ast of the input file.')
 
     args = parser.parse_args()
 
@@ -32,8 +33,10 @@ def main():
     cst_visitor = CSTVisitor()
     ast = cst_visitor.visit(tree)
 
-    optimizer_visitor = OptimizerVisitor()
-    ast = optimizer_visitor.visit_ast(ast)
+    # Perform constant folding
+    if args.constant_folding:
+        optimizer_visitor = OptimizerVisitor()
+        ast = optimizer_visitor.visit_ast(ast)
 
     symbol_table_visitor = SymbolTableVisitor()
     symbol_table_visitor.visit_ast(ast)
