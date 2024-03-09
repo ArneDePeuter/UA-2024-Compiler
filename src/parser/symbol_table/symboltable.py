@@ -11,8 +11,8 @@ class SymbolTable:
         self.symbols = {}
         self.parent = parent
         self.scope_name = scope_name  # Name of the scope (useful for debugging)
-        self.scope_level = scope_level  # Nested scope level
-        self.children = []  # Add this line to track child symbol tables
+        self.scope_level = scope_level
+        self.children = []  # Added this line to track child symbol tables
 
     def insert(self, name, symbol):
         self.symbols[name] = symbol
