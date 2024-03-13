@@ -9,6 +9,7 @@ from ..ast.declaration import Declaration
 from ..ast.type import Type
 from ..ast.variable import Variable
 from ..ast import ast as AST
+from ..ast.comment import Comment
 
 
 class OptimizerVisitor(Visitor):
@@ -36,6 +37,9 @@ class OptimizerVisitor(Visitor):
         for i, statement in enumerate(compound_statement.statements):
             compound_statement.statements[i] = self.visit_ast(statement)
         return compound_statement
+
+    def visit_comment(self, comment: Comment):
+        return comment
 
     def visit_declaration(self, declaration: Declaration):
         declaration.var_type = self.visit_ast(declaration.var_type)

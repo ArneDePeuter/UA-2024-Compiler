@@ -1,6 +1,6 @@
 from antlr4 import *
-from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
-from src.antlr_files.project_2.MyGrammarVisitor import MyGrammarVisitor
+from src.antlr_files.project_3.MyGrammarParser import MyGrammarParser
+from src.antlr_files.project_3.MyGrammarVisitor import MyGrammarVisitor
 
 from .ast.expression import *
 from .ast.program import Program
@@ -9,6 +9,7 @@ from .ast.compound_statement import CompoundStatement
 from .ast.declaration import Declaration
 from .ast.type import Type
 from .ast.variable import Variable
+from .ast.comment import Comment
 
 class CSTVisitor(MyGrammarVisitor):
     def visitProgram(self, ctx):
@@ -47,12 +48,19 @@ class CSTVisitor(MyGrammarVisitor):
                 statement = self.visitDeclaration(child)
             elif isinstance(child, MyGrammarParser.ExpressionStatementContext):
                 statement = self.visitExpressionStatement(child)
+            elif isinstance(child, MyGrammarParser.CommentContext):
+                statement = self.visitComment(child)
             else:
                 statement = self.visit(child)
-            if statement is not None:
-                statements.append(statement)
+            statements.append(statement)
 
         return CompoundStatement(statements=statements)
+
+    def visitComment(self, ctx):
+        if ctx.SINGLE_LINE_COMMENT():
+            return Comment(ctx.SINGLE_LINE_COMMENT().getText())
+        elif ctx.MULTI_LINE_COMMENT():
+            return Comment(ctx.MULTI_LINE_COMMENT().getText())
 
     def visitDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
@@ -252,9 +260,21 @@ class CSTVisitor(MyGrammarVisitor):
             return FLOAT(float(ctx.FLOAT().getText()))
         elif ctx.CHAR() is not None:
             return CHAR(ctx.CHAR().getText()[1:-1])  # Remove the surrounding single quotes
+        elif ctx.CHAR_ESC() is not None:
+            return CHAR(self.process_char_escape(ctx.CHAR_ESC().getText()[1:-1]))  # Process the escape sequence
         elif ctx.ID() is not None:
             return VariableReference(ctx.ID().getText())
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
         else:
             raise ValueError("Unknown primary expression")
+
+    def process_char_escape(self, char_esc):
+        if char_esc == '\\n':
+            return '\n'
+        elif char_esc == '\\t':
+            return '\t'
+        elif char_esc == '\\0':
+            return '\0'
+        else:
+            return char_esc

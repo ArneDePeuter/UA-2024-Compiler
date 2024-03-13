@@ -3,8 +3,8 @@ import argparse
 from src.parser.cst_visitor import CSTVisitor
 from src.parser.ast_visitor.dotvisitor import DotVisitor
 from src.parser.tree_creation import tree_from_file
-from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
-from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
+from src.antlr_files.project_3.MyGrammarLexer import MyGrammarLexer
+from src.antlr_files.project_3.MyGrammarParser import MyGrammarParser
 from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
 from src.parser.ast_visitor.astprintvisitor import ASTPrintVisitor
 
@@ -12,10 +12,10 @@ from src.parser.ast_visitor.astprintvisitor import ASTPrintVisitor
 def main():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('--input', dest="filename", help='the input file to compile')
-    parser.add_argument('--render_ast', dest="render_ast", help='the input file to compile')
-    parser.add_argument('--render_symb', dest="render_symb", help='the input file to compile')
-    parser.add_argument('--target_llvm', dest="target_llvm", help='the input file to compile')
-    parser.add_argument('--target_mips', dest="target_mips", help='the input file to compile')
+    parser.add_argument('--render_ast', dest="render_ast", help='option to the abstract syntax tree')
+    parser.add_argument('--render_symb', dest="render_symb", help='option to render the symbol table')
+    parser.add_argument('--target_llvm', dest="target_llvm", help='option to compile to llvm')
+    parser.add_argument('--target_mips', dest="target_mips", help='option to compile to mips')
 
     args = parser.parse_args()
     if not args.filename:
