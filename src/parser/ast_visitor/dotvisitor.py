@@ -2,6 +2,8 @@ from typing import Any
 
 from .visitor import Visitor
 from ..ast import expression as EXPR
+from ..ast.comment import Comment
+from ..ast.declaration import Declaration
 
 
 class DotVisitor(Visitor):
@@ -33,10 +35,29 @@ class DotVisitor(Visitor):
     def visit_compound_statement(self, compound_statement):
         node_name = str(id(compound_statement))
         self.total += f'{node_name} [label="CompoundStatement"];\n'
+        prev_statement_node_name = None
         for statement in compound_statement.statements:
-            statement_node_name = str(id(statement))
-            self.total += f'{node_name} -> {statement_node_name};\n'
-            self.visit_ast(statement)
+            if isinstance(statement, Comment):
+                comment_node_name = str(id(statement))
+                self.total += f'{comment_node_name} [label="Comment\\n{statement.content}"];\n'
+                if prev_statement_node_name:
+                    self.total += f'{prev_statement_node_name} -> {comment_node_name} [style=dashed];\n'
+                else:
+                    self.total += f'{node_name} -> {comment_node_name} [style=dashed];\n'
+            elif isinstance(statement, Declaration):
+                declaration_node_name = str(id(statement))
+                self.total += f'{node_name} -> {declaration_node_name};\n'
+                self.visit_declaration(statement)
+                prev_statement_node_name = declaration_node_name
+            else:
+                statement_node_name = str(id(statement))
+                self.total += f'{node_name} -> {statement_node_name};\n'
+                self.visit_ast(statement)
+                prev_statement_node_name = statement_node_name
+
+    def visit_comment(self, comment: Comment):
+        node_name = str(id(comment))
+        self.total += f'{node_name} [label="Comment\\n{comment.content}"];\n'
 
     def visit_declaration(self, declaration):
         node_name = str(id(declaration))

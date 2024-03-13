@@ -10,6 +10,7 @@ from ..ast.expression import CastExpression
 from ..ast.type import Type
 from ..ast.declaration import Declaration
 from ..ast.variable import Variable
+from ..ast.comment import Comment
 
 
 class Visitor(ABC):
@@ -18,6 +19,7 @@ class Visitor(ABC):
             Program: self.visit_program,
             MainFunction: self.visit_main_function,
             CompoundStatement: self.visit_compound_statement,
+            Comment: self.visit_comment,
             Declaration: self.visit_declaration,
             Type: self.visit_type,
             Variable: self.visit_variable,
@@ -53,6 +55,9 @@ class Visitor(ABC):
 
     @abstractmethod
     def visit_compound_statement(self, compound_statement: CompoundStatement) -> Any:
+        pass
+
+    def visit_comment(self, comment: Comment) -> Any:
         pass
 
     @abstractmethod
