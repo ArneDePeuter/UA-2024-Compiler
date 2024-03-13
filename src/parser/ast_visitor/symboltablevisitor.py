@@ -66,7 +66,7 @@ class SymbolTableVisitor(Visitor):
             self.current_scope.insert(variable.identifier, symbol)
 
     def visit_cast_expression(self, cast_expression: CastExpression):
-        self.visit(cast_expression.expr)
+        self.visit_ast(cast_expression.expression)
 
     def visit_binary_arithmetic(self, expr: EXPR.BinaryArithmetic):
         self.visit_ast(expr.left)
