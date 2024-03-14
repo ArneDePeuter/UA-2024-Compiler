@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 
+from .type import Type
 from .ast import AST
 
 
@@ -12,6 +13,37 @@ class Expression(AST):
 @dataclass
 class INT(Expression):
     value: int
+
+
+@dataclass
+class FLOAT(Expression):
+    value: float
+
+
+@dataclass
+class CHAR(Expression):
+    value: str
+
+
+@dataclass
+class IDENTIFIER(Expression):
+    name: str
+
+
+@dataclass
+class DereferenceExpression(Expression):
+    expression: Expression
+
+
+@dataclass
+class AddressExpression(Expression):
+    expression: Expression
+
+
+@dataclass
+class TypeCastExpression(Expression):
+    cast_type: Type
+    expression: Expression
 
 
 @dataclass

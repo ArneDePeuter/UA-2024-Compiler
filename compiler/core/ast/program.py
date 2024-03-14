@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from .ast import AST
-from .expression import Expression
+
+from .statement import Statement
 
 
 @dataclass
-class Program(AST):
-    expressions: list[Expression]
+class Program(Statement):
+    statements: list[Statement]
+

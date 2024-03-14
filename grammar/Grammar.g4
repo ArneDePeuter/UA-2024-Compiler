@@ -1,9 +1,47 @@
 grammar Grammar;
 
 // Parser rules
-program : (expression ';')+ ;
+program : mainFunction ;
 
-expression : logicalExpression ;
+mainFunction : 'int' 'main' '(' ')' body ;
+
+body : '{' statement* '}' ;
+
+declaration
+    : type variableList ';'
+    ;
+
+castExpression
+    : '(' type ')' unaryExpression
+    ;
+
+statement
+    : expressionStatement
+    | body
+    | declaration
+    ;
+
+expressionStatement
+    : expression ';'
+    ;
+
+expression
+    : mutableExpression
+    | immutableExpression
+    ;
+
+mutableExpression
+    : assignmentExpression
+    ;
+
+immutableExpression
+    : logicalExpression
+    ;
+
+assignmentExpression
+    : unaryExpression assignmentOperator expression
+    | logicalExpression
+    ;
 
 logicalExpression
     : logicalExpression ('&&' | '||') comparisonExpression
@@ -36,37 +74,86 @@ shiftExpression
     ;
 
 unaryExpression
-    : ('+' | '-' | '!') unaryExpression
-    | primary
+    : ('+' | '-' | '!' | '*' | '&' | '++' | '--') unaryExpression
+    | primary ('++' | '--')?
     ;
+
 
 primary
     : NUMBER
+    | FLOAT
     | '(' expression ')'
+    | ID
+    | CHAR
+    | CHAR_ESC
+    | castExpression
+    ;
+
+type
+    : typeQualifier? baseType pointerQualifier*
+    ;
+
+baseType
+    : 'int'
+    | 'float'
+    | 'char'
+    ;
+
+typeQualifier
+    : 'const'
+    ;
+
+pointerQualifier
+    : '*'
     ;
 
 
+variableList
+    : (variable (',' variable)*)?
+    ;
+
+variable
+    : ID ('=' expression)?
+    ;
+
+assignmentOperator
+    : '='
+    | '+='
+    | '-='
+    | '*='
+    | '/='
+    | '%='
+    | '<<='
+    | '>>='
+    | '&='
+    | '^='
+    | '|='
+    ;
+
 // Lexer rules
 NUMBER : '0' | [1-9][0-9]* ;
-PLUS : '+';
-MINUS : '-';
-MUL : '*';
-DIV : '/';
-MOD : '%';
-GT : '>';
-LT : '<';
-EQ : '==';
-GE : '>=';
-LE : '<=';
-NE : '!=';
-AND : '&&';
-OR : '||';
-NOT : '!';
+FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
+ID     : [a-zA-Z_][a-zA-Z_0-9]* ;
+CHAR : '\'' [\u0000-\u00FF] '\'' ;
+CHAR_ESC : '\'' ( '\\n' | '\\t' | '\\0' | . ) '\'' ;
+PLUS   : '+';
+MINUS  : '-';
+MUL    : '*';
+DIV    : '/';
+MOD    : '%';
+GT     : '>';
+LT     : '<';
+EQ     : '==';
+GE     : '>=';
+LE     : '<=';
+NE     : '!=';
+AND    : '&&';
+OR     : '||';
+NOT    : '!';
 LSHIFT : '<<';
 RSHIFT : '>>';
 BITAND : '&';
-BITOR : '|';
+BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
-
-WS : [ \t\r\n]+ -> skip ;
+WS     : [ \t\r\n]+ -> skip ;
