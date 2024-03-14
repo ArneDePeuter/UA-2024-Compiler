@@ -1,4 +1,4 @@
-grammar Project1;
+grammar Main;
 
 // Parser rules
 program : (expression ';')+ ;

@@ -6,7 +6,7 @@ from src.frontend.antlr_files.project_1.MyGrammarLexer import MyGrammarLexer
 def test_intliteralbeginwithzero():
     try:
         tree = tree_from_file(
-            filename="./files/proj1_man_syntaxErr_intLiteralBeginWithZero.c",
+            filename="files/proj1_man_syntaxErr_intLiteralBeginWithZero.c",
             lexer_class=MyGrammarLexer,
             parser_class=MyGrammarParser
         )
@@ -19,7 +19,7 @@ def test_intliteralbeginwithzero():
 def test_operators():
     try:
         tree = tree_from_file(
-            filename="./files/proj1_man_syntaxErr_operators.c",
+            filename="files/proj1_man_syntaxErr_operators.c",
             lexer_class=MyGrammarLexer,
             parser_class=MyGrammarParser
         )

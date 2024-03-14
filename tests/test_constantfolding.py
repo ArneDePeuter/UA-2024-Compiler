@@ -22,7 +22,7 @@ def eval_expr(eq: str) -> expr.INT:
 
 def test_folding():
     tree = tree_from_file(
-        filename="./files/proj1_man_pass_constantFolding.c",
+        filename="files/proj1_man_pass_constantFolding.c",
         lexer_class=MyGrammarLexer,
         parser_class=MyGrammarParser
     )
@@ -35,7 +35,7 @@ def test_folding():
 
     assert isinstance(ast, Program)
 
-    with open("./files/proj1_man_pass_constantFolding.c", "r") as f:
+    with open("files/proj1_man_pass_constantFolding.c", "r") as f:
         lines = [line.strip() for line in f if line.strip()]
 
     for i, line in enumerate(lines):
