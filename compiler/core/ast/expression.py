@@ -1,6 +1,6 @@
 from enum import Enum
-
 from dataclasses import dataclass
+
 from .ast import AST
 
 
@@ -8,31 +8,10 @@ from .ast import AST
 class Expression(AST):
     pass
 
-@dataclass
-class Assignment(Expression):
-    left: Expression
-    right: Expression
-
-@dataclass
-class CastExpression(Expression):
-    cast_type: Type
-    expression: Expression
 
 @dataclass
 class INT(Expression):
     value: int
-
-@dataclass
-class FLOAT(Expression):
-    value: float
-
-@dataclass
-class CHAR(Expression):
-    value: str
-
-@dataclass
-class VariableReference(Expression):
-    identifier: str
 
 
 @dataclass
@@ -50,9 +29,7 @@ class BinaryArithmetic(BinaryOperation):
         DIV = "/"
         MOD = "%"
 
-    left: Expression
     operator: Operator
-    right: Expression
 
 
 @dataclass
@@ -62,9 +39,7 @@ class BinaryBitwiseArithmetic(BinaryOperation):
         OR = "|"
         XOR = "^"
 
-    left: Expression
     operator: Operator
-    right: Expression
 
 
 @dataclass
@@ -73,9 +48,8 @@ class BinaryLogicalOperation(BinaryOperation):
         AND = "&&"
         OR = "||"
 
-    left: Expression
     operator: Operator
-    right: Expression
+
 
 @dataclass
 class ComparisonOperation(BinaryOperation):
@@ -87,9 +61,7 @@ class ComparisonOperation(BinaryOperation):
         EQ = "=="
         NEQ = "!="
 
-    left: Expression
     operator: Operator
-    right: Expression
 
 
 @dataclass
@@ -99,14 +71,9 @@ class UnaryExpression(Expression):
         NEGATIVE = "-"
         ONESCOMPLEMENT = "~"
         LOGICALNEGATION = "!"
-        ADDRESSOF = "&"
-        DEREFERENCE = "*"
-        INCREMENT = "++"
-        DECREMENT = "--"
 
     value: Expression
     operator: Operator
-    prefix: bool
 
 
 @dataclass
@@ -117,9 +84,7 @@ class BitwiseExpression(BinaryOperation):
         BITXOR = "^"
         BITNOT = "~"
 
-    left: Expression
     operator: Operator
-    right: Expression
 
 
 @dataclass
