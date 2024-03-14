@@ -10,6 +10,12 @@ class Statement(AST):
     pass
 
 
+@dataclass
+class Program(Statement):
+    statements: list[Statement]
+
+
+@dataclass
 class Body(Statement):
     statements: list[Statement]
 
@@ -22,10 +28,15 @@ class FunctionDeclaration(Statement):
 
 
 @dataclass
-class VariableDeclaration(Statement):
-    var_type: Type
+class VariableDeclarationQualifier(Statement):
     identifier: str
     initializer: Expression or None
+
+
+@dataclass
+class VariableDeclaration(Statement):
+    var_type: Type
+    qualifiers: list[VariableDeclarationQualifier]
 
 
 @dataclass

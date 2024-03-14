@@ -7,19 +7,103 @@ from compiler.core import ast
 
 class TreeVisitor(GrammarVisitor):
     def visitProgram(self, ctx) -> ast.Program:
-        expressions = []
+        statements = []
 
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
-            expression = self.visit(child)
-            expressions.append(expression)
+            statement = self.visit(child)
+            statements.append(statement)
         return ast.Program(
-            expressions=expressions
+            statements=statements
         )
+
+    def visitMainFunction(self, ctx):
+        body = self.visit(ctx.body())
+
+        return ast.FunctionDeclaration(
+            return_type=ast.IntegerType(),
+            name='main',
+            body=body
+        )
+
+    def visitBody(self, ctx):
+        statements = []
+
+        for child in ctx.getChildren():
+            if isinstance(child, TerminalNode):
+                continue
+            if isinstance(child, GrammarParser.DeclarationContext):
+                statement = self.visitDeclaration(child)
+            elif isinstance(child, GrammarParser.ExpressionStatementContext):
+                statement = self.visitExpressionStatement(child)
+            else:
+                statement = self.visit(child)
+            statements.append(statement)
+
+        return ast.Body(
+            statements=statements
+        )
+
+    def visitDeclaration(self, ctx):
+        var_type = self.visit(ctx.type_())
+        qualifiers = self.visit(ctx.variableList())
+
+        return ast.VariableDeclaration(
+            var_type=var_type,
+            qualifiers=qualifiers
+        )
+
+    def visitExpressionStatement(self, ctx):
+        return self.visit(ctx.expression())
+
+    def visitType(self, ctx):
+        ret_type = self.visit(ctx.baseType())
+
+        for _ in range(len(ctx.pointerQualifier())):
+            ret_type = ast.DereferenceType(ret_type)
+
+        if ctx.typeQualifier():
+            ret_type = ast.ConstType(ret_type)
+
+        return ret_type
+
+    def visitBaseType(self, ctx):
+        text = ctx.getText()
+        if text == "int":
+            return ast.IntegerType()
+        elif text == "float":
+            return ast.FloatType()
+        else:
+            return ast.CharType()
 
     def visitExpression(self, ctx: GrammarParser.ExpressionContext):
         return self.visitChildren(ctx)
+
+    def visitVariableList(self, ctx):
+        variables = [self.visit(variable) for variable in ctx.variable()]
+        return variables
+
+    def visitVariable(self, ctx):
+        identifier = ctx.ID().getText()
+        initializer = self.visit(ctx.expression()) if ctx.expression() else None
+        return ast.VariableDeclarationQualifier(identifier=identifier, initializer=initializer)
+
+    def visitCastExpression(self, ctx):
+        cast_type = self.visit(ctx.type_())
+        expression = self.visit(ctx.unaryExpression())
+        return ast.TypeCastExpression(cast_type=cast_type, expression=expression)
+
+    def visitAssignmentExpression(self, ctx):
+        if ctx.logicalExpression():
+            return self.visit(ctx.logicalExpression())
+
+        identifier = ctx.ID()
+        expression = self.visit(ctx.expression())
+        return ast.AssignmentStatement(
+            identifier=identifier,
+            value=expression
+        )
 
     def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):
         if ctx.getChildCount() == 1:
@@ -107,14 +191,36 @@ class TreeVisitor(GrammarVisitor):
 
         expr = self.visit(ctx.unaryExpression())
         op = ctx.getChild(0).getText()
+        operator = ast.UnaryExpression.Operator(op)
         return ast.UnaryExpression(
             value=expr,
-            operator=ast.UnaryExpression.Operator(op)
+            operator=operator,
+            prefix=op not in ['++', '--']
         )
+
+    @staticmethod
+    def process_char_escape(char_esc):
+        if char_esc == '\\n':
+            return '\n'
+        elif char_esc == '\\t':
+            return '\t'
+        elif char_esc == '\\0':
+            return '\0'
+        else:
+            return char_esc
 
     def visitPrimary(self, ctx: GrammarParser.PrimaryContext):
         if ctx.NUMBER() is not None:
-            return ast.INT(
-                value=int(ctx.NUMBER().getText())
-            )
-        return self.visit(ctx.expression())
+            return ast.INT(int(ctx.NUMBER().getText()))
+        elif ctx.expression() is not None:
+            return self.visit(ctx.expression())
+        elif ctx.FLOAT() is not None:
+            return ast.FLOAT(float(ctx.FLOAT().getText()))
+        elif ctx.CHAR() is not None:
+            return ast.CHAR(ctx.CHAR().getText()[1:-1])  # Remove the surrounding single quotes
+        elif ctx.CHAR_ESC() is not None:
+            return ast.CHAR(self.process_char_escape(ctx.CHAR_ESC().getText()[1:-1]))
+        elif ctx.ID() is not None:
+            return ast.IDENTIFIER(ctx.ID().getText())
+        elif ctx.castExpression() is not None:
+            return self.visit(ctx.castExpression())

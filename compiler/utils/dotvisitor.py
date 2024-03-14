@@ -1,27 +1,17 @@
-from typing import Any
-
-from compiler.core.ast_visitor import ASTVisitor
+from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
 
 
-class ASTDotVisitor(ASTVisitor):
+class AstDotVisitor(AstVisitor):
     def __init__(self):
-        super().__init__()
         self.total = ""
+        super().__init__()
 
     def output(self, filename: str):
         with open(filename, "w") as file:
             file.write("digraph ExpressionGraph {\n")
             file.write(self.total)
             file.write("}\n")
-
-    def visit_program(self, program):
-        program_node_name = str(id(program))
-        self.total += f'{program_node_name} [label="Program"];\n'
-        for expression in program.expressions:
-            statement_node_name = str(id(expression))
-            self.total += f'{program_node_name} -> {statement_node_name};\n'
-            self.visit_ast(expression)
 
     def gen_binary_dot(self, me: ast.BinaryOperation, operator_str: str) -> None:
         node_name = str(id(me))
@@ -30,43 +20,155 @@ class ASTDotVisitor(ASTVisitor):
         right_node_name = str(id(me.right))
         self.total += f"{node_name} -> {left_node_name};\n"
         self.total += f"{node_name} -> {right_node_name};\n"
-        self.visit_ast(me.left)
-        self.visit_ast(me.right)
+        self.visit_expression(me.left)
+        self.visit_expression(me.right)
 
-    def visit_binary_arithmetic(self, expr: ast.BinaryArithmetic) -> Any:
-        self.gen_binary_dot(expr, expr.operator.name)
+    def visit_int(self, node: ast.INT):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"INT: {node.value}\"];\n"
 
-    def visit_binary_bitwise_arithmetic(self, expr: ast.BinaryBitwiseArithmetic) -> Any:
-        self.gen_binary_dot(expr, expr.operator.name)
+    def visit_float(self, node: ast.FLOAT):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"FLOAT: {node.value}\"];\n"
 
-    def visit_binary_logical_operation(self, expr: ast.BinaryLogicalOperation) -> Any:
-        self.gen_binary_dot(expr, expr.operator.name)
+    def visit_char(self, node: ast.CHAR):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"CHAR: {node.value}\"];\n"
 
-    def visit_comparison_operation(self, expr: ast.ComparisonOperation) -> Any:
-        self.gen_binary_dot(expr, expr.operator.name)
+    def visit_identifier(self, node: ast.IDENTIFIER):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"IDENTIFIER: {node.name}\"];\n"
 
-    def visit_shift_expression(self, expr: ast.ShiftExpression) -> Any:
-        node_name = str(id(expr))
-        label = f"{expr.operator.name}"
-        self.total += f"{node_name} [label=\"{label}\"];\n"
+    def visit_type_cast_expression(self, node: ast.TypeCastExpression):
+        node_name = str(id(ast))
+        self.total += f'{node_name} [label="TypeCastExpression"];\n'
+        type_node_name = str(id(node.cast_type))
+        self.total += f'{node_name} -> {type_node_name};\n'
+        self.visit_type(node.cast_type)
+        expression_node_name = str(id(ast.expression))
+        self.total += f'{node_name} -> {expression_node_name};\n'
+        self.visit_expression(node.expression)
 
-        value_node_name = str(id(expr.value))
-        self.total += f"{node_name} -> {value_node_name};\n"
-        self.visit_ast(expr.value)
+    def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
+        self.gen_binary_dot(node, node.operator.name)
 
-        shamt_node_name = str(id(expr.amount))
-        self.total += f"{node_name} -> {shamt_node_name};\n"
-        self.visit_ast(expr.amount)
+    def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
+        self.gen_binary_dot(node, node.operator.name)
 
-    def visit_unary_expression(self, expr: ast.UnaryExpression) -> Any:
-        node_name = str(id(expr))
-        operator_str = expr.operator.name
-        self.total += f"{node_name} [label=\"{operator_str}\"];\n"
+    def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
+        self.gen_binary_dot(node, node.operator.name)
 
-        operand_node_name = str(id(expr.value))
+    def visit_comparison_operation(self, node: ast.ComparisonOperation):
+        self.gen_binary_dot(node, node.operator.name)
+
+    def visit_unary_expression(self, node: ast.UnaryExpression):
+        node_name = str(id(node))
+        operator_str = node.operator.name
+        self.total += f"{node_name} [label=\"Unary: {operator_str}\"];\n"
+
+        operand_node_name = str(id(node.value))
         self.total += f"{node_name} -> {operand_node_name};\n"
-        self.visit_ast(expr.value)
+        self.visit_expression(node.value)
 
-    def visit_int(self, expr: ast.INT) -> Any:
-        node_name = id(expr)
-        self.total += f"{node_name} [label=\"{expr.value}\"];\n"
+    def visit_shift_expression(self, node: ast.ShiftExpression):
+        node_name = str(id(node))
+        label = f"{node.operator.name}"
+        self.total += f"{node_name} [label=\"SHIFT: {label}\"];\n"
+
+        value_node_name = str(id(node.value))
+        self.total += f"{node_name} -> {value_node_name};\n"
+        self.visit_expression(node.value)
+
+        shamt_node_name = str(id(node.amount))
+        self.total += f"{node_name} -> {shamt_node_name};\n"
+        self.visit_expression(node.amount)
+    
+    def visit_program(self, node: ast.Program):
+        program_node_name = str(id(node))
+        self.total += f'{program_node_name} [label="Program"];\n'
+        for statement in node.statements:
+            statement_node_name = str(id(statement))
+            self.total += f'{program_node_name} -> {statement_node_name};\n'
+            self.visit_statement(statement)
+    
+    def visit_body(self, node: ast.Body):
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="CompoundStatement"];\n'
+        for statement in node.statements:
+            statement_name = str(id(statement))
+            self.total += f'{node_name} -> {statement_name};\n'
+            self.visit_statement(statement)
+
+    def visit_function_declaration(self, node: ast.FunctionDeclaration):
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="Function: {node.name}"];\n'
+        return_type_node_name = str(id(node.return_type))
+        self.total += f'{node_name} -> {return_type_node_name};\n'
+        self.visit_type(node.return_type)
+        body_node_name = str(id(node.body))
+        self.total += f'{node_name} -> {body_node_name};\n'
+        self.visit_body(node.body)
+    
+    def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="Declaration Qualifier: {node.identifier}"];\n'
+        if node.initializer is not None:
+            initializer_node_name = str(id(node.initializer))
+            self.total += f'{node_name} -> {initializer_node_name};\n'
+            self.visit_expression(node.initializer)
+    
+    def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="Variable Declaration"];\n'
+        type_node_name = str(id(node.var_type))
+        self.total += f'{node_name} -> {type_node_name};\n'
+        self.visit_type(node.var_type)
+
+        for qualifier in node.qualifiers:
+            variable_node_name = str(id(qualifier))
+            self.total += f'{node_name} -> {variable_node_name};\n'
+            self.visit_variable_declaration_qualifier(qualifier)
+    
+    def visit_assignment_statement(self, node: ast.AssignmentStatement):
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="Assignment: {node.identifier}"];\n'
+
+        value_node_name = str(id(node.value))
+        self.total += f'{node_name} -> {value_node_name};\n'
+        self.visit_expression(node.value)
+    
+    def visit_float_type(self, node: ast.FloatType):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"float\"];\n"
+
+    def visit_integer_type(self, node: ast.IntegerType):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"int\"];\n"
+    
+    def visit_char_type(self, node: ast.CharType):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"char\"];\n"
+    
+    def visit_const_type(self, node: ast.ConstType):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"const\"];\n"
+
+        of_name = str(id(node.of))
+        self.total += f'{node_name} -> {of_name};\n'
+        self.visit_type(node.of)
+    
+    def visit_dereference_type(self, node: ast.DereferenceType):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"dereference\"];\n"
+
+        of_name = str(id(node.of))
+        self.total += f'{node_name} -> {of_name};\n'
+        self.visit_type(node.of)
+
+    def visit_address_type(self, node: ast.AddressType):
+        node_name = id(ast)
+        self.total += f"{node_name} [label=\"address\"];\n"
+
+        of_name = str(id(node.of))
+        self.total += f'{node_name} -> {of_name};\n'
+        self.visit_type(node.of)

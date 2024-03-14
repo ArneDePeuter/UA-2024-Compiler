@@ -39,7 +39,7 @@ immutableExpression
     ;
 
 assignmentExpression
-    : unaryExpression assignmentOperator expression
+    : ID assignmentOperator expression
     | logicalExpression
     ;
 

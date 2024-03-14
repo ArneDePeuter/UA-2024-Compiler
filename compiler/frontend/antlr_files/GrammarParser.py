@@ -47,8 +47,8 @@ def serializedATN():
         78,1,0,0,0,81,79,1,0,0,0,81,80,1,0,0,0,82,11,1,0,0,0,83,84,3,14,
         7,0,84,85,5,7,0,0,85,13,1,0,0,0,86,89,3,16,8,0,87,89,3,18,9,0,88,
         86,1,0,0,0,88,87,1,0,0,0,89,15,1,0,0,0,90,91,3,20,10,0,91,17,1,0,
-        0,0,92,93,3,22,11,0,93,19,1,0,0,0,94,95,3,34,17,0,95,96,3,50,25,
-        0,96,97,3,14,7,0,97,100,1,0,0,0,98,100,3,22,11,0,99,94,1,0,0,0,99,
+        0,0,92,93,3,22,11,0,93,19,1,0,0,0,94,95,5,27,0,0,95,96,3,50,25,0,
+        96,97,3,14,7,0,97,100,1,0,0,0,98,100,3,22,11,0,99,94,1,0,0,0,99,
         98,1,0,0,0,100,21,1,0,0,0,101,102,6,11,-1,0,102,103,3,24,12,0,103,
         109,1,0,0,0,104,105,10,2,0,0,105,106,7,0,0,0,106,108,3,24,12,0,107,
         104,1,0,0,0,108,111,1,0,0,0,109,107,1,0,0,0,109,110,1,0,0,0,110,
@@ -787,9 +787,8 @@ class GrammarParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def unaryExpression(self):
-            return self.getTypedRuleContext(GrammarParser.UnaryExpressionContext,0)
-
+        def ID(self):
+            return self.getToken(GrammarParser.ID, 0)
 
         def assignmentOperator(self):
             return self.getTypedRuleContext(GrammarParser.AssignmentOperatorContext,0)
@@ -834,7 +833,7 @@ class GrammarParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 94
-                self.unaryExpression()
+                self.match(GrammarParser.ID)
                 self.state = 95
                 self.assignmentOperator()
                 self.state = 96

@@ -3,22 +3,29 @@ class Type:
     ...
 
 
-class Integer(Type):
+class IntegerType(Type):
     ...
 
 
-class Float(Type):
+class FloatType(Type):
     ...
 
 
-class Char(Type):
+class CharType(Type):
     ...
 
 
-class Address(Type):
-    base_type: Type
+class ConstType(Type):
+    def __init__(self, of: Type):
+        self.of = of
 
 
-class Dereference(Type):
-    base_type: Type
+class AddressType(Type):
+    def __init__(self, of: Type):
+        self.of = of
+
+
+class DereferenceType(Type):
+    def __init__(self, of: Type):
+        self.of = of
 

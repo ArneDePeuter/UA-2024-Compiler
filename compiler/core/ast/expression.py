@@ -31,16 +31,6 @@ class IDENTIFIER(Expression):
 
 
 @dataclass
-class DereferenceExpression(Expression):
-    expression: Expression
-
-
-@dataclass
-class AddressExpression(Expression):
-    expression: Expression
-
-
-@dataclass
 class TypeCastExpression(Expression):
     cast_type: Type
     expression: Expression
@@ -103,9 +93,14 @@ class UnaryExpression(Expression):
         NEGATIVE = "-"
         ONESCOMPLEMENT = "~"
         LOGICALNEGATION = "!"
+        ADDRESSOF = "&"
+        DEREFERENCE = "*"
+        INCREMENT = "++"
+        DECREMENT = "--"
 
     value: Expression
     operator: Operator
+    prefix: bool
 
 
 @dataclass
