@@ -1,13 +1,11 @@
 from enum import Enum
 
 from dataclasses import dataclass
-
-from .statement import Statement
-from .type import Type
+from .ast import AST
 
 
 @dataclass
-class Expression(Statement):
+class Expression(AST):
     pass
 
 @dataclass
