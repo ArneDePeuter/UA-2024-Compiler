@@ -1,73 +1,31 @@
 import argparse
-import os
-import subprocess
 
-from src.frontend.parser.cst_visitor import CSTVisitor
-from src.utils.dotvisitor import DotVisitor
-from src.frontend.parser.tree_creation import tree_from_file
-from src.antlr_files.project_2.MyGrammarLexer import MyGrammarLexer
-from src.antlr_files.project_2.MyGrammarParser import MyGrammarParser
-from src.middleend.optimizervisitor import OptimizerVisitor
-from src.frontend.symbol_table.symboltablevisitor import SymbolTableVisitor
-#from src.parser.ast_visitor.llvmvisitor import LLVMVisitor
-#from src.parser.ast_visitor.mipsvisitor import MIPSVisitor
+from compiler.frontend import tree_from_file, tree_to_ast
+from compiler.middleend import optimise_ast
+from compiler.utils import ASTDotVisitor
 
 
 def main():
     parser = argparse.ArgumentParser(description='Compiler options.')
     parser.add_argument('--input', required=True, help='The input file to compile')
-    parser.add_argument('--render_ast', action='store_true', help='Render the AST of the input file.')
-    parser.add_argument('--render_symb', action='store_true', help='Render the symbol table of the input file.')
-    parser.add_argument('--target_llvm', action='store_true', help='Generate LLVM code for the input file.')
-    parser.add_argument('--target_mips', action='store_true', help='Generate MIPS code for the input file.')
-    parser.add_argument('--constant_folding', action='store_true', help='Perform constant folding on the ast of the input file.')
+    parser.add_argument('--render_ast', help='Render the AST of the input file.')
+    parser.add_argument('--no-optimise', action = 'store_true', help='Dont optimise the ast if this flag is provided.')
 
     args = parser.parse_args()
 
-    tree = tree_from_file(
-        filename=args.input,
-        lexer_class=MyGrammarLexer,
-        parser_class=MyGrammarParser
-    )
+    # frontend
+    tree = tree_from_file(filename=args.input)
+    ast = tree_to_ast(tree)
 
-    cst_visitor = CSTVisitor()
-    ast = cst_visitor.visit(tree)
-
-    # Perform constant folding
-    if args.constant_folding:
-        optimizer_visitor = OptimizerVisitor()
-        ast = optimizer_visitor.visit_ast(ast)
-
-    symbol_table_visitor = SymbolTableVisitor()
-    symbol_table_visitor.visit_ast(ast)
-    symbol_table_tree = symbol_table_visitor.get_symbol_table_tree()
+    # middle end
+    if not args.no_optimise:
+        ast = optimise_ast(ast)
 
     # Perform actions based on the command line arguments
     if args.render_ast:
-        dot_visitor = DotVisitor()
+        dot_visitor = ASTDotVisitor()
         dot_visitor.visit_ast(ast)
-
-        base_filename = os.path.splitext(os.path.basename(args.input))[0]
-        file_name = "temp/ast_output_"+base_filename
-
-        dot_visitor.output(file_name + ".dot")
-
-        command = "dot -Tpng -o" + file_name + ".png " + file_name + ".dot"
-        subprocess.run(command, shell=True, check=True)
-
-    if args.render_symb:
-        dot_visitor = DotVisitor()
-        dot_visitor.visit_symbol_table(symbol_table_tree)
-        base_filename = os.path.splitext(os.path.basename(args.input))[0]
-        file_name = "temp/symb_output_"+base_filename
-        dot_visitor.output(file_name + ".dot")
-        command = "dot -Tpng -o"+file_name+".png "+file_name+".dot"
-        subprocess.run(command, shell=True, check=True)
-
-    if args.target_llvm:
-        pass
-    if args.target_mips:
-        pass
+        dot_visitor.output(args.render_ast)
 
 
 if __name__ == "__main__":

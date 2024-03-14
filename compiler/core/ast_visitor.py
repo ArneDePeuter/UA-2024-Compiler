@@ -12,7 +12,6 @@ class ASTVisitor(ABC):
             ast.BinaryArithmetic: self.visit_binary_arithmetic,
             ast.BinaryBitwiseArithmetic: self.visit_binary_bitwise_arithmetic,
             ast.BinaryLogicalOperation: self.visit_binary_logical_operation,
-            ast.BitwiseExpression: self.visit_bitwise_expression,
             ast.ComparisonOperation: self.visit_comparison_operation,
             ast.UnaryExpression: self.visit_unary_expression,
             ast.ShiftExpression: self.visit_shift_expression,
@@ -52,10 +51,6 @@ class ASTVisitor(ABC):
 
     @abstractmethod
     def visit_shift_expression(self, expr: ast.ShiftExpression) -> Any:
-        pass
-
-    @abstractmethod
-    def visit_bitwise_expression(self, expr: ast.BitwiseExpression) -> Any:
         pass
 
     @abstractmethod

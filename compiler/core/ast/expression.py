@@ -77,17 +77,6 @@ class UnaryExpression(Expression):
 
 
 @dataclass
-class BitwiseExpression(BinaryOperation):
-    class Operator(Enum):
-        BITAND = "&"
-        BITOR = "|"
-        BITXOR = "^"
-        BITNOT = "~"
-
-    operator: Operator
-
-
-@dataclass
 class ShiftExpression(Expression):
     class Operator(Enum):
         LEFT = "<<"

@@ -1,10 +1,8 @@
-from typing import Any
-
 from compiler.core import ast
 from compiler.core.ast_visitor import ASTVisitor
 
 
-class OptimizerVisitor(ASTVisitor):
+class ConstantFoldingASTVisitor(ASTVisitor):
     def __init__(self):
         super().__init__()
 
@@ -67,7 +65,7 @@ class OptimizerVisitor(ASTVisitor):
             result = expr.left.value and expr.right.value
         elif expr.operator == ast.BinaryLogicalOperation.Operator.OR:
             result = expr.left.value or expr.right.value
-        return ast.INT(result)
+        return ast.INT(int(result))
 
     def visit_comparison_operation(self, expr: ast.ComparisonOperation):
         # Visit left and right operands to potentially simplify them first
@@ -91,7 +89,7 @@ class OptimizerVisitor(ASTVisitor):
             result = expr.left.value == expr.right.value
         elif expr.operator == ast.ComparisonOperation.Operator.NEQ:
             result = expr.left.value != expr.right.value
-        return ast.INT(result)
+        return ast.INT(int(result))
 
     def visit_unary_expression(self, expr: ast.UnaryExpression):
         # Visit operand to potentially simplify it first
@@ -109,27 +107,7 @@ class OptimizerVisitor(ASTVisitor):
         elif expr.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
             value = ~expr.value.value
         elif expr.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
-            value = not expr.value.value
-        return ast.INT(value)
-
-    def visit_bitwise_expression(self, expr: ast.BitwiseExpression):
-        # Visit left and right operands to potentially simplify them first
-        expr.left = self.visit_ast(expr.left)
-        expr.right = self.visit_ast(expr.right)
-
-        # If both operands aren't INT expressions, we can't fold them
-        if not (isinstance(expr.left, ast.INT) and isinstance(expr.right, ast.INT)):
-            return expr
-
-        value = None
-        if expr.operator == ast.BitwiseExpression.Operator.BITAND:
-            value = expr.left.value & expr.right.value
-        elif expr.operator == ast.BitwiseExpression.Operator.BITOR:
-            value = expr.left.value | expr.right.value
-        elif expr.operator == ast.BitwiseExpression.Operator.BITXOR:
-            value = expr.left.value ^ expr.right.value
-        elif expr.operator == ast.BitwiseExpression.Operator.BITNOT:
-            value = ~expr.left.value
+            value = int(not expr.value.value)
         return ast.INT(value)
 
     def visit_shift_expression(self, expr: ast.ShiftExpression):
