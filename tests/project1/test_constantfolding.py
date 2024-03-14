@@ -1,11 +1,11 @@
-from src.parser.tree_creation import tree_from_str, tree_from_file
+from src.frontend.parser.tree_creation import tree_from_str, tree_from_file
 from src.antlr_files.project_1.MyGrammarParser import MyGrammarParser
-from src.antlr_files.project_1.MyGrammarLexer import MyGrammarLexer
-from src.parser.ast_visitor.optimizervisitor import OptimizerVisitor
-from src.parser.cst_visitor import CSTVisitor
+from src.frontend.antlr_files.project_1.MyGrammarLexer import MyGrammarLexer
+from src.middleend.optimizervisitor import OptimizerVisitor
+from src.frontend.parser.cst_visitor import CSTVisitor
 
-from src.parser.ast.program import Program
-from src.parser.ast import expression as expr
+from src.core.ast.program import Program
+from src.core.ast import expression as expr
 
 
 def eval_expr(eq: str) -> expr.INT:
