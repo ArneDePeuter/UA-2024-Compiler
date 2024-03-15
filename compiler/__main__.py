@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 
 from compiler.frontend import tree_from_file, tree_to_ast
 from compiler.middleend import optimise_ast
@@ -28,6 +29,9 @@ def main():
         folder = args.render_ast
         filename = str(args.input).split("/")[-1][:-2] + ".dot"
         dot_visitor.output(f"{folder}/{filename}")
+        command = "dot -Tpng -o" + f"{folder}/{filename}" + ".png " + f"{folder}/{filename}"
+        subprocess.run(command, shell=True, check=True)
+
 
 
 if __name__ == "__main__":
