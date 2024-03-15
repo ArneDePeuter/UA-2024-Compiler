@@ -27,6 +27,7 @@ statement
     : expressionStatement
     | body
     | variableDeclaration
+    | assignmentStatement
     ;
 
 expressionStatement
@@ -34,21 +35,11 @@ expressionStatement
     ;
 
 expression
-    : mutableExpression
-    | immutableExpression
-    ;
-
-mutableExpression
-    : assignmentExpression
-    ;
-
-immutableExpression
     : logicalExpression
     ;
 
-assignmentExpression
-    : addressQualifier* ID assignmentOperator expression
-    | logicalExpression
+assignmentStatement
+    : addressQualifier* ID assignmentOperator expression ';'
     ;
 
 logicalExpression

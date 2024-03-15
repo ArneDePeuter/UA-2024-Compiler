@@ -41,6 +41,11 @@ class VariableDeclaration(Statement):
 
 
 @dataclass
+class ExpressionStatement(Statement):
+    expression: Expression
+
+
+@dataclass
 class AssignmentStatement(Statement):
     identifier: str
     value: Expression

@@ -93,3 +93,8 @@ class ConstantPropagationAstVisitor(AstVisitor):
         node.value = self.visit_expression(node.value)
         return node.value
 
+    def visit_expression_statement(self, node: ast.ExpressionStatement):
+        node.expression = self.visit_expression(node.expression)
+        return node.expression
+
+

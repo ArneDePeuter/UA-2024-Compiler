@@ -144,3 +144,11 @@ class AstDotVisitor(AstVisitor):
         addrs = "".join([str(addr.value) for addr in node.address_qualifiers])
         descr = f"{const}{node.base_type.name} {addrs}"
         self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
+
+    def visit_expression_statement(self, node: ast.ExpressionStatement):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"ExpressionStatement\"];\n"
+
+        expression_node_name = str(id(node.expression))
+        self.total += f'{node_name} -> {expression_node_name};\n'
+        self.visit_expression(node.expression)
