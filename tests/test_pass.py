@@ -1,13 +1,15 @@
-from compiler.frontend import tree_from_file
+import os
+
+from compiler.frontend import tree_from_file, tree_to_ast
 
 
-def test_intliteral():
-    tree_from_file("./files/proj1_man_pass_intliteral.c")
+def test_pass() -> None:
+    directory = os.fsencode("./files/pass")
 
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        print(f"Testing {filename}")
 
-def test_operators():
-    tree_from_file("./files/proj1_man_pass_operators.c")
+        tree = tree_from_file(f"{directory.decode()}/{filename}")
+        ast = tree_to_ast(tree)
 
-
-def test_whitespace():
-    tree_from_file("./files/proj1_man_pass_whitespace.c")

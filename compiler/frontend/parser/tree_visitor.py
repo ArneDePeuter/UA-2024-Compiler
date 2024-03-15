@@ -96,7 +96,8 @@ class TreeVisitor(GrammarVisitor):
         expression = self.visit(ctx.expression())
         return ast.AssignmentStatement(
             identifier=identifier,
-            value=expression
+            value=expression,
+            address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
         )
 
     def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):

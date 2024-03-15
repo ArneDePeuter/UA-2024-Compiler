@@ -1,19 +1,18 @@
+import os
+
 from compiler.frontend import tree_from_file
 
 
-def test_intliteralbeginwithzero():
-    try:
-        tree = tree_from_file("./files/proj1_man_syntaxErr_intLiteralBeginWithZero.c")
-    except Exception as e:
-        pass
-    else:
-        assert False
+def test_syntax_err() -> None:
+    directory = os.fsencode("./files/syntax_err")
 
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
 
-def test_operators():
-    try:
-        tree = tree_from_file("./files/proj1_man_syntaxErr_operators.c")
-    except Exception as e:
-        pass
-    else:
-        assert False
+        try:
+            tree_from_file(f"{directory.decode()}/{filename}")
+        except Exception as e:
+            ...
+        else:
+            print(f"{filename} passed")
+            assert False

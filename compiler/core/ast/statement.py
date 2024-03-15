@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from .ast import AST
 from .expression import Expression
-from .type import Type
+from .type import Type, AddressQualifier
 
 
 @dataclass
@@ -43,3 +44,8 @@ class VariableDeclaration(Statement):
 class AssignmentStatement(Statement):
     identifier: str
     value: Expression
+    address_qualifiers: Optional[list[AddressQualifier]] = None
+
+    def __post_init__(self):
+        if self.address_qualifiers is None:
+            self.address_qualifiers = []

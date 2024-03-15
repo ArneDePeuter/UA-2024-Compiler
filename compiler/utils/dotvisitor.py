@@ -131,7 +131,8 @@ class AstDotVisitor(AstVisitor):
     
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         node_name = str(id(node))
-        self.total += f'{node_name} [label="Assignment: {node.identifier}"];\n'
+        addrs = "".join([str(addr.value) for addr in node.address_qualifiers])
+        self.total += f'{node_name} [label="Assignment: {addrs}{node.identifier}"];\n'
 
         value_node_name = str(id(node.value))
         self.total += f'{node_name} -> {value_node_name};\n'

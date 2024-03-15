@@ -47,7 +47,7 @@ immutableExpression
     ;
 
 assignmentExpression
-    : ID assignmentOperator expression
+    : addressQualifier* ID assignmentOperator expression
     | logicalExpression
     ;
 
