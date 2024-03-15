@@ -29,78 +29,157 @@ class SymbolTableVisitor(AstVisitor):
         # First, visit the expression being cast to ensure it's semantically valid on its own.
         self.visit(node.expression)
         # Retrieve the type of the expression being cast.
-        expression_type = self.get_expression_type(node.expression)
+        expression_type = self.get_expression_type(node.expression)  # TODO: implement get_expression_type
         # Check if the cast from expression_type to node.cast_type is allowed.
-        if not self.is_cast_allowed(expression_type, node.cast_type):
+        if not self.is_cast_allowed(expression_type, node.cast_type):  # TODO: implement is_cast_allowed
             raise SemanticError(f"Invalid type cast from {expression_type} to {node.cast_type}.", node.line, node.position)
 
         # Additional checks might include ensuring the expression is not a const if the target type is non-const,
         # or if specific type casts are disallowed or require explicit actions.
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
-        # Bezoek eerst de linker- en rechterzijde van de operatie
+        # Visit both the left and right operands to ensure they're semantically valid.
         self.visit(node.left)
         self.visit(node.right)
-        # Voer hier type checks uit om te zorgen dat de operatie geldig is voor de gegeven typen
 
+        # Check if the types of the left and right operands are compatible for arithmetic operations.
+        left_type = self.get_expression_type(node.left) # TODO: implement get_expression_type
+        right_type = self.get_expression_type(node.right) # TODO: implement get_expression_type
+
+        if not self.are_types_compatible_for_arithmetic(left_type, right_type): # TODO: implement are_types_compatible_for_arithmetic
+            raise SemanticError(f"Incompatible types for arithmetic operation: {left_type} and {right_type}.",
+                                node.line, node.position)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        # Bitwise operaties vereisen meestal integer uitdrukkingen; controleer dit
+        # Similar to arithmetic operations, visit both operands.
         self.visit(node.left)
         self.visit(node.right)
-        # Voeg logica toe voor het controleren van de geldigheid van de bitwise operatie
+
+        # Check if the types are compatible for bitwise operations.
+        left_type = self.get_expression_type(node.left) # TODO: implement get_expression_type
+        right_type = self.get_expression_type(node.right) # TODO: implement get_expression_type
+
+        if not self.are_types_compatible_for_bitwise(left_type, right_type): # TODO: implement are_types_compatible_for_bitwise
+            raise SemanticError(f"Incompatible types for bitwise operation: {left_type} and {right_type}.", node.line, node.position)
+
+
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        # Logische operaties vereisen meestal boolean uitdrukkingen; controleer dit
+        # Visit both operands to ensure semantic validity.
         self.visit(node.left)
         self.visit(node.right)
-        # Voeg logica toe voor het controleren van de geldigheid van de logische operatie
+
+        # Check if the types of operands are compatible for logical operations.
+        left_type = self.get_expression_type(node.left) # TODO: implement get_expression_type
+        right_type = self.get_expression_type(node.right) # TODO: implement get_expression_type
+
+        if not self.are_types_compatible_for_logical(left_type, right_type): # TODO: implement are_types_compatible_for_logical
+            raise SemanticError(f"Incompatible types for logical operation: {left_type} and {right_type}.", node.line, node.position)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
-        # Vergelijkingsoperaties controleren; zorg ervoor dat de typen compatibel zijn
+        # Visit both the left and right operands.
         self.visit(node.left)
         self.visit(node.right)
-        # Voeg checks toe om te verzekeren dat de typen vergeleken kunnen worden
+
+        # Retrieve the types of both operands.
+        left_type = self.get_expression_type(node.left)  # TODO: implement get_expression_type
+        right_type = self.get_expression_type(node.right)  # TODO: implement get_expression_type
+
+        # Check if the types of the left and right operands are compatible for comparison.
+        if not self.are_types_compatible_for_comparison(left_type, right_type):  # TODO: implement are_types_compatible_for_comparison
+            raise SemanticError(f"Incompatible types for comparison operation: {left_type} and {right_type}.", node.line, node.position)
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
-        # Bezoek de unaire expressie; controleer op geldigheid afhankelijk van het type operatie
-        self.visit(node.expression)
-        # Voeg specifieke logica toe voor het type unaire operatie, bijv. negatie, bitwise not, etc.
+        # Visit the operand to ensure it's semantically valid.
+        self.visit(node.value)
+
+        # Retrieve the type of the operand.
+        operand_type = self.get_expression_type(node.value)  # TODO: implement get_expression_type
+
+        # Check if the unary operation is valid for the operand's type.
+        if not self.is_unary_operation_valid(node.operator, operand_type):  # TODO: implement is_unary_operation_valid
+            raise SemanticError(f"Invalid unary operation {node.operator} for type {operand_type}.", node.line, node.position)
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        # Shift operaties controleren; zorg ervoor dat de typen compatibel zijn
-        self.visit(node.left)
-        self.visit(node.right)
-        # Voeg checks toe om te verzekeren dat de typen vergelijkt kunnen worden
+        # Visit both the value and the shift amount to ensure they're semantically valid.
+        self.visit(node.value)
+        self.visit(node.amount)
+
+        # Retrieve the types of the value and the shift amount.
+        value_type = self.get_expression_type(node.value)  # TODO: implement get_expression_type
+        amount_type = self.get_expression_type(node.amount)  # TODO: implement get_expression_type
+
+        # Check if the types are compatible for shift operations.
+        if not self.are_types_compatible_for_shift(value_type, amount_type):  # TODO: implement are_types_compatible_for_shift
+            raise SemanticError(
+                f"Incompatible types for shift operation: {value_type} (value) and {amount_type} (amount).", node.line,
+                node.position)
 
     def visit_program(self, node: ast.Program):
-        # Controleer de declaraties in de program
-        for declaration in node.declarations:
-            self.visit(declaration)
-
-    def visit_body(self, node: ast.Body):
-        # Controleer de statements in de body
+        # Assuming Program node contains a list of statements, declarations, or function definitions.
         for statement in node.statements:
             self.visit(statement)
 
+    def visit_body(self, node: ast.Body):
+        # Enter a new scope when starting to visit a body
+        self.symbol_table.enter_scope()
+
+        for statement in node.statements:
+            self.visit(statement)
+
+        # Exit the scope after visiting all statements in the body
+        self.symbol_table.exit_scope()
+
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
-        # Controleer de declaraties in de functie
-        for declaration in node.declarations:
-            self.visit(declaration)
+        # Check if the function is already declared in the current scope
+        if self.symbol_table.lookup(node.name, current_scope_only=True):
+            raise SemanticError(f"Function '{node.name}' is already declared.", node.line, node.position)
+
+        # Register the function in the symbol table with its return type and parameter types
+        self.symbol_table.define_symbol(
+            Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level))
+
+        # Enter a new scope for the function's body
+        self.symbol_table.enter_scope()
+
+        # Visit the function's body
+        self.visit(node.body)
+
+        # Exit the function's scope
+        self.symbol_table.exit_scope()
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
-        # Controleer de declaraties in de variabele declaratie
-        for declaration in node.declarations:
-            self.visit(declaration)
+        # If there's an initializer, visit it to ensure it's semantically valid
+        if node.initializer is not None:
+            self.visit(node.initializer)
+
+        # Further checks for qualifiers could be implemented here, based on language semantics
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
-        # Voorbeeld voor het behandelen van variabele declaraties
-        if self.symbol_table.lookup(node.name, current_scope_only=True):
-            raise SemanticError(f"Variable '{node.name}' is already declared.", node.line, node.position)
-        self.symbol_table.define_symbol(Symbol(node.name, node.type, scope_level=self.symbol_table.current_scope_level))
+        # Iterate through each qualifier in the variable declaration
+        for qualifier in node.qualifiers:
+            # Ensure the variable is not already declared in the current scope
+            if self.symbol_table.lookup(qualifier.identifier, current_scope_only=True):
+                raise SemanticError(f"Variable '{qualifier.identifier}' is already declared.", node.line, node.position)
+
+            # Visit the qualifier, which will check the initializer
+            self.visit(qualifier)
+
+            # Define the symbol in the symbol table
+            self.symbol_table.define_symbol(
+                Symbol(qualifier.identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        # Controleren of de variabele bestaat voordat deze wordt toegewezen
-        symbol = self.symbol_table.lookup(node.variable_name)
+        # Ensure the variable is declared
+        symbol = self.symbol_table.lookup(node.identifier)
         if symbol is None:
-            raise SemanticError(f"Use of undeclared variable '{node.variable_name}'.", node.line, node.position)
-        # Voeg hier extra logica toe voor type checks of andere regels
+            raise SemanticError(f"Use of undeclared variable '{node.identifier}'.", node.line, node.position)
+
+        # Visit the value to be assigned to ensure it's semantically valid
+        self.visit(node.value)
+
+        # Optionally, check if the assignment's value type is compatible with the variable's type
+        value_type = self.get_expression_type(node.value)
+        if not self.is_type_compatible(symbol.type, value_type):
+            raise SemanticError(
+                f"Type mismatch in assignment to '{node.identifier}': cannot assign {value_type} to {symbol.type}.",
+                node.line, node.position)
