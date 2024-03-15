@@ -33,14 +33,8 @@ class TreeVisitor(GrammarVisitor):
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
-            if isinstance(child, GrammarParser.VariableDeclarationContext):
-                statement = self.visitVariableDeclaration(child)
-            elif isinstance(child, GrammarParser.ExpressionStatementContext):
-                statement = self.visitExpressionStatement(child)
-            else:
-                statement = self.visit(child)
+            statement = self.visit(child)
             statements.append(statement)
-
         return ast.Body(
             statements=statements
         )
@@ -54,8 +48,10 @@ class TreeVisitor(GrammarVisitor):
             qualifiers=qualifiers
         )
 
-    def visitExpressionStatement(self, ctx):
-        return self.visit(ctx.expression())
+    def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
+        return ast.ExpressionStatement(
+            expression=self.visitExpression(ctx.expression())
+        )
 
     def visitType(self, ctx):
         return ast.Type(
@@ -88,10 +84,7 @@ class TreeVisitor(GrammarVisitor):
         expression = self.visit(ctx.unaryExpression())
         return ast.TypeCastExpression(cast_type=cast_type, expression=expression)
 
-    def visitAssignmentExpression(self, ctx):
-        if ctx.logicalExpression():
-            return self.visit(ctx.logicalExpression())
-
+    def visitAssignmentStatement(self, ctx):
         identifier = ctx.ID()
         expression = self.visit(ctx.expression())
         return ast.AssignmentStatement(

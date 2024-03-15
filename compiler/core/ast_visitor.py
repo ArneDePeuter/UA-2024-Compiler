@@ -19,6 +19,7 @@ class AstVisitor(ABC):
             ast.ShiftExpression: self.visit_shift_expression
         }
         self.statement_fd = {
+            ast.ExpressionStatement: self.visit_expression_statement,
             ast.Program: self.visit_program,
             ast.Body: self.visit_body,
             ast.FunctionDeclaration: self.visit_function_declaration,
@@ -103,4 +104,8 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
+        ...
+
+    @abstractmethod
+    def visit_expression_statement(self, node: ast.ExpressionStatement):
         ...

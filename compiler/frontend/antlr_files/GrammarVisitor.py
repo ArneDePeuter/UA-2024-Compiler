@@ -59,18 +59,8 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#mutableExpression.
-    def visitMutableExpression(self, ctx:GrammarParser.MutableExpressionContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#immutableExpression.
-    def visitImmutableExpression(self, ctx:GrammarParser.ImmutableExpressionContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#assignmentExpression.
-    def visitAssignmentExpression(self, ctx:GrammarParser.AssignmentExpressionContext):
+    # Visit a parse tree produced by GrammarParser#assignmentStatement.
+    def visitAssignmentStatement(self, ctx:GrammarParser.AssignmentStatementContext):
         return self.visitChildren(ctx)
 
 

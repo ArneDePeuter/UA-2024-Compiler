@@ -98,30 +98,12 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#mutableExpression.
-    def enterMutableExpression(self, ctx:GrammarParser.MutableExpressionContext):
+    # Enter a parse tree produced by GrammarParser#assignmentStatement.
+    def enterAssignmentStatement(self, ctx:GrammarParser.AssignmentStatementContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#mutableExpression.
-    def exitMutableExpression(self, ctx:GrammarParser.MutableExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#immutableExpression.
-    def enterImmutableExpression(self, ctx:GrammarParser.ImmutableExpressionContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#immutableExpression.
-    def exitImmutableExpression(self, ctx:GrammarParser.ImmutableExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#assignmentExpression.
-    def enterAssignmentExpression(self, ctx:GrammarParser.AssignmentExpressionContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#assignmentExpression.
-    def exitAssignmentExpression(self, ctx:GrammarParser.AssignmentExpressionContext):
+    # Exit a parse tree produced by GrammarParser#assignmentStatement.
+    def exitAssignmentStatement(self, ctx:GrammarParser.AssignmentStatementContext):
         pass
 
 
