@@ -1,31 +1,26 @@
+from enum import Enum
+from typing import Optional
+from dataclasses import dataclass
 
-class Type:
-    ...
-
-
-class IntegerType(Type):
-    ...
+from .ast import AST
 
 
-class FloatType(Type):
-    ...
+class BaseType(Enum):
+    int = "int"
+    char = "char"
+    float = "float"
 
 
-class CharType(Type):
-    ...
+class AddressQualifier(Enum):
+    pointer = "*"
 
 
-class ConstType(Type):
-    def __init__(self, of: Type):
-        self.of = of
+@dataclass
+class Type(AST):
+    base_type: BaseType
+    const: Optional[bool] = False
+    address_qualifiers: Optional[list[AddressQualifier]] = None
 
-
-class AddressType(Type):
-    def __init__(self, of: Type):
-        self.of = of
-
-
-class DereferenceType(Type):
-    def __init__(self, of: Type):
-        self.of = of
-
+    def __post_init__(self):
+        if self.address_qualifiers is None:
+            self.address_qualifiers = []

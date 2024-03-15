@@ -137,38 +137,9 @@ class AstDotVisitor(AstVisitor):
         self.total += f'{node_name} -> {value_node_name};\n'
         self.visit_expression(node.value)
     
-    def visit_float_type(self, node: ast.FloatType):
+    def visit_type(self, node: ast.Type):
         node_name = id(node)
-        self.total += f"{node_name} [label=\"float\"];\n"
-
-    def visit_integer_type(self, node: ast.IntegerType):
-        node_name = id(node)
-        self.total += f"{node_name} [label=\"int\"];\n"
-    
-    def visit_char_type(self, node: ast.CharType):
-        node_name = id(node)
-        self.total += f"{node_name} [label=\"char\"];\n"
-    
-    def visit_const_type(self, node: ast.ConstType):
-        node_name = id(node)
-        self.total += f"{node_name} [label=\"const\"];\n"
-
-        of_name = str(id(node.of))
-        self.total += f'{node_name} -> {of_name};\n'
-        self.visit_type(node.of)
-    
-    def visit_dereference_type(self, node: ast.DereferenceType):
-        node_name = id(node)
-        self.total += f"{node_name} [label=\"dereference\"];\n"
-
-        of_name = str(id(node.of))
-        self.total += f'{node_name} -> {of_name};\n'
-        self.visit_type(node.of)
-
-    def visit_address_type(self, node: ast.AddressType):
-        node_name = id(node)
-        self.total += f"{node_name} [label=\"address\"];\n"
-
-        of_name = str(id(node.of))
-        self.total += f'{node_name} -> {of_name};\n'
-        self.visit_type(node.of)
+        const = "const " if node.const else ""
+        addrs = "".join([str(addr.value) for addr in node.address_qualifiers])
+        descr = f"{const}{node.base_type.name} {addrs}"
+        self.total += f"{node_name} [label=\"Type: {descr}\"];\n"

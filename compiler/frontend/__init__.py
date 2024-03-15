@@ -10,7 +10,7 @@ from .parser.tree_visitor import TreeVisitor
 
 class CompilationSyntaxError(Exception):
     def __init__(self, line, column, message):
-        super(self).__init__(f"ERROR: when parsing line {line} column {column}: {message}\n")
+        super().__init__(f"ERROR: when parsing line {line} column {column}: {message}\n")
 
 
 class MyErrorListener(ErrorListener):

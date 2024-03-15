@@ -24,8 +24,18 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#declaration.
-    def visitDeclaration(self, ctx:GrammarParser.DeclarationContext):
+    # Visit a parse tree produced by GrammarParser#variableDeclaration.
+    def visitVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#variableDeclarationQualifiers.
+    def visitVariableDeclarationQualifiers(self, ctx:GrammarParser.VariableDeclarationQualifiersContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#variableDeclarationQualifier.
+    def visitVariableDeclarationQualifier(self, ctx:GrammarParser.VariableDeclarationQualifierContext):
         return self.visitChildren(ctx)
 
 
@@ -114,23 +124,13 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#typeQualifier.
-    def visitTypeQualifier(self, ctx:GrammarParser.TypeQualifierContext):
+    # Visit a parse tree produced by GrammarParser#const.
+    def visitConst(self, ctx:GrammarParser.ConstContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#pointerQualifier.
-    def visitPointerQualifier(self, ctx:GrammarParser.PointerQualifierContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#variableList.
-    def visitVariableList(self, ctx:GrammarParser.VariableListContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#variable.
-    def visitVariable(self, ctx:GrammarParser.VariableContext):
+    # Visit a parse tree produced by GrammarParser#addressQualifier.
+    def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         return self.visitChildren(ctx)
 
 

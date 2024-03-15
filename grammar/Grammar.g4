@@ -7,8 +7,16 @@ mainFunction : 'int' 'main' '(' ')' body ;
 
 body : '{' statement* '}' ;
 
-declaration
-    : type variableList ';'
+variableDeclaration
+    : type variableDeclarationQualifiers ';'
+    ;
+
+variableDeclarationQualifiers
+    : (variableDeclarationQualifier (',' variableDeclarationQualifier)*)?
+    ;
+
+variableDeclarationQualifier
+    : ID ('=' expression)?
     ;
 
 castExpression
@@ -18,7 +26,7 @@ castExpression
 statement
     : expressionStatement
     | body
-    | declaration
+    | variableDeclaration
     ;
 
 expressionStatement
@@ -90,7 +98,7 @@ primary
     ;
 
 type
-    : typeQualifier? baseType pointerQualifier*
+    : const? baseType addressQualifier*
     ;
 
 baseType
@@ -99,22 +107,14 @@ baseType
     | 'char'
     ;
 
-typeQualifier
+const
     : 'const'
     ;
 
-pointerQualifier
+addressQualifier
     : '*'
     ;
 
-
-variableList
-    : (variable (',' variable)*)?
-    ;
-
-variable
-    : ID ('=' expression)?
-    ;
 
 assignmentOperator
     : '='

@@ -26,14 +26,6 @@ class AstVisitor(ABC):
             ast.VariableDeclaration: self.visit_variable_declaration,
             ast.AssignmentStatement: self.visit_assignment_statement
         }
-        self.type_fd = {
-            ast.FloatType: self.visit_float_type,
-            ast.IntegerType: self.visit_integer_type,
-            ast.CharType: self.visit_char_type,
-            ast.ConstType: self.visit_const_type,
-            ast.DereferenceType: self.visit_dereference_type,
-            ast.AddressType: self.visit_address_type
-        }
 
     def visit_expression(self, node: ast.Expression):
         return self.expression_fd.get(type(node))(node)
@@ -41,8 +33,9 @@ class AstVisitor(ABC):
     def visit_statement(self, node: ast.Statement):
         return self.statement_fd.get(type(node))(node)
 
+    @abstractmethod
     def visit_type(self, node: ast.Type):
-        return self.type_fd.get(type(node))(node)
+        ...
 
     @abstractmethod
     def visit_int(self, node: ast.INT):
@@ -110,28 +103,4 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        ...
-
-    @abstractmethod
-    def visit_float_type(self, node: ast.FloatType):
-        ...
-
-    @abstractmethod
-    def visit_integer_type(self, node: ast.IntegerType):
-        ...
-
-    @abstractmethod
-    def visit_char_type(self, node: ast.CharType):
-        ...
-
-    @abstractmethod
-    def visit_const_type(self, node: ast.ConstType):
-        ...
-
-    @abstractmethod
-    def visit_dereference_type(self, node: ast.DereferenceType):
-        ...
-
-    @abstractmethod
-    def visit_address_type(self, node: ast.AddressType):
         ...

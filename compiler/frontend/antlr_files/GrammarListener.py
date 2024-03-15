@@ -35,12 +35,30 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#declaration.
-    def enterDeclaration(self, ctx:GrammarParser.DeclarationContext):
+    # Enter a parse tree produced by GrammarParser#variableDeclaration.
+    def enterVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#declaration.
-    def exitDeclaration(self, ctx:GrammarParser.DeclarationContext):
+    # Exit a parse tree produced by GrammarParser#variableDeclaration.
+    def exitVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#variableDeclarationQualifiers.
+    def enterVariableDeclarationQualifiers(self, ctx:GrammarParser.VariableDeclarationQualifiersContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#variableDeclarationQualifiers.
+    def exitVariableDeclarationQualifiers(self, ctx:GrammarParser.VariableDeclarationQualifiersContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#variableDeclarationQualifier.
+    def enterVariableDeclarationQualifier(self, ctx:GrammarParser.VariableDeclarationQualifierContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#variableDeclarationQualifier.
+    def exitVariableDeclarationQualifier(self, ctx:GrammarParser.VariableDeclarationQualifierContext):
         pass
 
 
@@ -197,39 +215,21 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#typeQualifier.
-    def enterTypeQualifier(self, ctx:GrammarParser.TypeQualifierContext):
+    # Enter a parse tree produced by GrammarParser#const.
+    def enterConst(self, ctx:GrammarParser.ConstContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#typeQualifier.
-    def exitTypeQualifier(self, ctx:GrammarParser.TypeQualifierContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#pointerQualifier.
-    def enterPointerQualifier(self, ctx:GrammarParser.PointerQualifierContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#pointerQualifier.
-    def exitPointerQualifier(self, ctx:GrammarParser.PointerQualifierContext):
+    # Exit a parse tree produced by GrammarParser#const.
+    def exitConst(self, ctx:GrammarParser.ConstContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#variableList.
-    def enterVariableList(self, ctx:GrammarParser.VariableListContext):
+    # Enter a parse tree produced by GrammarParser#addressQualifier.
+    def enterAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#variableList.
-    def exitVariableList(self, ctx:GrammarParser.VariableListContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#variable.
-    def enterVariable(self, ctx:GrammarParser.VariableContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#variable.
-    def exitVariable(self, ctx:GrammarParser.VariableContext):
+    # Exit a parse tree produced by GrammarParser#addressQualifier.
+    def exitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         pass
 
 

@@ -22,7 +22,7 @@ class TreeVisitor(GrammarVisitor):
         body = self.visit(ctx.body())
 
         return ast.FunctionDeclaration(
-            return_type=ast.IntegerType(),
+            return_type=ast.Type(base_type=ast.BaseType.int),
             name='main',
             body=body
         )
@@ -33,8 +33,8 @@ class TreeVisitor(GrammarVisitor):
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
-            if isinstance(child, GrammarParser.DeclarationContext):
-                statement = self.visitDeclaration(child)
+            if isinstance(child, GrammarParser.VariableDeclarationContext):
+                statement = self.visitVariableDeclaration(child)
             elif isinstance(child, GrammarParser.ExpressionStatementContext):
                 statement = self.visitExpressionStatement(child)
             else:
@@ -45,9 +45,9 @@ class TreeVisitor(GrammarVisitor):
             statements=statements
         )
 
-    def visitDeclaration(self, ctx):
+    def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
-        qualifiers = self.visit(ctx.variableList())
+        qualifiers = self.visit(ctx.variableDeclarationQualifiers())
 
         return ast.VariableDeclaration(
             var_type=var_type,
@@ -58,33 +58,27 @@ class TreeVisitor(GrammarVisitor):
         return self.visit(ctx.expression())
 
     def visitType(self, ctx):
-        ret_type = self.visit(ctx.baseType())
+        return ast.Type(
+            base_type=self.visit(ctx.baseType()),
+            const=ctx.const(),
+            address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+        )
 
-        for _ in range(len(ctx.pointerQualifier())):
-            ret_type = ast.DereferenceType(ret_type)
-
-        if ctx.typeQualifier():
-            ret_type = ast.ConstType(ret_type)
-
-        return ret_type
+    def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
+        text = ctx.getText()
+        return ast.AddressQualifier(text)
 
     def visitBaseType(self, ctx):
         text = ctx.getText()
-        if text == "int":
-            return ast.IntegerType()
-        elif text == "float":
-            return ast.FloatType()
-        else:
-            return ast.CharType()
+        return ast.BaseType(text)
 
     def visitExpression(self, ctx: GrammarParser.ExpressionContext):
         return self.visitChildren(ctx)
 
-    def visitVariableList(self, ctx):
-        variables = [self.visit(variable) for variable in ctx.variable()]
-        return variables
+    def visitVariableDeclarationQualifiers(self, ctx):
+        return [self.visit(qualifier) for qualifier in ctx.variableDeclarationQualifier()]
 
-    def visitVariable(self, ctx):
+    def visitVariableDeclarationQualifier(self, ctx):
         identifier = ctx.ID().getText()
         initializer = self.visit(ctx.expression()) if ctx.expression() else None
         return ast.VariableDeclarationQualifier(identifier=identifier, initializer=initializer)
