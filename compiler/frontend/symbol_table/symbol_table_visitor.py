@@ -1,7 +1,7 @@
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core import ast
-from symboltable import SymbolTable, Symbol
+from compiler.frontend.symbol_table.symboltable import SymbolTable, Symbol
 class SymbolTableVisitor(AstVisitor):
     def __init__(self, symbol_table):
         # super().__init__()  # Aanroep constructor van ASTVisitor indien nodig
