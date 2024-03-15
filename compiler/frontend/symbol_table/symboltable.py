@@ -9,7 +9,8 @@ class Symbol:
         self.scope_level = scope_level
 
 class Scope:
-    def __init__(self, parent=None):
+    def __init__(self, level=0, parent=None):
+        self.level = level
         self.parent = parent
         self.symbols = {}
 
@@ -32,13 +33,15 @@ class SymbolTable:
         self.current_scope = self.global_scope
 
     def enter_scope(self):
-        self.current_scope = Scope(level=self.current_scope.level + 1, parent=self.current_scope)
+        new_scope_level = self.current_scope.level + 1
+        self.current_scope = Scope(level=new_scope_level, parent=self.current_scope)
 
     def exit_scope(self):
-        self.current_scope = self.current_scope.parent
+        if self.current_scope.parent is not None:
+            self.current_scope = self.current_scope.parent
 
     def define_symbol(self, symbol):
         return self.current_scope.define_symbol(symbol)
 
-    def lookup(self, name):
-        return self.current_scope.lookup(name)
+    def lookup(self, name, current_scope_only=False):
+        return self.current_scope.lookup(name, current_scope_only=current_scope_only)

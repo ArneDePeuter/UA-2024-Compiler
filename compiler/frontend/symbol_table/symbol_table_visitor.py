@@ -8,28 +8,34 @@ class SymbolTableVisitor(AstVisitor):
         self.symbol_table = symbol_table
 
     def visit_type(self, node: ast.Type):
-        # Implementatie afhankelijk van wat je wilt controleren/uitvoeren voor type nodes
+        # Because the type node doens't perform an operation, we can ignore it
+        pass
 
     def visit_int(self, node: ast.INT):
-        # Mogelijk wil je hier niets specifieks doen, tenzij je checks hebt voor INT waarden
+        pass
 
     def visit_float(self, node: ast.FLOAT):
-        # Idem als bij INT, afhankelijk van je specifieke vereisten
+        pass
 
     def visit_char(self, node: ast.CHAR):
-        # Idem, specifieke acties voor CHAR types indien nodig
+        pass
 
     def visit_identifier(self, node: ast.IDENTIFIER):
-        # Dit is belangrijk voor het controleren van de declaratie van identifiers
+        # This is important for checking the declaration of identifiersCan
         if self.symbol_table.lookup(node.name) is None:
             raise SemanticError(f"Use of undeclared identifier '{node.name}'.", node.line, node.position)
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
-        # Controleer of het type waarnaar wordt gecast geldig is
-        # en of de expressie compatibel is met het cast type.
-        # Dit vereist gedetailleerde typevergelijking en mogelijk informatie over impliciete/expliciete conversies.
-        self.visit(node.expression)  # Bezoek de expressie die gecast wordt
-        # Voeg hier logica toe voor het controleren van de typecast
+        # First, visit the expression being cast to ensure it's semantically valid on its own.
+        self.visit(node.expression)
+        # Retrieve the type of the expression being cast.
+        expression_type = self.get_expression_type(node.expression)
+        # Check if the cast from expression_type to node.cast_type is allowed.
+        if not self.is_cast_allowed(expression_type, node.cast_type):
+            raise SemanticError(f"Invalid type cast from {expression_type} to {node.cast_type}.", node.line, node.position)
+
+        # Additional checks might include ensuring the expression is not a const if the target type is non-const,
+        # or if specific type casts are disallowed or require explicit actions.
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         # Bezoek eerst de linker- en rechterzijde van de operatie
