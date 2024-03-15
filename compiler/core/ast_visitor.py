@@ -36,13 +36,13 @@ class AstVisitor(ABC):
         }
 
     def visit_expression(self, node: ast.Expression):
-        return self.expression_fd.get(type(node))
+        return self.expression_fd.get(type(node))(node)
 
     def visit_statement(self, node: ast.Statement):
-        return self.statement_fd.get(type(node))
+        return self.statement_fd.get(type(node))(node)
 
     def visit_type(self, node: ast.Type):
-        return self.type_fd.get(type(node))
+        return self.type_fd.get(type(node))(node)
 
     @abstractmethod
     def visit_int(self, node: ast.INT):

@@ -1,1 +1,1 @@
-from .dotvisitor import ASTDotVisitor
+from .dotvisitor import AstDotVisitor

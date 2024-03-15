@@ -1,8 +1,8 @@
 from compiler.core import ast
-from compiler.core.ast_visitor import ASTVisitor
+from compiler.core.ast_visitor import AstVisitor
 
 
-class ConstantFoldingASTVisitor(ASTVisitor):
+class ConstantFoldingASTVisitor(AstVisitor):
     def __init__(self):
         super().__init__()
 
