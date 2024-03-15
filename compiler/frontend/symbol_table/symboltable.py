@@ -1,36 +1,42 @@
 class Symbol:
-    def __init__(self, name, type=None, scope_level=None, line=None, additional_info=None):
+    def __init__(self, name, type, is_constant=False, is_pointer=False, scope_level=0):
         self.name = name
         self.type = type
+        self.is_constant = is_constant
+        self.is_pointer = is_pointer
         self.scope_level = scope_level
-        self.line = line  # Useful for error reporting, currently not used
-        self.additional_info = additional_info  # For any additional symbol-related information
 
-
-class SymbolTable:
-    def __init__(self, parent=None, scope_name=None, scope_level=0):
-        self.symbols = {}
+class Scope:
+    def __init__(self, parent=None):
         self.parent = parent
-        self.scope_name = scope_name  # Name of the scope (useful for debugging)
-        self.scope_level = scope_level
-        self.children = []  # Added this line to track child symbol tables
+        self.symbols = {}
 
-    def insert(self, name, symbol):
-        self.symbols[name] = symbol
+    def define_symbol(self, symbol):
+        self.symbols[symbol.name] = symbol
 
     def lookup(self, name, current_scope_only=False):
         symbol = self.symbols.get(name)
+
         if symbol is not None:
             return symbol
-        if not current_scope_only and self.parent:
+        elif self.parent is not None and not current_scope_only:
             return self.parent.lookup(name)
-        return None
+        else:
+            return None
 
-    def enter_new_scope(self, scope_name):
-        new_child = SymbolTable(parent=self, scope_name=scope_name, scope_level=self.scope_level + 1)
-        self.children.append(new_child)  # Track the new child
-        return new_child
+class SymbolTable:
+    def __init__(self):
+        self.global_scope = Scope(level=0)
+        self.current_scope = self.global_scope
 
-""""
-source: https://www.geeksforgeeks.org/symbol-table-compiler/
-"""
+    def enter_scope(self):
+        self.current_scope = Scope(level=self.current_scope.level + 1, parent=self.current_scope)
+
+    def exit_scope(self):
+        self.current_scope = self.current_scope.parent
+
+    def define_symbol(self, symbol):
+        return self.current_scope.define_symbol(symbol)
+
+    def lookup(self, name):
+        return self.current_scope.lookup(name)
