@@ -17,3 +17,7 @@ To run the program, execute the following command: `python3 -m compiler`
 3. Compiling a file and not rendering its AST: `python3 -m compiler --input <input_file>`
 
 
+- constant propagation Arne
+- constant folding update Siebe
+- symbol table refactor + raise semantic errors Siebe
+
