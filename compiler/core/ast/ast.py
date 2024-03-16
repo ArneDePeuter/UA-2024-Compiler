@@ -1,8 +1,9 @@
 from abc import ABC
-from dataclasses import dataclass
+from typing import Optional, List
+from dataclasses import dataclass, field
 
 
 @dataclass
 class AST(ABC):
-    line: int = None
-    position: int = None
+    line: Optional[int] = field(default=None, kw_only=True)
+    position: Optional[int] = field(default=None, kw_only=True)
