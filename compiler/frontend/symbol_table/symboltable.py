@@ -12,13 +12,14 @@ class Scope:
     def __init__(self, level=0, parent=None):
         self.level = level
         self.parent = parent
+        self.children = {} # Track children for the visualization (when scope is exited, the scope is gone)
         self.symbols = {}
 
     def define_symbol(self, symbol):
         self.symbols[symbol.name] = symbol
 
     def lookup(self, name, current_scope_only=False):
-        symbol = self.symbols.get(name)
+        symbol = self.symbols.get(str(name))
 
         if symbol is not None:
             return symbol
@@ -34,7 +35,9 @@ class SymbolTable:
 
     def enter_scope(self):
         new_scope_level = self.current_scope.level + 1
-        self.current_scope = Scope(level=new_scope_level, parent=self.current_scope)
+        new_scope = Scope(level=new_scope_level, parent=self.current_scope)
+        self.global_scope.children[new_scope_level] = new_scope
+        self.current_scope = new_scope
 
     def exit_scope(self):
         if self.current_scope.parent is not None:

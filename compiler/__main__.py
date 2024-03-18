@@ -6,6 +6,7 @@ from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisit
 from compiler.frontend.symbol_table.symboltable import SymbolTable
 from compiler.middleend import optimise_ast
 from compiler.utils import AstDotVisitor
+from compiler.utils.symboltabledotvisitor import SymbolTableDotVisitor
 
 
 def main():
@@ -30,21 +31,22 @@ def main():
         dot_visitor = AstDotVisitor()
         dot_visitor.visit_program(ast)
         folder = args.render_ast
-        filename = str(args.input).split("/")[-1][:-2] + ".dot"
+        filename = str(args.input).split("/")[-1][:-2] + "_AST.dot"
         dot_visitor.output(f"{folder}/{filename}")
         command = "dot -Tpng -o" + f"{folder}/{filename}" + ".png " + f"{folder}/{filename}"
         subprocess.run(command, shell=True, check=True)
 
     if args.render_symb:
-        # TODO: Render the symbol table to an image
-        """symbol_table_tree = SymbolTableVisitor(symbol_table=SymbolTable()).visit_program(ast)
-        dot_visitor = AstDotVisitor()
-        dot_visitor.visit_program(symbol_table_tree)
+        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+        symbol_table_visitor.visit_program(ast)
+        symbol_table_tree = symbol_table_visitor.symbol_table.global_scope
+        dot_visitor = SymbolTableDotVisitor()
+        dot_visitor.generate_dot(symbol_table_tree)
         folder = args.render_symb
-        filename = str(args.input).split("/")[-1][:-2] + ".dot"
+        filename = str(args.input).split("/")[-1][:-2] + "_SymbTable.dot"
         dot_visitor.output(f"{folder}/{filename}")
         command = "dot -Tpng -o" + f"{folder}/{filename}" + ".png " + f"{folder}/{filename}"
-        subprocess.run(command, shell=True, check=True)"""
+        subprocess.run(command, shell=True, check=True)
 
 
 
