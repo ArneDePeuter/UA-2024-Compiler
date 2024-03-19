@@ -1,11 +1,7 @@
 class Symbol:
-    def __init__(self, name, type, pointer_level=0, is_const=False, is_pointer_const=False, is_reference=False, scope_level=0):
+    def __init__(self, name, type, scope_level=0):
         self.name = name
         self.type = type
-        self.pointer_level = pointer_level
-        self.is_const = is_const
-        self.is_pointer_const = is_pointer_const
-        self.is_reference = is_reference
         self.scope_level = scope_level
 
 class Scope:
