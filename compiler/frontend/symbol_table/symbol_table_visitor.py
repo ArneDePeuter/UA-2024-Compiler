@@ -1,14 +1,17 @@
+from typing import Optional
+
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core import ast
 from compiler.frontend.symbol_table.symboltable import SymbolTable, Symbol
-
 from compiler.core.ast.type import Type, BaseType
 from compiler.core.ast.expression import UnaryExpression
+
+
 class SymbolTableVisitor(AstVisitor):
-    def __init__(self, symbol_table):
+    def __init__(self, symbol_table: Optional[SymbolTable] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
-        self.symbol_table = symbol_table
+        self.symbol_table = SymbolTable() if not symbol_table else symbol_table
 
     def get_expression_type(self, node):
         # This method finds out the type of exprression, helping to checki if the program follows rules about how differnt types can be user or combined
@@ -262,7 +265,7 @@ class SymbolTableVisitor(AstVisitor):
 
             # Define the symbol in the symbol table
             self.symbol_table.define_symbol(
-                Symbol(qualifier.identifier, node.var_type, is_const=bool(node.var_type.const), scope_level=self.symbol_table.current_scope.level))
+                Symbol(qualifier.identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
     def is_type_compatible(self, variable_type, value_type):
         # Check if the base types are the same

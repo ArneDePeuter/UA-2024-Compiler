@@ -42,5 +42,5 @@ class SymbolTable:
     def define_symbol(self, symbol):
         return self.current_scope.define_symbol(symbol)
 
-    def lookup(self, name, current_scope_only=False):
+    def lookup(self, name, current_scope_only=False) -> Symbol:
         return self.current_scope.lookup(name, current_scope_only=current_scope_only)
