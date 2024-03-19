@@ -262,14 +262,17 @@ class SymbolTableVisitor(AstVisitor):
 
             # Define the symbol in the symbol table
             self.symbol_table.define_symbol(
-                Symbol(qualifier.identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
+                Symbol(qualifier.identifier, node.var_type, is_const=bool(node.var_type.const), scope_level=self.symbol_table.current_scope.level))
 
     def is_type_compatible(self, variable_type, value_type):
-        # This is a stub for type compatibility logic.
-        # You should implement the actual logic based on your language's type system.
-        # For example, it could be a simple comparison:
-        return variable_type.base_type == value_type.base_type
-        # Or a more complex set of rules depending on type hierarchies, implicit conversions, etc.
+        # Check if the base types are the same
+        if variable_type.base_type != value_type.base_type:
+            return False
+        # Check if the pointer levels are the same
+        if len(value_type.address_qualifiers) != len(variable_type.address_qualifiers):
+            return False
+        # Add more type compatibility checks as needed
+        return True
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         # Ensure the variable is declared
@@ -279,6 +282,10 @@ class SymbolTableVisitor(AstVisitor):
 
         # Visit the value to be assigned to ensure it's semantically valid
         self.visit(node.value)
+
+        # Check if the variable is declared as const
+        if symbol.is_const:
+            raise SemanticError(f"Cannot assign to const variable '{node.identifier}'.", node.line, node.position)
 
         # Optionally, check if the assignment's value type is compatible with the variable's type
         value_type = self.get_expression_type(node.value)

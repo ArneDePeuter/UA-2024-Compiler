@@ -18,17 +18,20 @@ class SymbolTableDotVisitor():
         self.node_counter += 1
         node_id = f"node{self.node_counter}"
 
+        # Scope nodes have a different style
+        scope_style = 'style=filled, fillcolor=lightblue'
         node_label = f"Scope Level {scope.level}"
-        output = f'  {node_id} [label="{node_label}"];\n'
+        output = f'  {node_id} [label="{node_label}", {scope_style}];\n'
 
         if parent_id:
             # Draw an edge from the parent scope to this scope
             output += f"  {parent_id} -> {node_id};\n"
 
         for symbol in scope.symbols.values():
-            # Optionally, add symbol details here in the label, or create separate nodes for them
-            output += f'  {node_id} -> {node_id}_{symbol.name} [label="{symbol.name}"];\n'
-            output += f'  {node_id}_{symbol.name} [shape=none, label="{symbol.name}"];\n'
+            # Symbol nodes are plain text
+            symbol_node_id = f"{node_id}_{symbol.name}"
+            output += f'  {node_id} -> {symbol_node_id} [color=black];\n'
+            output += f'  {symbol_node_id} [label="{symbol.name}", shape=box, style=filled, fillcolor=white];\n'
 
         for child in scope.children.values():
             output += self.traverse_scope(child, node_id)
