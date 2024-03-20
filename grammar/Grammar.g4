@@ -1,7 +1,7 @@
 grammar Grammar;
 
 // Parser rules
-program : mainFunction ;
+program : statement* mainFunction statement* ;
 
 mainFunction : 'int' 'main' '(' ')' body ;
 
@@ -28,7 +28,12 @@ statement
     | body
     | variableDeclaration
     | assignmentStatement
+    | comment
+    | typedefStatement
     ;
+
+typedefStatement
+    : 'typedef' baseType ID ';';
 
 expressionStatement
     : expression ';'
@@ -36,6 +41,11 @@ expressionStatement
 
 expression
     : logicalExpression
+    | printCall
+    ;
+
+printCall
+    : 'printf' '(' ('"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ) ',' logicalExpression ')'
     ;
 
 assignmentStatement
@@ -96,6 +106,7 @@ baseType
     : 'int'
     | 'float'
     | 'char'
+    | ID
     ;
 
 const
@@ -120,6 +131,12 @@ assignmentOperator
     | '^='
     | '|='
     ;
+
+comment
+    : SINGLE_LINE_COMMENT
+    | MULTI_LINE_COMMENT
+    ;
+
 
 // Lexer rules
 NUMBER : '0' | [1-9][0-9]* ;
@@ -148,3 +165,5 @@ BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
 WS     : [ \t\r\n]+ -> skip ;
+SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
+MULTI_LINE_COMMENT : '/*' .*? '*/' ;

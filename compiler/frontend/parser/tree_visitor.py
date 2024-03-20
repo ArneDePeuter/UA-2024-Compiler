@@ -7,33 +7,25 @@ from compiler.core import ast
 
 class TreeVisitor(GrammarVisitor):
     def visitProgram(self, ctx) -> ast.Program:
-        statements = []
-
-        for child in ctx.getChildren():
-            if isinstance(child, TerminalNode):
-                continue
-            statement = self.visit(child)
-            statements.append(statement)
-
-        line = ctx.start.line
-        position = ctx.start.column
+        statements = [
+            self.visitMainFunction(ctx.mainFunction())
+        ]
 
         return ast.Program(
             statements=statements,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitMainFunction(self, ctx):
         body = self.visit(ctx.body())
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.FunctionDeclaration(
             return_type=ast.Type(base_type=ast.BaseType.int),
             name='main',
             body=body,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitBody(self, ctx):
@@ -45,45 +37,37 @@ class TreeVisitor(GrammarVisitor):
             statement = self.visit(child)
             statements.append(statement)
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.Body(
             statements=statements,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
         qualifiers = self.visit(ctx.variableDeclarationQualifiers())
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.VariableDeclaration(
             var_type=var_type,
             qualifiers=qualifiers,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.ExpressionStatement(
             expression=self.visitExpression(ctx.expression()),
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitType(self, ctx):
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.Type(
             base_type=self.visit(ctx.baseType()),
             const=ctx.const(),
             address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
@@ -104,32 +88,34 @@ class TreeVisitor(GrammarVisitor):
         identifier = ctx.ID().getText()
         initializer = self.visit(ctx.expression()) if ctx.expression() else None
 
-        line = ctx.start.line
-        position = ctx.start.column
-
-        return ast.VariableDeclarationQualifier(identifier=identifier, initializer=initializer, line=line, position=position)
+        return ast.VariableDeclarationQualifier(
+            identifier=identifier,
+            initializer=initializer,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
 
     def visitCastExpression(self, ctx):
         cast_type = self.visit(ctx.type_())
         expression = self.visit(ctx.unaryExpression())
 
-        line = ctx.start.line
-        position = ctx.start.column
-
-        return ast.TypeCastExpression(cast_type=cast_type, expression=expression, line=line, position=position)
+        return ast.TypeCastExpression(
+            cast_type=cast_type,
+            expression=expression,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
 
     def visitAssignmentStatement(self, ctx):
         identifier = ctx.ID()
         expression = self.visit(ctx.expression())
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.AssignmentStatement(
             identifier=identifier,
             value=expression,
             address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):
@@ -140,14 +126,12 @@ class TreeVisitor(GrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.BinaryLogicalOperation(
             left=left,
             operator=ast.BinaryLogicalOperation.Operator(op),
             right=right,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitComparisonExpression(self, ctx: GrammarParser.ComparisonExpressionContext):
@@ -158,14 +142,12 @@ class TreeVisitor(GrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.ComparisonOperation(
             left=left,
             operator=ast.ComparisonOperation.Operator(op),
             right=right,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitAdditiveExpression(self, ctx: GrammarParser.AdditiveExpressionContext):
@@ -176,14 +158,12 @@ class TreeVisitor(GrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.BinaryArithmetic(
             left=left,
             operator=ast.BinaryArithmetic.Operator(op),
             right=right,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitMultiplicativeExpression(self, ctx: GrammarParser.MultiplicativeExpressionContext):
@@ -194,14 +174,12 @@ class TreeVisitor(GrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.BinaryArithmetic(
             left=left,
             operator=ast.BinaryArithmetic.Operator(op),
             right=right,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitBitwiseExpression(self, ctx: GrammarParser.BitwiseExpressionContext):
@@ -212,14 +190,12 @@ class TreeVisitor(GrammarVisitor):
         right = self.visit(ctx.getChild(2))
         op = ctx.getChild(1).getText()
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.BinaryBitwiseArithmetic(
             left=left,
             operator=ast.BinaryBitwiseArithmetic.Operator(op),
             right=right,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitShiftExpression(self, ctx: GrammarParser.ShiftExpressionContext):
@@ -230,14 +206,12 @@ class TreeVisitor(GrammarVisitor):
         amount = self.visit(ctx.unaryExpression())
         op = ctx.getChild(1).getText()
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.ShiftExpression(
             value=value,
             operator=ast.ShiftExpression.Operator(op),
             amount=amount,
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     def visitUnaryExpression(self, ctx: GrammarParser.UnaryExpressionContext):
@@ -248,14 +222,12 @@ class TreeVisitor(GrammarVisitor):
         op = ctx.getChild(0).getText()
         operator = ast.UnaryExpression.Operator(op)
 
-        line = ctx.start.line
-        position = ctx.start.column
-
         return ast.UnaryExpression(
             value=expr,
             operator=operator,
             prefix=op not in ['++', '--'],
-            line=line, position=position
+            line=ctx.start.line,
+            position=ctx.start.column
         )
 
     @staticmethod
