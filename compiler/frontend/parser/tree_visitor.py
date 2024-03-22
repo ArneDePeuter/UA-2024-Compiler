@@ -16,10 +16,9 @@ class TreeVisitor(GrammarVisitor):
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
-            if isinstance(child, GrammarParser.TypedefStatementContext):
-                self.visitTypedefStatement(child)
-                continue
             statement = self.visit(child)
+            if statement is None:
+                continue
             statements.append(statement)
 
         return ast.Program(
@@ -46,10 +45,9 @@ class TreeVisitor(GrammarVisitor):
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
-            if isinstance(child, GrammarParser.TypedefStatementContext):
-                self.visitTypedefStatement(child)
-                continue
             statement = self.visit(child)
+            if statement is None:
+                continue
             statements.append(statement)
 
         self.typedef_scope = typedef_scope_before
