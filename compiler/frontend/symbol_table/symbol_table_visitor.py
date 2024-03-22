@@ -17,11 +17,11 @@ class SymbolTableVisitor(AstVisitor):
         # This method finds out the type of exprression, helping to checki if the program follows rules about how differnt types can be user or combined
 
         if isinstance(node, ast.INT):
-            return Type(base_type=BaseType.int)
+            return Type(base_type=BaseType.int, line=node.line, position=node.position)
         elif isinstance(node, ast.FLOAT):
-            return Type(base_type=BaseType.float)
+            return Type(base_type=BaseType.float, line=node.line, position=node.position)
         elif isinstance(node, ast.CHAR):
-            return Type(base_type=BaseType.char)
+            return Type(base_type=BaseType.char, line=node.line, position=node.position)
         elif isinstance(node, ast.IDENTIFIER):
             # Lookup the identifier in the symbol table to get its type.
             symbol = self.symbol_table.lookup(node.name)
@@ -39,11 +39,15 @@ class SymbolTableVisitor(AstVisitor):
             else:
                 # Handle type mismatch or implement logic for determining resulting type based on operands
                 # This example just returns an int type for demonstration.
-                return Type(base_type=BaseType.int)  # Simplification, real logic may vary.
+                return Type(base_type=BaseType.int, line=node.line, position=node.position)  # Simplification, real logic may vary.
+        elif isinstance(node, ast.UnaryExpression):
+            operant_type = self.get_expression_type(node.value)
+            return operant_type
+
         # Add additional elif branches for other expression types as needed.
 
         # Handle unknown or unimplemented node types.
-        return Type(base_type=BaseType.int)  # Default or error case, adjust as needed.
+        return SemanticError(f"Unsupported expression type: {type(node)}")  # Default or error case, adjust as needed.
 
     def visit_type(self, node: ast.Type):
         # Because the type node doens't perform an operation, we can ignore it
@@ -252,6 +256,10 @@ class SymbolTableVisitor(AstVisitor):
             self.visit(node.initializer)
 
         # Further checks for qualifiers could be implemented here, based on language semantics
+        # Check incompatible types
+        initializer_type = self.get_expression_type(node.initializer)
+        return initializer_type
+
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
         # Iterate through each qualifier in the variable declaration
@@ -261,7 +269,12 @@ class SymbolTableVisitor(AstVisitor):
                 raise SemanticError(f"Variable '{qualifier.identifier}' is already declared.", node.line, node.position)
 
             # Visit the qualifier, which will check the initializer
-            self.visit(qualifier)
+            qualifier_type = self.visit(qualifier)
+
+            # Check if the type is compatible with the initializer
+            if not self.is_type_compatible(qualifier_type, node.var_type):
+                raise SemanticError(f"Incompatible types for variable '{qualifier.identifier}': {qualifier_type} and {node.var_type}.", node.line, node.position)
+
 
             # Define the symbol in the symbol table
             self.symbol_table.define_symbol(
@@ -287,7 +300,7 @@ class SymbolTableVisitor(AstVisitor):
         self.visit(node.value)
 
         # Check if the variable is declared as const
-        if symbol.is_const:
+        if symbol.type.const:
             raise SemanticError(f"Cannot assign to const variable '{node.identifier}'.", node.line, node.position)
 
         # Optionally, check if the assignment's value type is compatible with the variable's type
