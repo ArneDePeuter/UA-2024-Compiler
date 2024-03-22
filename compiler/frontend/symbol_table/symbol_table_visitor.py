@@ -41,8 +41,13 @@ class SymbolTableVisitor(AstVisitor):
                 # This example just returns an int type for demonstration.
                 return Type(base_type=BaseType.int, line=node.line, position=node.position)  # Simplification, real logic may vary.
         elif isinstance(node, ast.UnaryExpression):
+            # TODO: Check if below is the proper approach it works since the refernece gerenerates a pointer level so it can assign to pointer
             operant_type = self.get_expression_type(node.value)
-            return operant_type
+            if node.operator == node.Operator.ADDRESSOF:
+                return Type(base_type=operant_type.base_type, line=node.line, position=node.position, const=operant_type.const, address_qualifiers={ast.AddressQualifier.pointer})
+            else:
+                # Handle other unary operations, like negation or logical NOT, if needed
+                return operant_type
 
         # Add additional elif branches for other expression types as needed.
 
@@ -256,7 +261,6 @@ class SymbolTableVisitor(AstVisitor):
             self.visit(node.initializer)
 
         # Further checks for qualifiers could be implemented here, based on language semantics
-        # Check incompatible types
         initializer_type = self.get_expression_type(node.initializer)
         return initializer_type
 
