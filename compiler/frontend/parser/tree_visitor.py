@@ -79,7 +79,7 @@ class TreeVisitor(GrammarVisitor):
     def visitType(self, ctx):
         return ast.Type(
             base_type=self.visit(ctx.baseType()),
-            const=ctx.const(),
+            const=ctx.const() is not None,
             address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
             line=ctx.start.line,
             position=ctx.start.column
