@@ -16,7 +16,8 @@ class AstVisitor(ABC):
             ast.BinaryLogicalOperation: self.visit_binary_logical_operation,
             ast.ComparisonOperation: self.visit_comparison_operation,
             ast.UnaryExpression: self.visit_unary_expression,
-            ast.ShiftExpression: self.visit_shift_expression
+            ast.ShiftExpression: self.visit_shift_expression,
+            ast.PrintFCall: self.visit_printf_call
         }
         self.statement_fd = {
             ast.ExpressionStatement: self.visit_expression_statement,
@@ -25,7 +26,8 @@ class AstVisitor(ABC):
             ast.FunctionDeclaration: self.visit_function_declaration,
             ast.VariableDeclarationQualifier: self.visit_variable_declaration_qualifier,
             ast.VariableDeclaration: self.visit_variable_declaration,
-            ast.AssignmentStatement: self.visit_assignment_statement
+            ast.AssignmentStatement: self.visit_assignment_statement,
+            ast.CommentStatement: self.visit_comment_statement
         }
 
     def visit(self, node: ast.AST):
@@ -117,4 +119,12 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_expression_statement(self, node: ast.ExpressionStatement):
+        ...
+
+    @abstractmethod
+    def visit_printf_call(self, node: ast.PrintFCall):
+        ...
+
+    @abstractmethod
+    def visit_comment_statement(self, node: ast.CommentStatement):
         ...

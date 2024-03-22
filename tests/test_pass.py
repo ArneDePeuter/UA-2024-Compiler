@@ -11,6 +11,5 @@ def test_pass() -> None:
         print(f"Testing {filename}")
 
         tree = tree_from_file(f"{directory.decode()}/{filename}")
-
-        # ast = tree_to_ast(tree) TODO: add this
+        ast = tree_to_ast(tree)
 

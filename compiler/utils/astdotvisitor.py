@@ -152,3 +152,17 @@ class AstDotVisitor(AstVisitor):
         expression_node_name = str(id(node.expression))
         self.total += f'{node_name} -> {expression_node_name};\n'
         self.visit_expression(node.expression)
+
+    def visit_printf_call(self, node: ast.PrintFCall):
+        node_name = id(node)
+
+        self.total += f"{node_name} [label=\"PrintFCall {node.replacer.value}\"];\n"
+
+        expression_node_name = str(id(node.expression))
+        self.total += f'{node_name} -> {expression_node_name};\n'
+        self.visit_expression(node.expression)
+
+    def visit_comment_statement(self, node: ast.CommentStatement):
+        node_name = id(node)
+
+        self.total += f"{node_name} [label=\"Comment: \n {node.content}\"];\n"
