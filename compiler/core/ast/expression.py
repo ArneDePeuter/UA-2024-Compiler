@@ -112,3 +112,16 @@ class ShiftExpression(Expression):
     value: Expression
     operator: Operator
     amount: Expression
+
+
+@dataclass
+class PrintFCall(Expression):
+    class Replacer(Enum):
+        s = "%s"
+        d = "%d"
+        x = "%x"
+        f = "%f"
+        c = "%c"
+
+    replacer: Replacer
+    expression: Expression

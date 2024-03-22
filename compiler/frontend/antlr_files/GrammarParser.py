@@ -967,6 +967,7 @@ class GrammarParser ( Parser ):
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+            self.replacer = None # Token
 
         def logicalExpression(self):
             return self.getTypedRuleContext(GrammarParser.LogicalExpressionContext,0)
@@ -1004,9 +1005,10 @@ class GrammarParser ( Parser ):
             self.state = 127
             self.match(GrammarParser.T__2)
             self.state = 128
+            localctx.replacer = self._input.LT(1)
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 126976) != 0)):
-                self._errHandler.recoverInline(self)
+                localctx.replacer = self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
                 self.consume()

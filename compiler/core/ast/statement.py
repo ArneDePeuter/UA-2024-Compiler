@@ -54,3 +54,8 @@ class AssignmentStatement(Statement):
     def __post_init__(self):
         if self.address_qualifiers is None:
             self.address_qualifiers = []
+
+
+@dataclass
+class CommentStatement(Statement):
+    content: str

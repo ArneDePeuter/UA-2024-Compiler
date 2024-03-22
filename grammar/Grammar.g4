@@ -45,7 +45,7 @@ expression
     ;
 
 printCall
-    : 'printf' '(' ('"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ) ',' logicalExpression ')'
+    : 'printf' '(' replacer=('"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ) ',' logicalExpression ')'
     ;
 
 assignmentStatement

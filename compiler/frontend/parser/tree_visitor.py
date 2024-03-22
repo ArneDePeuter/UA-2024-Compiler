@@ -1,4 +1,5 @@
 from antlr4 import *
+import copy
 
 from compiler.frontend.antlr_files.GrammarParser import GrammarParser
 from compiler.frontend.antlr_files.GrammarVisitor import GrammarVisitor
@@ -6,10 +7,20 @@ from compiler.core import ast
 
 
 class TreeVisitor(GrammarVisitor):
+    def __init__(self):
+        self.typedef_scope: dict[str, ast.BaseType] = {}
+
     def visitProgram(self, ctx) -> ast.Program:
-        statements = [
-            self.visitMainFunction(ctx.mainFunction())
-        ]
+        statements = []
+
+        for child in ctx.getChildren():
+            if isinstance(child, TerminalNode):
+                continue
+            if isinstance(child, GrammarParser.TypedefStatementContext):
+                self.visitTypedefStatement(child)
+                continue
+            statement = self.visit(child)
+            statements.append(statement)
 
         return ast.Program(
             statements=statements,
@@ -29,13 +40,19 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitBody(self, ctx):
+        typedef_scope_before = copy.deepcopy(self.typedef_scope)
         statements = []
 
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
+            if isinstance(child, GrammarParser.TypedefStatementContext):
+                self.visitTypedefStatement(child)
+                continue
             statement = self.visit(child)
             statements.append(statement)
+
+        self.typedef_scope = typedef_scope_before
 
         return ast.Body(
             statements=statements,
@@ -74,7 +91,18 @@ class TreeVisitor(GrammarVisitor):
         text = ctx.getText()
         return ast.AddressQualifier(text)
 
+    def visitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
+        base_type = self.visitBaseType(ctx.baseType())
+        name = ctx.ID().getText()
+        self.typedef_scope[name] = base_type
+
     def visitBaseType(self, ctx):
+        if ctx.ID():
+            text = ctx.ID().getText()
+            if text in self.typedef_scope:
+                return self.typedef_scope[text]
+            else:
+                raise RuntimeError("Typedef not defined")
         text = ctx.getText()
         return ast.BaseType(text)
 
@@ -258,3 +286,18 @@ class TreeVisitor(GrammarVisitor):
             return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
+
+    def visitComment(self, ctx:GrammarParser.CommentContext):
+        return ast.CommentStatement(
+            content=ctx.getText(),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitPrintCall(self, ctx:GrammarParser.PrintCallContext):
+        return ast.PrintFCall(
+            replacer=ast.PrintFCall.Replacer(ctx.replacer.value),
+            expression=self.visitLogicalExpression(ctx.logicalExpression()),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
