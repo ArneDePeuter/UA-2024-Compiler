@@ -5,8 +5,7 @@ from compiler.core.errors.semantic_error import SemanticError
 
 error_dict = {
     "proj2_man_semanticErr_constAssignment.c": SemanticError("Cannot assign to const variable 'x'", 4, 0),
-    "proj2_man_semanticErr_constPointerRessignment.c": SemanticError(),
-    "semantic_err_3": "Use of undeclared identifier 'z'.",
+    # "proj2_man_semanticErr_constPointerRessignment.c": SemanticError()
 }
 
 
