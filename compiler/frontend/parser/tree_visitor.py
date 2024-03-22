@@ -257,15 +257,8 @@ class TreeVisitor(GrammarVisitor):
         )
 
     @staticmethod
-    def process_char_escape(char_esc):
-        if char_esc == '\\n':
-            return '\n'
-        elif char_esc == '\\t':
-            return '\t'
-        elif char_esc == '\\0':
-            return '\0'
-        else:
-            return char_esc
+    def remove_dashes(input):
+        return input[1:-1]
 
     def visitPrimary(self, ctx: GrammarParser.PrimaryContext):
         line = ctx.start.line
@@ -279,7 +272,7 @@ class TreeVisitor(GrammarVisitor):
         elif ctx.CHAR() is not None:
             return ast.CHAR(ctx.CHAR().getText()[1:-1], line=line, position=position)  # Remove the surrounding single quotes
         elif ctx.CHAR_ESC() is not None:
-            return ast.CHAR(self.process_char_escape(ctx.CHAR_ESC().getText()[1:-1]), line=line, position=position)
+            return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
         elif ctx.ID() is not None:
             return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
         elif ctx.castExpression() is not None:
@@ -294,7 +287,7 @@ class TreeVisitor(GrammarVisitor):
 
     def visitPrintCall(self, ctx:GrammarParser.PrintCallContext):
         return ast.PrintFCall(
-            replacer=ast.PrintFCall.Replacer(ctx.replacer.value),
+            replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
             expression=self.visitLogicalExpression(ctx.logicalExpression()),
             line=ctx.start.line,
             position=ctx.start.column

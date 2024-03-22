@@ -45,7 +45,7 @@ expression
     ;
 
 printCall
-    : 'printf' '(' replacer=('"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ) ',' logicalExpression ')'
+    : 'printf' '(' PRINTFREPLACER ',' logicalExpression ')'
     ;
 
 assignmentStatement
@@ -164,6 +164,7 @@ BITAND : '&';
 BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
+PRINTFREPLACER: '"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ;
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
 MULTI_LINE_COMMENT : '/*' .*? '*/' ;
