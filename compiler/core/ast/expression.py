@@ -256,7 +256,7 @@ class UnaryExpression(Expression):
 
     value: Expression
     operator: Operator
-    prefix: bool
+    prefix: bool = False
 
 
 @dataclass

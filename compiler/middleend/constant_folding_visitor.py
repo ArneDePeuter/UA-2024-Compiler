@@ -155,13 +155,27 @@ class ConstantFoldingVisitor(AstVisitor):
             return node
 
         if node.operator == ast.UnaryExpression.Operator.POSITIVE:
-            pass
+            return node.value
         elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
-            if not isinstance(node.value, ast.CHAR):
-                node.value = -node.value
+            if isinstance(node.value, ast.INT):
+                return ast.INT(
+                    value=-node.value.value,
+                    line=node.line,
+                    position=node.position
+                )
+            elif isinstance(node.value, ast.FLOAT):
+                return ast.FLOAT(
+                    value=-node.value.value,
+                    line=node.line,
+                    position=node.position
+                )
         elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
             if isinstance(node.value, ast.INT):
-                node.value = ~node.value
+                return ast.INT(
+                    value=~node.value.value,
+                    line=node.line,
+                    position=node.position
+                )
         elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
             return ast.INT(
                 value=1 if not bool(node.value) else 0,
