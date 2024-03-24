@@ -1,7 +1,7 @@
 int main() {
     int x = 4;
     int* ptr = &x;
-    float* ptr2 = 0;
+    float* ptr2 = 0; // This should be valid using type conversion
 
     // wrong types
     float* ptr3 = ptr2 + ptr; // error: invalid operands to binary expression ('float *' and 'int *')
