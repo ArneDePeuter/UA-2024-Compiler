@@ -275,6 +275,10 @@ class SymbolTableVisitor(AstVisitor):
             # Visit the qualifier, which will check the initializer
             qualifier_type = self.visit(qualifier)
 
+            # Check if the initializer is declared
+            if qualifier.initializer is None:
+                raise SemanticError(f"Variable '{qualifier.identifier}' must have an initializer. Meaning it is undeclared.", node.line, node.position)
+
             # Check if the type is compatible with the initializer
             if not self.is_type_compatible(qualifier_type, node.var_type):
                 raise SemanticError(f"Incompatible types for variable '{qualifier.identifier}': {qualifier_type} and {node.var_type}.", node.line, node.position)
