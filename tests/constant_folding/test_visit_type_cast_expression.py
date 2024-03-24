@@ -1,5 +1,3 @@
-from dataclasses import asdict
-
 from compiler.middleend import ConstantFoldingVisitor
 from compiler.core import ast
 
@@ -174,5 +172,4 @@ def test_no_conv():
             ),
             expression=no_conv_ast
         )
-        assert asdict(no_conv_ast) == asdict(ConstantFoldingVisitor().visit(no_conv_ast))
-
+        assert no_conv_ast is ConstantFoldingVisitor().visit(no_conv_ast)
