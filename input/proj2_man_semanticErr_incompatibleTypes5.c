@@ -6,5 +6,5 @@ int z = -33;
 
 int* p = &z;
 
-p = *x;
+p = *x; // error: indirection requires pointer operand ('int' invalid)
 }
