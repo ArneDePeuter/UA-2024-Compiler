@@ -1,39 +1,12 @@
 from typing import Union
 
 from compiler.core import ast
+from compiler.core.type_caster import TypeCaster
 from compiler.core.ast_visitor import AstVisitor
 
 
 class ConstantFoldingVisitor(AstVisitor):
-    @staticmethod
-    def upcast(item: Union[ast.INT, ast.CHAR]) -> Union[ast.FLOAT, ast.INT]:
-        if isinstance(item, ast.INT):
-            return ast.FLOAT(
-                value=float(item.value),
-                line=item.line,
-                position=item.position
-            )
-        if isinstance(item, ast.CHAR):
-            return ast.INT(
-                value=ord(item.value),
-                line=item.line,
-                position=item.position
-            )
-
-    @staticmethod
-    def downcast(item: Union[ast.FLOAT, ast.INT]) -> Union[ast.INT, ast.CHAR]:
-        if isinstance(item, ast.FLOAT):
-            return ast.INT(
-                value=int(item.value),
-                line=item.line,
-                position=item.position
-            )
-        if isinstance(item, ast.INT):
-            return ast.CHAR(
-                value=chr(item.value),
-                line=item.line,
-                position=item.position
-            )
+    foldables = [ast.CHAR, ast.INT, ast.FLOAT]
 
     def type_match_binary(self, binary: ast.BinaryOperation) -> bool:
         """
@@ -43,25 +16,22 @@ class ConstantFoldingVisitor(AstVisitor):
         self.visit_expression(binary.left)
         self.visit_expression(binary.right)
 
-        heirarchy = [ast.CHAR, ast.INT, ast.FLOAT]
-
-        # could be unfoldable expression
-        if type(binary.left) not in heirarchy or type(binary.right) not in heirarchy:
+        if type(binary.left) not in ConstantFoldingVisitor.foldables or type(binary.right) not in ConstantFoldingVisitor.foldables:
             return False
 
         # same type so types are matched - we can execute binary (==fold)
         if type(binary.left) == type(binary.right):
             return True
 
-        diff = heirarchy.index(type(binary.left)) - heirarchy.index(type(binary.right))
+        diff = TypeCaster.get_heirarchy_of_ast(binary.left) - TypeCaster.get_heirarchy_of_ast(binary.right)
 
         for _ in range(abs(diff)):
             if diff > 0:
                 # left is bigger hierarchy so upcast right
-                binary.right = self.upcast(binary.right)
+                binary.right = TypeCaster.upcast(binary.right)
             else:
                 # right is bigger so upcast left
-                binary.left = self.upcast(binary.left)
+                binary.left = TypeCaster.upcast(binary.left)
         return True
 
     def visit_type(self, node: ast.Type):
@@ -82,30 +52,19 @@ class ConstantFoldingVisitor(AstVisitor):
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         node.expression = self.visit_expression(node.expression)
 
-        heirarchy = [ast.CHAR, ast.INT, ast.FLOAT]
-
-        if type(node.expression) not in heirarchy:
+        if type(node.expression) not in ConstantFoldingVisitor.foldables:
             return node
 
-        my_type = type(node.expression)
-        cast_type = None
-        if node.cast_type.base_type == ast.BaseType.int:
-            cast_type = ast.INT
-        if node.cast_type.base_type == ast.BaseType.float:
-            cast_type = ast.FLOAT
-        if node.cast_type.base_type == ast.BaseType.char:
-            cast_type = ast.CHAR
-
-        diff = heirarchy.index(my_type) - heirarchy.index(cast_type)
+        diff = TypeCaster.get_heirarchy_of_ast(node.expression) - TypeCaster.get_heirarchy_of_base_type(node.cast_type.base_type)
 
         result = node.expression
         for _ in range(abs(diff)):
             if diff > 0:
                 # my type is bigger so downcast
-                result = self.downcast(result)
+                result = TypeCaster.downcast(result)
             else:
                 # cast type is bigger so upcast
-                result = self.upcast(result)
+                result = TypeCaster.upcast(result)
 
         return result
 
@@ -191,9 +150,7 @@ class ConstantFoldingVisitor(AstVisitor):
     def visit_unary_expression(self, node: ast.UnaryExpression):
         node.value = self.visit_expression(node.value)
 
-        foldables = [ast.CHAR, ast.INT, ast.FLOAT]
-
-        if type(node.value) not in foldables:
+        if type(node.value) not in ConstantFoldingVisitor.foldables:
             return node
 
         if node.operator == ast.UnaryExpression.Operator.POSITIVE:
