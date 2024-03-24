@@ -1,5 +1,3 @@
-from typing import Union
-
 from compiler.core import ast
 from compiler.core.type_caster import TypeCaster
 from compiler.core.ast_visitor import AstVisitor
@@ -13,8 +11,8 @@ class ConstantFoldingVisitor(AstVisitor):
         attempts to type match a binary operation
         returns True if possible in context of constant folding
         """
-        self.visit_expression(binary.left)
-        self.visit_expression(binary.right)
+        binary.left = self.visit_expression(binary.left)
+        binary.right = self.visit_expression(binary.right)
 
         if type(binary.left) not in ConstantFoldingVisitor.foldables or type(binary.right) not in ConstantFoldingVisitor.foldables:
             return False

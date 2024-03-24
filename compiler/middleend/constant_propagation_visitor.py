@@ -56,8 +56,8 @@ class ConstantPropagationVisitor(AstVisitor):
         return node
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        node.left = self.visit_expression(node.left)
-        node.right = self.visit_expression(node.right)
+        node.value = self.visit_expression(node.value)
+        node.amount = self.visit_expression(node.amount)
         return node
 
     def visit_program(self, node: ast.Program):
@@ -91,11 +91,11 @@ class ConstantPropagationVisitor(AstVisitor):
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         node.value = self.visit_expression(node.value)
-        return node.value
+        return node
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         node.expression = self.visit_expression(node.expression)
-        return node.expression
+        return node
 
     def visit_printf_call(self, node: ast.PrintFCall):
         return node
