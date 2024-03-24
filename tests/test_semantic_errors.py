@@ -26,6 +26,7 @@ def test_semantic_err() -> None:
 
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
+        print(f"Testing {filename}")
 
         try:
             tree_from_file(f"{directory.decode()}/{filename}")

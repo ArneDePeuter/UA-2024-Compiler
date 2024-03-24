@@ -298,7 +298,8 @@ class SymbolTableVisitor(AstVisitor):
             return False
         # Here i raise warning that i discart the const qualifier
         if variable_type.const != value_type.const:
-            print(WarningError(f"Initializing {variable_type} with {value_type} discard the const qualifier", value_type.line, value_type.position))
+            warning = WarningError(f"Initializing {variable_type} with {value_type} discard the const qualifier.", value_type.line, value_type.position)
+            warning.warn()
         # Add more type compatibility checks as needed
         return True
 
