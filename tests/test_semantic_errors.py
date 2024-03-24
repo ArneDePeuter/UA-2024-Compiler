@@ -12,7 +12,7 @@ error_dict = {
     # TODO: Implement proj2_man_semanticErr_incompatibleTypes4.c
     "proj2_man_semanticErr_incompatibleTypes5.c": SemanticError("Invalid unary operation Operator.DEREFERENCE for type Type(line=3, position=0, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers=[]).", 9, 4),
     "proj2_man_semanticErr_redeclaration.c": SemanticError("Variable 'x' is already declared.", 5, 0),
-    "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already declared.", 4, 0), # TODO: Trow more specific error message
+    "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already declared.", 4, 0), # TODO: Mabye trow a more specific error message
     # TODO: Implement proj2_man_semanticErr_rvalueAssignment1.c
     # TODO: Implement proj2_man_semanticErr_rvalueAssignment2.c
     "proj2_man_semanticErr_undeclaredVariable1.c": SemanticError("Variable 'some_variable' must have an initializer. Meaning it is undeclared.", 4, 0),
