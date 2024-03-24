@@ -2,6 +2,7 @@ from typing import Optional
 
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core.errors.semantic_error import SemanticError
+from compiler.core.errors.warning_error import WarningError
 from compiler.core import ast
 from compiler.frontend.symbol_table.symboltable import SymbolTable, Symbol
 from compiler.core.ast.type import Type, BaseType
@@ -295,6 +296,9 @@ class SymbolTableVisitor(AstVisitor):
         # Check if the pointer levels are the same
         if len(value_type.address_qualifiers) != len(variable_type.address_qualifiers):
             return False
+        # Here i raise warning that i discart the const qualifier
+        if variable_type.const != value_type.const:
+            print(WarningError(f"Initializing {variable_type} with {value_type} discard the const qualifier", value_type.line, value_type.position))
         # Add more type compatibility checks as needed
         return True
 
