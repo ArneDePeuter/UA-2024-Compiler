@@ -83,6 +83,7 @@ class ConstantFoldingVisitor(AstVisitor):
         elif node.operator == ast.BinaryArithmetic.Operator.DIV:
             node = node.left / node.right
         elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+            print(node.left, node.right)
             node = node.left % node.right
 
         return node
