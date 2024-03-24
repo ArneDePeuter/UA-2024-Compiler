@@ -4,7 +4,7 @@ from compiler.core import ast
 from compiler.core.ast_visitor import AstVisitor
 
 
-class ConstantPropagationAstVisitor(AstVisitor):
+class ConstantPropagationVisitor(AstVisitor):
     def __init__(self):
         self.const_scope: dict[str, ast.Expression] = {}
         super().__init__()
@@ -97,4 +97,8 @@ class ConstantPropagationAstVisitor(AstVisitor):
         node.expression = self.visit_expression(node.expression)
         return node.expression
 
+    def visit_printf_call(self, node: ast.PrintFCall):
+        return node
 
+    def visit_comment_statement(self, node: ast.CommentStatement):
+        return node

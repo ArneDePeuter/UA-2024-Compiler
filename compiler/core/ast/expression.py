@@ -14,15 +14,100 @@ class Expression(AST):
 class INT(Expression):
     value: int
 
+    def __add__(self, other):
+        return INT(self.value + other.value)
+
+    def __sub__(self, other):
+        return INT(self.value - other.value)
+
+    def __mul__(self, other):
+        return INT(self.value * other.value)
+
+    def __truediv__(self, other):
+        return INT(self.value // other.value)
+
+    def __mod__(self, other):
+        return INT(self.value % other.value)
+
 
 @dataclass
 class FLOAT(Expression):
     value: float
 
+    def __add__(self, other):
+        return FLOAT(
+            value=self.value + other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __sub__(self, other):
+        return FLOAT(
+            value=self.value - other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __mul__(self, other):
+        return FLOAT(
+            value=self.value * other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __truediv__(self, other):
+        return FLOAT(
+            value=self.value / other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __mod__(self, other):
+        return FLOAT(
+            value=self.value % other.value,
+            line=self.line,
+            position=self.position
+        )
+
 
 @dataclass
 class CHAR(Expression):
     value: str
+
+    def __add__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) + ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __sub__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) - ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __mul__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) * ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __truediv__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) // ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __mod__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) % ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
 
 
 @dataclass
