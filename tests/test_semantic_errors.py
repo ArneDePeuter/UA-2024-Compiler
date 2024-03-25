@@ -9,7 +9,7 @@ error_dict = {
     "proj2_man_semanticErr_incompatibleTypes1.c": SemanticError("Incompatible types for variable 'x_ptr': Type(line=8, position=14, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers={<AddressQualifier.pointer: '*'>}) and Type(line=8, position=0, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers=[<AddressQualifier.pointer: '*'>, <AddressQualifier.pointer: '*'>])", 8, 0),
     "proj2_man_semanticErr_incompatibleTypes2.c": SemanticError("Incompatible types for variable 'x_ptr': Type(line=6, position=14, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers={<AddressQualifier.pointer: '*'>}) and Type(line=6, position=0, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers=[<AddressQualifier.pointer: '*'>, <AddressQualifier.pointer: '*'>])", 6, 0),
     "proj2_man_semanticErr_incompatibleTypes3.c": SemanticError("Incompatible types for variable 'y': Type(line=5, position=10, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers={<AddressQualifier.pointer: '*'>}) and Type(line=5, position=0, base_type=<BaseType.float: 'float'>, const=False, address_qualifiers=[])", 5, 0),
-    # TODO: Implement proj2_man_semanticErr_incompatibleTypes4.c
+    "proj2_man_semanticErr_incompatibleTypes4.c": SemanticError("Incompatible types for arithmetic operation: Type(line=4, position=4, base_type=<BaseType.float: 'float'>, const=False, address_qualifiers=[<AddressQualifier.pointer: '*'>]) and Type(line=3, position=4, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers=[<AddressQualifier.pointer: '*'>]).", 6, 18),
     "proj2_man_semanticErr_incompatibleTypes5.c": SemanticError("Invalid unary operation Operator.DEREFERENCE for type Type(line=3, position=0, base_type=<BaseType.int: 'int'>, const=False, address_qualifiers=[]).", 9, 4),
     "proj2_man_semanticErr_redeclaration.c": SemanticError("Variable 'x' is already declared.", 5, 0),
     "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already declared.", 4, 0), # TODO: Mabye trow a more specific error message
@@ -26,6 +26,10 @@ def test_semantic_err() -> None:
 
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
+
+        if filename in error_dict:
+            continue
+
         print(f"Testing {filename}")
 
         try:

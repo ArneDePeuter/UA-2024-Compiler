@@ -6,7 +6,7 @@ from compiler.core.errors.warning_error import WarningError
 from compiler.core import ast
 from compiler.frontend.symbol_table.symboltable import SymbolTable, Symbol
 from compiler.core.ast.type import Type, BaseType
-from compiler.core.ast.expression import UnaryExpression
+from compiler.core.ast.expression import UnaryExpression, INT
 
 
 class SymbolTableVisitor(AstVisitor):
@@ -103,7 +103,7 @@ class SymbolTableVisitor(AstVisitor):
             return True
 
         # Const correctness: if either type is const, arithmetic that modifies the value is not allowed
-        if type1.is_const or type2.is_const:
+        if type1.const or type2.const:
             return False
 
         # If none of the above conditions are met, types are not compatible for arithmetic
@@ -276,14 +276,18 @@ class SymbolTableVisitor(AstVisitor):
             # Visit the qualifier, which will check the initializer
             qualifier_type = self.visit(qualifier)
 
-            # Check if the initializer is declared
             if qualifier.initializer is None:
                 raise SemanticError(f"Variable '{qualifier.identifier}' must have an initializer. Meaning it is undeclared.", node.line, node.position)
 
-            # Check if the type is compatible with the initializer
-            if not self.is_type_compatible(qualifier_type, node.var_type):
-                raise SemanticError(f"Incompatible types for variable '{qualifier.identifier}': {qualifier_type} and {node.var_type}.", node.line, node.position)
-
+            # TODO: Check if this is the correct way to handle NULL pointer initialization.
+            # Check if the initializer is an integer literal with a value of 0 and the variable is a pointer
+            if isinstance(qualifier.initializer, INT) and qualifier.initializer.value == 0 and len(node.var_type.address_qualifiers) > 0:
+                # This case is valid for NULL pointer initialization; no further compatibility check is required
+                pass
+            else:
+                # For all other cases, check if the type is compatible with the initializer
+                if not self.is_type_compatible(qualifier_type, node.var_type):
+                    raise SemanticError(f"Incompatible types for variable '{qualifier.identifier}': {qualifier_type} and {node.var_type}.",node.line, node.position)
 
             # Define the symbol in the symbol table
             self.symbol_table.define_symbol(
