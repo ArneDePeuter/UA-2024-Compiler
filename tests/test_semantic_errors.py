@@ -42,7 +42,8 @@ def test_semantic_err() -> None:
                 symbol_table_visitor.visit_program(ast)
             except Exception as e:
                 error_dict[filename] = str(e)
-                print(f"{filename} passed")
+                print(f"{filename} failed")
                 assert True
             else:
+                print(f"{filename} passed")
                 assert False
