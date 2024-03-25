@@ -9,6 +9,7 @@ class BaseType(Enum):
     int = "int"
     char = "char"
     float = "float"
+    bool = "bool"
 
 
 class AddressQualifier(Enum):

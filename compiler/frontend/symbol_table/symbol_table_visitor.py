@@ -15,49 +15,50 @@ class SymbolTableVisitor(AstVisitor):
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
 
     def get_expression_type(self, node):
-        # This method finds out the type of exprression, helping to checki if the program follows rules about how differnt types can be user or combined
-
         if isinstance(node, ast.INT):
-            return Type(base_type=BaseType.int, line=node.line, position=node.position)
+            return Type(base_type=BaseType.int)
         elif isinstance(node, ast.FLOAT):
-            return Type(base_type=BaseType.float, line=node.line, position=node.position)
+            return Type(base_type=BaseType.float)
         elif isinstance(node, ast.CHAR):
-            return Type(base_type=BaseType.char, line=node.line, position=node.position)
+            return Type(base_type=BaseType.char)
         elif isinstance(node, ast.IDENTIFIER):
-            # Lookup the identifier in the symbol table to get its type.
             symbol = self.symbol_table.lookup(node.name)
             if symbol is not None:
-                return symbol.type  # Assuming symbol.type is already a Type instance.
+                return symbol.type
             else:
                 raise SemanticError(f"Use of undeclared identifier '{node.name}'.")
-        elif isinstance(node, (ast.BinaryArithmetic, ast.BinaryBitwiseArithmetic, ast.BinaryLogicalOperation)):
-            # For binary operations, the type might depend on the operation and the operand types.
-            # This is a simplified approach; actual implementation might need to consider type promotion rules, etc.
+        elif isinstance(node, ast.TypeCastExpression):
+            # Directly return the cast type, assuming it's valid.
+            return node.cast_type
+        elif isinstance(node, (ast.BinaryArithmetic, ast.BinaryBitwiseArithmetic)):
             left_type = self.get_expression_type(node.left)
             right_type = self.get_expression_type(node.right)
-            if left_type.base_type == right_type.base_type:
-                return left_type  # Assuming the operation does not change the type.
+            if self.are_types_compatible_for_arithmetic(left_type, right_type):
+                return left_type  # Assumes the operation results in the same type as its operands.
             else:
-                # Handle type mismatch or implement logic for determining resulting type based on operands
-                # This example just returns an int type for demonstration.
-                return Type(base_type=BaseType.int, line=node.line, position=node.position)  # Simplification, real logic may vary.
+                raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+        elif isinstance(node, ast.BinaryLogicalOperation) or isinstance(node, ast.ComparisonOperation):
+            # For logical and comparison operations, we assume the result is always boolean.
+            # This part of the logic needs to validate the operands but the result is a boolean type.
+            self.get_expression_type(node.left)  # Validate operand types but don't use them directly.
+            self.get_expression_type(node.right)
+            return Type(base_type=BaseType.int, line=node.line, position=node.position)  # Assuming BaseType includes a 'bool' type for boolean values.
         elif isinstance(node, ast.UnaryExpression):
-            # TODO: Check if below is the proper approach it works since the refernece gerenerates a pointer level so it can assign to pointer
-            operant_type = self.get_expression_type(node.value)
+            operand_type = self.get_expression_type(node.value)
             if node.operator == node.Operator.ADDRESSOF:
-                return Type(base_type=operant_type.base_type, line=node.line, position=node.position, const=operant_type.const, address_qualifiers={ast.AddressQualifier.pointer})
+                # Increase pointer level for address-of operation.
+                return Type(base_type=operand_type.base_type, line=node.line, position=node.position, const=operand_type.const, address_qualifiers={ast.AddressQualifier.pointer})
             else:
-                # Handle other unary operations, like negation or logical NOT, if needed
-                return operant_type
+                return operand_type
+        else:
+            raise SemanticError(f"Unsupported expression type: {type(node).__name__}")
 
-        # Add additional elif branches for other expression types as needed.
-
-        # Handle unknown or unimplemented node types.
-        return SemanticError(f"Unsupported expression type: {type(node)}")  # Default or error case, adjust as needed.
+        # Add additional handling for other expressions as needed.
 
     def visit_type(self, node: ast.Type):
         # Because the type node doens't perform an operation, we can ignore it
         pass
+    # Type(base_type=operant_type.base_type, line=node.line, position=node.position, const=operant_type.const, address_qualifiers={ast.AddressQualifier.pointer})
 
     def visit_int(self, node: ast.INT):
         pass
@@ -72,6 +73,35 @@ class SymbolTableVisitor(AstVisitor):
         # This is important for checking the declaration of identifiersCan
         if self.symbol_table.lookup(node.name) is None:
             raise SemanticError(f"Use of undeclared identifier '{node.name}'.", node.line, node.position)
+
+    def is_cast_allowed(self, source_type: Type, target_type: Type) -> bool:
+        # Check if base types are the same; if so, the cast is always allowed.
+        if source_type.base_type == target_type.base_type:
+            return True
+
+        # Example rules for base type conversions; adjust as needed.
+        allowed_conversions = {
+            (BaseType.int, BaseType.float): True,
+            (BaseType.float, BaseType.int): True,
+            # Add more conversions as needed
+        }
+
+        # Check for an allowed base type conversion.
+        if (source_type.base_type, target_type.base_type) in allowed_conversions:
+            return True
+
+        # If the source is const and the target is not, disallow the cast.
+        if source_type.const and not target_type.const:
+            return False
+
+        # Example rule for pointer types: disallow casting between different pointer types.
+        # Adjust according to your language's rules for pointers and address qualifiers.
+        if source_type.address_qualifiers and target_type.address_qualifiers:
+            # This is a simplification. You may have rules allowing casting between certain pointer types.
+            return False
+
+        # Default case: if none of the above rules apply, the cast is not allowed.
+        return False
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         # First, visit the expression being cast to ensure it's semantically valid on its own.

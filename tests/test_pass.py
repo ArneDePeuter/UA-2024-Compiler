@@ -1,6 +1,7 @@
 import os
 
 from compiler.frontend import tree_from_file, tree_to_ast
+from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor, SymbolTable
 from compiler.core.errors.warning_error import WarningError
 
 warning_dict = {
@@ -23,6 +24,10 @@ def test_pass() -> None:
 
         tree = tree_from_file(f"{directory.decode()}/{filename}")
         ast = tree_to_ast(tree)
+
+        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+        symbol_table_visitor.visit_program(ast)
+
         print(f"{filename} passed")
         assert True
 
