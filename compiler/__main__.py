@@ -7,6 +7,7 @@ from compiler.frontend.symbol_table.symboltable import SymbolTable
 from compiler.middleend import optimise_ast
 from compiler.utils import AstDotVisitor
 from compiler.utils.symboltabledotvisitor import SymbolTableDotVisitor
+from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
 
 
 def main():
@@ -21,6 +22,15 @@ def main():
     # frontend
     tree = tree_from_file(filename=args.input)
     ast = tree_to_ast(tree)
+
+    # Generate LLVM IR
+    llvm_ir_generator = LLVMIRGenerator()
+    llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
+
+    # Write LLVM IR to a file
+    output_file = args.input.rsplit(".", 1)[0] + ".ll"
+    with open(output_file, "w") as file:
+        file.write(llvm_ir)
 
     # middle end
     if not args.no_optimise:
