@@ -43,6 +43,14 @@ class LLVMIRGenerator(AstVisitor):
         # Visit the function body
         self.visit(node.body)
 
+        # Add a default return statement if not present
+        if not block.is_terminated:
+            if return_type == ir.VoidType():
+                self.builder.ret_void()
+            else:
+                default_value = ir.Constant(return_type, None)
+                self.builder.ret(default_value)
+
         # Reset the builder
         self.builder = None
 
