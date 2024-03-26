@@ -49,7 +49,7 @@ printCall
     ;
 
 assignmentStatement
-    : addressQualifier* ID assignmentOperator expression ';'
+    : expression assignmentOperator expression ';'
     ;
 
 logicalExpression
