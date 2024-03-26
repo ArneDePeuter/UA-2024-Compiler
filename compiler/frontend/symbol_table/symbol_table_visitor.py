@@ -109,7 +109,7 @@ class SymbolTableVisitor(AstVisitor):
         # Retrieve the type of the expression being cast.
         expression_type = self.get_expression_type(node.expression)
         # Check if the cast from expression_type to node.cast_type is allowed.
-        if not self.is_cast_allowed(expression_type, node.cast_type):  # TODO: implement is_cast_allowed
+        if not self.is_cast_allowed(expression_type, node.cast_type):
             raise SemanticError(f"Invalid type cast from {expression_type} to {node.cast_type}.", node.line, node.position)
 
         # Additional checks might include ensuring the expression is not a const if the target type is non-const,
@@ -325,8 +325,8 @@ class SymbolTableVisitor(AstVisitor):
 
     def is_type_compatible(self, variable_type, value_type):
         # Check if the base types are the same
-        if variable_type.base_type != value_type.base_type:
-            return False
+        #if variable_type.base_type != value_type.base_type:
+        #    return False
         # Check if the pointer levels are the same
         if len(value_type.address_qualifiers) != len(variable_type.address_qualifiers):
             return False
