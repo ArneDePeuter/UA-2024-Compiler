@@ -80,6 +80,15 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#typedefStatement.
+    def enterTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#typedefStatement.
+    def exitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#expressionStatement.
     def enterExpressionStatement(self, ctx:GrammarParser.ExpressionStatementContext):
         pass
@@ -95,6 +104,15 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#expression.
     def exitExpression(self, ctx:GrammarParser.ExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#printCall.
+    def enterPrintCall(self, ctx:GrammarParser.PrintCallContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#printCall.
+    def exitPrintCall(self, ctx:GrammarParser.PrintCallContext):
         pass
 
 
@@ -221,6 +239,15 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#assignmentOperator.
     def exitAssignmentOperator(self, ctx:GrammarParser.AssignmentOperatorContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#comment.
+    def enterComment(self, ctx:GrammarParser.CommentContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#comment.
+    def exitComment(self, ctx:GrammarParser.CommentContext):
         pass
 
 

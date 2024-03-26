@@ -47,10 +47,10 @@ class ExpressionStatement(Statement):
 
 @dataclass
 class AssignmentStatement(Statement):
-    identifier: str
-    value: Expression
-    address_qualifiers: Optional[list[AddressQualifier]] = None
+    left: Expression
+    right: Expression
 
-    def __post_init__(self):
-        if self.address_qualifiers is None:
-            self.address_qualifiers = []
+
+@dataclass
+class CommentStatement(Statement):
+    content: str

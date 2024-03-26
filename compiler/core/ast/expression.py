@@ -14,15 +14,171 @@ class Expression(AST):
 class INT(Expression):
     value: int
 
+    def __add__(self, other):
+        return INT(self.value + other.value)
+
+    def __sub__(self, other):
+        return INT(self.value - other.value)
+
+    def __mul__(self, other):
+        return INT(self.value * other.value)
+
+    def __truediv__(self, other):
+        return INT(self.value // other.value)
+
+    def __mod__(self, other):
+        return INT(self.value % other.value)
+
+    def __bool__(self):
+        return bool(self.value > 0)
+
+    def __and__(self, other):
+        return INT(self.value & other.value)
+
+    def __or__(self, other):
+        return INT(self.value | other.value)
+
+    def __xor__(self, other):
+        return INT(self.value ^ other.value)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+    def __le__(self, other):
+        return self.value < other.value or self.value == other.value
+
+    def __ge__(self, other):
+        return self.value > other.value or self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 @dataclass
 class FLOAT(Expression):
     value: float
 
+    def __add__(self, other):
+        return FLOAT(
+            value=self.value + other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __sub__(self, other):
+        return FLOAT(
+            value=self.value - other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __mul__(self, other):
+        return FLOAT(
+            value=self.value * other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __truediv__(self, other):
+        return FLOAT(
+            value=self.value / other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __mod__(self, other):
+        return FLOAT(
+            value=self.value % other.value,
+            line=self.line,
+            position=self.position
+        )
+
+    def __bool__(self):
+        return bool(self.value > 0)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+
+    def __le__(self, other):
+        return self.value < other.value or self.value == other.value
+
+    def __ge__(self, other):
+        return self.value > other.value or self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 @dataclass
 class CHAR(Expression):
     value: str
+
+    def __add__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) + ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __sub__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) - ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __mul__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) * ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __truediv__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) // ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __mod__(self, other):
+        return CHAR(
+            value=chr(ord(self.value) % ord(other.value)),
+            line=self.line,
+            position=self.position
+        )
+
+    def __bool__(self):
+        return bool(ord(self.value) > 0)
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def __gt__(self, other):
+        return ord(self.value) > ord(other.value)
+
+    def __le__(self, other):
+        return ord(self.value) < ord(other.value) or self.value == other.value
+
+    def __ge__(self, other):
+        return ord(self.value) > ord(other.value) or self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 @dataclass
@@ -100,7 +256,7 @@ class UnaryExpression(Expression):
 
     value: Expression
     operator: Operator
-    prefix: bool
+    prefix: bool = False
 
 
 @dataclass
@@ -112,3 +268,16 @@ class ShiftExpression(Expression):
     value: Expression
     operator: Operator
     amount: Expression
+
+
+@dataclass
+class PrintFCall(Expression):
+    class Replacer(Enum):
+        s = "%s"
+        d = "%d"
+        x = "%x"
+        f = "%f"
+        c = "%c"
+
+    replacer: Replacer
+    expression: Expression

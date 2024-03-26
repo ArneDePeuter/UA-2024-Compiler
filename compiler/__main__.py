@@ -34,9 +34,9 @@ def main():
         dot_visitor = AstDotVisitor()
         dot_visitor.visit_program(ast)
         folder = args.render_ast
-        filename = str(args.input).split("/")[-1][:-2] + "_AST.dot"
-        dot_visitor.output(f"{folder}/{filename}")
-        command = "dot -Tpng -o" + f"{folder}/{filename}" + ".png " + f"{folder}/{filename}"
+        filename = str(args.input).split("/")[-1][:-2] + "_AST"
+        dot_visitor.output(f"{folder}/{filename}.dot")
+        command = f"dot -Tpng -o {folder}/{filename}.png {folder}/{filename}.dot"
         subprocess.run(command, shell=True, check=True)
 
     if args.render_symb:

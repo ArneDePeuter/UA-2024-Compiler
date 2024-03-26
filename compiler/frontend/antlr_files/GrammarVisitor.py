@@ -49,6 +49,11 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#typedefStatement.
+    def visitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#expressionStatement.
     def visitExpressionStatement(self, ctx:GrammarParser.ExpressionStatementContext):
         return self.visitChildren(ctx)
@@ -56,6 +61,11 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#expression.
     def visitExpression(self, ctx:GrammarParser.ExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#printCall.
+    def visitPrintCall(self, ctx:GrammarParser.PrintCallContext):
         return self.visitChildren(ctx)
 
 
@@ -126,6 +136,11 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#assignmentOperator.
     def visitAssignmentOperator(self, ctx:GrammarParser.AssignmentOperatorContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#comment.
+    def visitComment(self, ctx:GrammarParser.CommentContext):
         return self.visitChildren(ctx)
 
 
