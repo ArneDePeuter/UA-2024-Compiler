@@ -360,3 +360,10 @@ class SymbolTableVisitor(AstVisitor):
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         # Visit the expression to ensure it's semantically valid
         self.visit(node.expression)
+
+    def visit_printf_call(self, node: ast.PrintFCall):
+        for arg in node.arguments:
+            self.visit(arg)
+
+    def visit_comment_statement(self, node: ast.CommentStatement):
+        pass
