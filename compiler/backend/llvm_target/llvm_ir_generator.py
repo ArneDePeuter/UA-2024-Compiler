@@ -23,19 +23,28 @@ class LLVMIRGenerator(AstVisitor):
                 self.module.get_global(line_num).set_metadata('node', f"{node}")
 
     def visit_program(self, node: ast.Program):
-        main_func = ir.FunctionType(ir.IntType(32), [])
-        func = ir.Function(self.module, main_func, 'main')
-        block = func.append_basic_block('entry')
-        self.builder = ir.IRBuilder(block)
-
         for statement in node.statements:
             self.visit(statement)
 
-        self.builder.ret(ir.Constant(ir.IntType(32), 0))
-
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
-        # Skipping function declaration for now
-        pass
+        # Get the function return type
+        return_type = self._get_llvm_type(node.return_type)
+
+        # Create the function type
+        func_type = ir.FunctionType(return_type, [])
+
+        # Create the function
+        func = ir.Function(self.module, func_type, name=node.name)
+
+        # Create a new basic block for the function body
+        block = func.append_basic_block(name="entry")
+        self.builder = ir.IRBuilder(block)
+
+        # Visit the function body
+        self.visit(node.body)
+
+        # Reset the builder
+        self.builder = None
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
         for qualifier in node.qualifiers:
@@ -49,7 +58,8 @@ class LLVMIRGenerator(AstVisitor):
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        var_addr = self.variables[node.identifier]
+        var_name = node.identifier.getText()  # Extract the identifier string
+        var_addr = self.variables[var_name]
         value = self.visit(node.value)
         value = self._cast_value(value, var_addr.type.pointee)
         self.builder.store(value, var_addr)
