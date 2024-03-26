@@ -240,7 +240,8 @@ class ConstantFoldingVisitor(AstVisitor):
         return node
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        node.value = self.visit_expression(node.value)
+        node.left = self.visit_expression(node.left)
+        node.right = self.visit_expression(node.right)
         return node
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):

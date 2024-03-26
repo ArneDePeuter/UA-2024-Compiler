@@ -133,13 +133,12 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitAssignmentStatement(self, ctx):
-        identifier = ctx.ID()
-        expression = self.visit(ctx.expression())
+        left = self.visit(ctx.getChild(0))
+        right = self.visit(ctx.getChild(2))
 
         return ast.AssignmentStatement(
-            identifier=identifier,
-            value=expression,
-            address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
+            left=left,
+            right=right,
             line=ctx.start.line,
             position=ctx.start.column
         )
