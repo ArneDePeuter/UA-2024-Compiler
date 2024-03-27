@@ -112,7 +112,38 @@ class LLVMIRGenerator(AstVisitor):
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return self._handle_binary_arithmetic(node.operator, left, right)
+
+        # Perform type conversion if necessary
+        if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.DoubleType):
+            left = self.builder.sitofp(left, right.type)
+        elif isinstance(left.type, ir.DoubleType) and isinstance(right.type, ir.IntType):
+            right = self.builder.sitofp(right, left.type)
+
+        if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+            if isinstance(left.type, ir.IntType):
+                return self.builder.add(left, right)
+            else:
+                return self.builder.fadd(left, right)
+        elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+            if isinstance(left.type, ir.IntType):
+                return self.builder.sub(left, right)
+            else:
+                return self.builder.fsub(left, right)
+        elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+            if isinstance(left.type, ir.IntType):
+                return self.builder.mul(left, right)
+            else:
+                return self.builder.fmul(left, right)
+        elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+            if isinstance(left.type, ir.IntType):
+                return self.builder.sdiv(left, right)
+            else:
+                return self.builder.fdiv(left, right)
+        elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+            if isinstance(left.type, ir.IntType):
+                return self.builder.srem(left, right)
+            else:
+                return self.builder.frem(left, right)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         left = self.visit(node.left)
