@@ -24,7 +24,7 @@ float f = 45;
 
 char c = 'b';
 
-int x = 5;
+int a = 11;
 
-printf("%d", 5+5);
+printf("%x", a);
 }
