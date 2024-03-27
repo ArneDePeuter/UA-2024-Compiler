@@ -92,34 +92,26 @@ class LLVMIRGenerator(AstVisitor):
         # Visit the left expression to get the assignment target
         target = self.visit(node.left)
 
-        # Check if the target is a dereference expression
-        if isinstance(node.left,
-                      ast.UnaryExpression) and node.left.operator == ast.UnaryExpression.Operator.DEREFERENCE:
-            # Get the pointer from the dereference expression
-            pointer = target
-
-            # Load the value from the pointer
-            target = self.builder.load(pointer)
-
         # Get the target type
         target_type = target.type
 
         # Check if the target is a pointer type
-        if not isinstance(target_type, ir.PointerType):
-            # If it's not a pointer, create a pointer to the target type
-            target_type = ir.PointerType(target_type)
-            target_addr = self.builder.alloca(target_type.pointee)
-            self.builder.store(target, target_addr)
-            target = target_addr
-
-        # Cast the value to the target type if necessary
-        if isinstance(value.type, ir.DoubleType) and isinstance(target_type.pointee, ir.IntType):
-            value = self.builder.fptosi(value, target_type.pointee)
+        if isinstance(target_type, ir.PointerType):
+            # If the target is a pointer, we need to store the value directly
+            # Cast the value to the target's pointee type if necessary
+            pointee_type = target_type.pointee
+            if value.type != pointee_type:
+                value = self._cast_value(value, pointee_type)
+            self.builder.store(value, target)
         else:
-            value = self._cast_value(value, target_type.pointee)
+            # If the target is not a pointer, we need to allocate memory for it
+            # and store the value in the allocated memory
+            alloca = self.builder.alloca(target_type)
+            self.builder.store(value, alloca)
 
-        # Store the value in the target
-        self.builder.store(value, target)
+            # Update the variables dictionary only if the left side is an identifier
+            if isinstance(node.left, ast.IDENTIFIER):
+                self.variables[node.left.name] = alloca
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left = self.visit(node.left)
