@@ -35,7 +35,21 @@ class SymbolTableVisitor(AstVisitor):
         ...
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
-        ...
+        left_type = self.visit_expression(node.left)
+        right_type = self.visit_expression(node.right)
+
+        # Pointer arithmetics
+        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
+            # For pointer + integer or pointer - integer, the result is a pointer of the same type
+            return left_type
+        elif len(right_type.address_qualifiers) > 0 and left_type.base_type == ast.BaseType.int and node.operator ==ast.BinaryArithmetic.Operator.PLUS:
+            # For integer + pointer (valid only for addition), the result is a pointer of the same type
+            return right_type
+        elif left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+            raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+
+        # TODO: Determine the type of the expression
+        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         ...
@@ -111,7 +125,7 @@ class SymbolTableVisitor(AstVisitor):
 
             # Check if the (left)type is compatible with the initializer
             if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
-                # Add the exception of null pointers
+                # Add the exception to allow null pointers
                 if isinstance(initializer, ast.INT) and initializer.value == 0 and len(node.var_type.address_qualifiers) > 0:
                     pass
                 else:
@@ -121,7 +135,11 @@ class SymbolTableVisitor(AstVisitor):
             self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        ...
+        left_type = self.visit(node.left)
+        right_type = self.visit(node.right)
+
+        if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+            raise SemanticError(f"Type mismatch in assignment: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         ...
