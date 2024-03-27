@@ -251,6 +251,7 @@ class LLVMIRGenerator(AstVisitor):
             ast.PrintFCall.Replacer.c: "%c\n",
             ast.PrintFCall.Replacer.f: "%f\n",
             ast.PrintFCall.Replacer.s: "%s\n",
+            ast.PrintFCall.Replacer.x: "%x\n",
         }[node.replacer]
 
         # Create a global string constant for the format string
