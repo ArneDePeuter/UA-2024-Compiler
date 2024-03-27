@@ -254,6 +254,15 @@ class TreeVisitor(GrammarVisitor):
 
     def visitUnaryExpression(self, ctx: GrammarParser.UnaryExpressionContext):
         if ctx.primary():
+            if ctx.getChild(1):
+                op = ast.UnaryExpression.Operator(ctx.getChild(1).getText())
+                return ast.UnaryExpression(
+                    value=self.visit(ctx.primary()),
+                    operator=op,
+                    prefix=False,
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
             return self.visit(ctx.primary())
 
         expr = self.visit(ctx.unaryExpression())
@@ -263,7 +272,7 @@ class TreeVisitor(GrammarVisitor):
         return ast.UnaryExpression(
             value=expr,
             operator=operator,
-            prefix=op not in ['++', '--'],
+            prefix=True,
             line=ctx.start.line,
             position=ctx.start.column
         )
