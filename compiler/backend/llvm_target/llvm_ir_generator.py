@@ -107,6 +107,9 @@ class LLVMIRGenerator(AstVisitor):
             # If the target is not a pointer, we need to allocate memory for it
             # and store the value in the allocated memory
             alloca = self.builder.alloca(target_type)
+            # Cast the value to the target type if necessary
+            if value.type != target_type:
+                value = self._cast_value(value, target_type)
             self.builder.store(value, alloca)
 
             # Update the variables dictionary only if the left side is an identifier
@@ -248,8 +251,34 @@ class LLVMIRGenerator(AstVisitor):
         return self.builder.load(var_addr)
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        # Skipping printf call for now
-        pass
+        # Get the format string based on the replacer
+        format_string = {
+            ast.PrintFCall.Replacer.d: "%d\n",
+            ast.PrintFCall.Replacer.c: "%c\n",
+            ast.PrintFCall.Replacer.f: "%f\n",
+            ast.PrintFCall.Replacer.s: "%s\n",
+        }[node.replacer]
+
+        # Create a global string constant for the format string
+        format_string_constant = ir.GlobalVariable(
+            self.module, ir.ArrayType(ir.IntType(8), len(format_string)),
+            name=f"printf_format_{node.line}_{node.position}"
+        )
+        format_string_constant.global_constant = True
+        format_string_constant.initializer = ir.Constant(
+            ir.ArrayType(ir.IntType(8), len(format_string)),
+            bytearray(format_string.encode('utf-8'))
+        )
+
+        # Generate the IR for the expression to be printed
+        value = self.visit(node.expression)
+
+        # Declare the printf function
+        printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+        printf_func = ir.Function(self.module, printf_type, name="printf")
+
+        # Call the printf function with the format string and the value
+        self.builder.call(printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value])
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         # Comments are handled separately in the append_comments method
@@ -287,6 +316,8 @@ class LLVMIRGenerator(AstVisitor):
             return self.visit_identifier(node)
         elif isinstance(node, ast.TypeCastExpression):
             return self.visit_type_cast_expression(node)
+        elif isinstance(node, ast.PrintFCall):
+            return self.visit_printf_call(node)
         else:
             raise NotImplementedError(f"Unsupported expression type: {type(node)}")
 
@@ -320,15 +351,12 @@ class LLVMIRGenerator(AstVisitor):
                 return self.builder.sext(value, target_type)
             elif value_type.width > target_type.width:
                 return self.builder.trunc(value, target_type)
-        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.FloatType):
+        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.DoubleType):
             return self.builder.sitofp(value, target_type)
-        elif isinstance(value_type, ir.FloatType) and isinstance(target_type, ir.IntType):
+        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.IntType):
             return self.builder.fptosi(value, target_type)
-        elif isinstance(value_type, ir.FloatType) and isinstance(target_type, ir.FloatType):
-            if value_type.width < target_type.width:
-                return self.builder.fpext(value, target_type)
-            elif value_type.width > target_type.width:
-                return self.builder.fptrunc(value, target_type)
+        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.DoubleType):
+            return value  # No casting needed for double to double
 
         raise NotImplementedError(f"Casting from {value_type} to {target_type} is not implemented")
 
