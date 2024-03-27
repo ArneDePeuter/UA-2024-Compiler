@@ -1,6 +1,7 @@
 from antlr4 import *
 import copy
 
+from compiler.core.errors.semantic_error import SemanticError
 from compiler.frontend.antlr_files.GrammarParser import GrammarParser
 from compiler.frontend.antlr_files.GrammarVisitor import GrammarVisitor
 from compiler.core import ast
@@ -8,7 +9,11 @@ from compiler.core import ast
 
 class TreeVisitor(GrammarVisitor):
     def __init__(self, input_stream: InputStream):
-        self.typedef_scope: dict[str, ast.BaseType] = {}
+        self.typedef_scope: dict[str, ast.Type] = {
+            "float": ast.Type(base_type=ast.BaseType.float),
+            "int": ast.Type(base_type=ast.BaseType.int),
+            "char": ast.Type(base_type=ast.BaseType.char)
+        }
         self.input_stream = input_stream
 
     def get_original_text(self, ctx):
@@ -82,8 +87,14 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitType(self, ctx):
+        if ctx.ID():
+            text = ctx.ID().getText()
+            if text in self.typedef_scope:
+                return copy.deepcopy(self.typedef_scope[text])
+            else:
+                raise RuntimeError("Typedef not defined")
         return ast.Type(
-            base_type=self.visit(ctx.baseType()),
+            base_type=ast.BaseType((ctx.baseType().getText())),
             const=ctx.const() is not None,
             address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
             line=ctx.start.line,
@@ -95,19 +106,15 @@ class TreeVisitor(GrammarVisitor):
         return ast.AddressQualifier(text)
 
     def visitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
-        base_type = self.visitBaseType(ctx.baseType())
+        my_type = self.visitType(ctx.type_())
         name = ctx.ID().getText()
-        self.typedef_scope[name] = base_type
-
-    def visitBaseType(self, ctx):
-        if ctx.ID():
-            text = ctx.ID().getText()
-            if text in self.typedef_scope:
-                return self.typedef_scope[text]
-            else:
-                raise RuntimeError("Typedef not defined")
-        text = ctx.getText()
-        return ast.BaseType(text)
+        if name in self.typedef_scope:
+            raise SemanticError(
+                f"Typedef redefinition: {name} already defined",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        self.typedef_scope[name] = my_type
 
     def visitExpression(self, ctx: GrammarParser.ExpressionContext):
         return self.visitChildren(ctx)
@@ -247,6 +254,15 @@ class TreeVisitor(GrammarVisitor):
 
     def visitUnaryExpression(self, ctx: GrammarParser.UnaryExpressionContext):
         if ctx.primary():
+            if ctx.getChild(1):
+                op = ast.UnaryExpression.Operator(ctx.getChild(1).getText())
+                return ast.UnaryExpression(
+                    value=self.visit(ctx.primary()),
+                    operator=op,
+                    prefix=False,
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
             return self.visit(ctx.primary())
 
         expr = self.visit(ctx.unaryExpression())
@@ -256,7 +272,7 @@ class TreeVisitor(GrammarVisitor):
         return ast.UnaryExpression(
             value=expr,
             operator=operator,
-            prefix=op not in ['++', '--'],
+            prefix=True,
             line=ctx.start.line,
             position=ctx.start.column
         )
