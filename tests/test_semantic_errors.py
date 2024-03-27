@@ -1,7 +1,7 @@
 import os
 
 from compiler.frontend import tree_from_file, tree_to_ast
-from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor, SymbolTable
+from compiler.frontend.symbol_table.symbol_table_visitor_old import SymbolTableVisitor, SymbolTable
 from compiler.core.errors.semantic_error import SemanticError
 
 error_dict = {

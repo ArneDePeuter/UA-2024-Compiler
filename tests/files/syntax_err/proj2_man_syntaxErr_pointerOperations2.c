@@ -4,7 +4,7 @@ int x = 54;
 
 int z = -33;
 
-int* p = &z;
+int* p = z&;
 
-p = *x;
+x = *p;
 }
