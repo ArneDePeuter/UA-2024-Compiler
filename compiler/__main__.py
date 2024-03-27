@@ -27,14 +27,14 @@ def main():
     if not args.no_optimise:
         ast = optimise_ast(ast)
 
-    # # Generate LLVM IR
-    # llvm_ir_generator = LLVMIRGenerator()
-    # llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
-    #
-    # # Write LLVM IR to a file
-    # output_file = args.input.rsplit(".", 1)[0] + ".ll"
-    # with open(output_file, "w") as file:
-    #     file.write(llvm_ir)
+    # Generate LLVM IR
+    llvm_ir_generator = LLVMIRGenerator()
+    llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
+
+    # Write LLVM IR to a file
+    output_file = args.input.rsplit(".", 1)[0] + ".ll"
+    with open(output_file, "w") as file:
+        file.write(llvm_ir)
 
     # Perform actions based on the command line arguments
     if args.render_ast:
