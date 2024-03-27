@@ -8,19 +8,10 @@ class LLVMIRGenerator(AstVisitor):
         self.module = ir.Module()
         self.builder = None
         self.variables = {}
-        self.comment_map = {}
 
     def generate_llvm_ir(self, node):
         self.visit(node)
-        self.append_comments()
         return str(self.module)
-
-    def append_comments(self):
-        for line_num, node in self.comment_map.items():
-            if isinstance(node, ast.CommentStatement):
-                self.module.get_global(line_num).set_metadata('comment', f"{node.content}")
-            else:
-                self.module.get_global(line_num).set_metadata('node', f"{node}")
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
@@ -55,6 +46,7 @@ class LLVMIRGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        self.builder.comment(f"C Syntax: {node.c_syntax}")
         for qualifier in node.qualifiers:
             var_name = qualifier.identifier
             var_type = self._get_llvm_type(node.var_type)
@@ -68,7 +60,7 @@ class LLVMIRGenerator(AstVisitor):
             var_addr = self.builder.alloca(var_type, name=var_name)
             self.variables[var_name] = var_addr
 
-            if qualifier.initializer:
+            if qualifier.initializer is not None:
                 init_value = self.visit(qualifier.initializer)
 
                 # Cast the initializer value to the variable type if necessary
@@ -82,10 +74,11 @@ class LLVMIRGenerator(AstVisitor):
                     else:
                         raise TypeError(
                             f"Cannot cast initializer value of type {init_value.type} to variable type {var_type}")
-
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
+        self.builder.comment(node.c_syntax)
+
         # Visit the right expression to get the value to be assigned
         value = self.visit(node.right)
 
@@ -251,6 +244,7 @@ class LLVMIRGenerator(AstVisitor):
         return self.builder.load(var_addr)
 
     def visit_printf_call(self, node: ast.PrintFCall):
+        self.builder.comment(node.c_syntax)
         # Get the format string based on the replacer
         format_string = {
             ast.PrintFCall.Replacer.d: "%d\n",
@@ -281,8 +275,8 @@ class LLVMIRGenerator(AstVisitor):
         self.builder.call(printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value])
 
     def visit_comment_statement(self, node: ast.CommentStatement):
-        # Comments are handled separately in the append_comments method
-        pass
+        for line in node.content.split("\n"):
+            self.builder.comment(line)
 
     def _get_llvm_type(self, node_type: ast.Type):
         if node_type.base_type == ast.BaseType.int:
@@ -300,26 +294,6 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         self.visit(node.expression)
-
-    def visit_expression(self, node: ast.Expression):
-        if isinstance(node, ast.BinaryOperation):
-            return self.visit_binary_operation(node)
-        elif isinstance(node, ast.UnaryExpression):
-            return self.visit_unary_expression(node)
-        elif isinstance(node, ast.INT):
-            return self.visit_int(node)
-        elif isinstance(node, ast.FLOAT):
-            return self.visit_float(node)
-        elif isinstance(node, ast.CHAR):
-            return self.visit_char(node)
-        elif isinstance(node, ast.IDENTIFIER):
-            return self.visit_identifier(node)
-        elif isinstance(node, ast.TypeCastExpression):
-            return self.visit_type_cast_expression(node)
-        elif isinstance(node, ast.PrintFCall):
-            return self.visit_printf_call(node)
-        else:
-            raise NotImplementedError(f"Unsupported expression type: {type(node)}")
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
         value = self.visit(node.value)

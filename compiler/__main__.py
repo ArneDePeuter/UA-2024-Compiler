@@ -20,8 +20,8 @@ def main():
     args = parser.parse_args()
 
     # frontend
-    tree = tree_from_file(filename=args.input)
-    ast = tree_to_ast(tree)
+    tree, input_stream = tree_from_file(filename=args.input)
+    ast = tree_to_ast(tree, input_stream)
 
     # Generate LLVM IR
     llvm_ir_generator = LLVMIRGenerator()

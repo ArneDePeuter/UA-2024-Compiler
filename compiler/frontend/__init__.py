@@ -36,10 +36,10 @@ def tree_from_str(data: str):
     parser.removeErrorListeners()
     parser.addErrorListener(my_listener)
 
-    return parser.program()
+    return parser.program(), input_stream
 
 
-def tree_to_ast(tree) -> ast.AST:
-    tree_visitor = TreeVisitor()
+def tree_to_ast(tree, input_stream) -> ast.AST:
+    tree_visitor = TreeVisitor(input_stream)
     return tree_visitor.visit(tree)
 

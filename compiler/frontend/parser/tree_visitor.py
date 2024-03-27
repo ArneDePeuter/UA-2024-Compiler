@@ -7,8 +7,12 @@ from compiler.core import ast
 
 
 class TreeVisitor(GrammarVisitor):
-    def __init__(self):
+    def __init__(self, input_stream: InputStream):
         self.typedef_scope: dict[str, ast.BaseType] = {}
+        self.input_stream = input_stream
+
+    def get_original_text(self, ctx):
+        return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
 
     def visitProgram(self, ctx) -> ast.Program:
         statements = []
@@ -66,7 +70,8 @@ class TreeVisitor(GrammarVisitor):
             var_type=var_type,
             qualifiers=qualifiers,
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
 
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
@@ -140,7 +145,8 @@ class TreeVisitor(GrammarVisitor):
             left=left,
             right=right,
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
 
     def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):
@@ -257,7 +263,8 @@ class TreeVisitor(GrammarVisitor):
 
     @staticmethod
     def remove_dashes(input):
-        return input[1:-1]
+        out = input[1:-1].replace("\\n", "\n").replace("\\t", "\t").replace("\\0", "\0")
+        return out
 
     def visitPrimary(self, ctx: GrammarParser.PrimaryContext):
         line = ctx.start.line
@@ -279,7 +286,7 @@ class TreeVisitor(GrammarVisitor):
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
-            content=ctx.getText(),
+            content=ctx.getText()[:-1],
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -289,5 +296,6 @@ class TreeVisitor(GrammarVisitor):
             replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
             expression=self.visitLogicalExpression(ctx.logicalExpression()),
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
