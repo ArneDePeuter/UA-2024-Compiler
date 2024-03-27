@@ -58,19 +58,68 @@ class LLVMIRGenerator(AstVisitor):
         for qualifier in node.qualifiers:
             var_name = qualifier.identifier
             var_type = self._get_llvm_type(node.var_type)
+
+            # Check if the variable is a pointer type
+            if node.var_type.address_qualifiers:
+                # Create a pointer type based on the number of address qualifiers
+                for _ in range(len(node.var_type.address_qualifiers)):
+                    var_type = ir.PointerType(var_type)
+
             var_addr = self.builder.alloca(var_type, name=var_name)
             self.variables[var_name] = var_addr
 
             if qualifier.initializer:
                 init_value = self.visit(qualifier.initializer)
+
+                # Cast the initializer value to the variable type if necessary
+                if init_value.type != var_type:
+                    if isinstance(var_type, ir.PointerType) and isinstance(init_value.type, ir.PointerType):
+                        init_value = self.builder.bitcast(init_value, var_type)
+                    elif isinstance(var_type, ir.IntType) and isinstance(init_value.type, ir.DoubleType):
+                        init_value = self.builder.fptosi(init_value, var_type)
+                    elif isinstance(var_type, ir.DoubleType) and isinstance(init_value.type, ir.IntType):
+                        init_value = self.builder.sitofp(init_value, var_type)
+                    else:
+                        raise TypeError(
+                            f"Cannot cast initializer value of type {init_value.type} to variable type {var_type}")
+
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        var_name = node.identifier.getText()  # Extract the identifier string
-        var_addr = self.variables[var_name]
-        value = self.visit(node.value)
-        value = self._cast_value(value, var_addr.type.pointee)
-        self.builder.store(value, var_addr)
+        # Visit the right expression to get the value to be assigned
+        value = self.visit(node.right)
+
+        # Visit the left expression to get the assignment target
+        target = self.visit(node.left)
+
+        # Check if the target is a dereference expression
+        if isinstance(node.left,
+                      ast.UnaryExpression) and node.left.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            # Get the pointer from the dereference expression
+            pointer = target
+
+            # Load the value from the pointer
+            target = self.builder.load(pointer)
+
+        # Get the target type
+        target_type = target.type
+
+        # Check if the target is a pointer type
+        if not isinstance(target_type, ir.PointerType):
+            # If it's not a pointer, create a pointer to the target type
+            target_type = ir.PointerType(target_type)
+            target_addr = self.builder.alloca(target_type.pointee)
+            self.builder.store(target, target_addr)
+            target = target_addr
+
+        # Cast the value to the target type if necessary
+        if isinstance(value.type, ir.DoubleType) and isinstance(target_type.pointee, ir.IntType):
+            value = self.builder.fptosi(value, target_type.pointee)
+        else:
+            value = self._cast_value(value, target_type.pointee)
+
+        # Store the value in the target
+        self.builder.store(value, target)
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left = self.visit(node.left)
@@ -176,6 +225,20 @@ class LLVMIRGenerator(AstVisitor):
             return self.builder.neg(operand)
         elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
             return self.builder.not_(operand)
+        elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
+            if isinstance(operand, ir.AllocaInstr):
+                return operand
+            elif isinstance(operand, ir.Argument):
+                return self.builder.alloca(operand.type, name=operand.name)
+            elif isinstance(operand, ir.LoadInstr):
+                return operand.operands[0]  # Return the pointer being loaded
+            else:
+                raise NotImplementedError(f"Unsupported operand type for address-of operator: {type(operand)}")
+        elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            if isinstance(operand.type, ir.PointerType):
+                return self.builder.load(operand)
+            else:
+                raise NotImplementedError(f"Unsupported operand type for dereference operator: {type(operand)}")
         else:
             raise NotImplementedError(f"Unsupported unary operator: {node.operator}")
 
@@ -232,8 +295,6 @@ class LLVMIRGenerator(AstVisitor):
             return self.visit_identifier(node)
         elif isinstance(node, ast.TypeCastExpression):
             return self.visit_type_cast_expression(node)
-        elif isinstance(node, ast.Expression):
-            return self.visit(node)
         else:
             raise NotImplementedError(f"Unsupported expression type: {type(node)}")
 
@@ -257,12 +318,27 @@ class LLVMIRGenerator(AstVisitor):
         return self._cast_value(value, target_type)
 
     def _cast_value(self, value, target_type):
-        if isinstance(value.type, ir.IntType) and isinstance(target_type, ir.DoubleType):
-            return self.builder.sitofp(value, target_type)
-        elif isinstance(value.type, ir.DoubleType) and isinstance(target_type, ir.IntType):
-            return self.builder.fptosi(value, target_type)
-        else:
+        value_type = value.type
+
+        if value_type == target_type:
             return value
+
+        if isinstance(value_type, ir.IntType) and isinstance(target_type, ir.IntType):
+            if value_type.width < target_type.width:
+                return self.builder.sext(value, target_type)
+            elif value_type.width > target_type.width:
+                return self.builder.trunc(value, target_type)
+        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.FloatType):
+            return self.builder.sitofp(value, target_type)
+        elif isinstance(value_type, ir.FloatType) and isinstance(target_type, ir.IntType):
+            return self.builder.fptosi(value, target_type)
+        elif isinstance(value_type, ir.FloatType) and isinstance(target_type, ir.FloatType):
+            if value_type.width < target_type.width:
+                return self.builder.fpext(value, target_type)
+            elif value_type.width > target_type.width:
+                return self.builder.fptrunc(value, target_type)
+
+        raise NotImplementedError(f"Casting from {value_type} to {target_type} is not implemented")
 
     def _cast_to_common_type(self, left, right):
         if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.DoubleType):
