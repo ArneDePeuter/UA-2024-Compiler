@@ -7,7 +7,7 @@ To run the program, execute the following command: `python3 -m compiler`
 ## Command Line Flags
 
 - `--input`: (**required**) Specifies the input file to compile.
-- `--render_ast`: Renders the Abstract Syntax Tree (AST) of the input file.
+- `--render_ast`: Renders the Abstract Syntax Tree (AST) of the input file. Specify the output folder
 - `--no-optimise`: If provided, the AST will not be optimized.
 
 ### Examples:
