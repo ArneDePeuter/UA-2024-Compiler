@@ -1,7 +1,11 @@
+
+
+typedef int bool;
+
 int main() {
-    char x = 'a';
-    int y = 5;
+    bool x = 1;
+    bool y = 0;
+    int z = x && y;
 
-    int result = x & y;
-
+    bool b = y * z * 57809;
 }
