@@ -6,16 +6,12 @@ import antlr4
 from .antlr_files.GrammarParser import GrammarParser
 from .antlr_files.GrammarLexer import GrammarLexer
 from .parser.tree_visitor import TreeVisitor
-
-
-class CompilationSyntaxError(Exception):
-    def __init__(self, line, column, message):
-        super().__init__(f"ERROR: when parsing line {line} column {column}: {message}\n")
+from ..core.errors.compiler_syntaxerror import CompilerSyntaxError
 
 
 class MyErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise CompilationSyntaxError(line, column, msg)
+        raise CompilerSyntaxError(msg, line, column)
 
 
 def tree_from_file(filename: str):

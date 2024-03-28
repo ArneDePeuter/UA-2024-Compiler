@@ -44,16 +44,7 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        # TODO: Pointer arithmetics, better abstraction should trow for
-        #     int* ptr = &x;
-        #     float* ptr2 = 0;
-        #     float* ptr3 = ptr2 + ptr;
-        # But not for:
-        #     int x = 4;
-        #     int* ptr = &x;
-        #     ptr = ptr + 4*num_skip_elements;
-
-        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
+        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and len(right_type.address_qualifiers) == 0 and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
             # For pointer + integer or pointer - integer, the result is a pointer of the same type
             return Type(base_type=left_type.base_type, line=node.line, position=node.position, address_qualifiers=left_type.address_qualifiers)
         elif len(right_type.address_qualifiers) > 0 and left_type.base_type == ast.BaseType.int and node.operator == ast.BinaryArithmetic.Operator.PLUS:
@@ -70,7 +61,7 @@ class SymbolTableVisitor(AstVisitor):
 
                 return Type(base_type=right_type.base_type, line=node.line, position=node.position,
                             address_qualifiers=right_type.address_qualifiers)
-            raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+            raise SemanticError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position)
 
         return Type(base_type=left_type.base_type, line=node.line, position=node.position)
 
@@ -117,6 +108,8 @@ class SymbolTableVisitor(AstVisitor):
             return new_type
 
         elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            if len(type.address_qualifiers) == 0:
+                raise SemanticError(f"Cannot dereference a non pointer type: {type}.", node.line, node.position)
             new_type = copy.deepcopy(type)
             new_type.address_qualifiers.pop()
             return new_type
@@ -170,7 +163,7 @@ class SymbolTableVisitor(AstVisitor):
             # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
             if initializer is not None:
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration
-                initializer_type = self.visit(initializer)
+                initializer_type = self.visit_expression(initializer)
 
                 # Check if the (left)type is compatible with the initializer
                 if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
