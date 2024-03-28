@@ -1,6 +1,8 @@
 from antlr4 import *
 import copy
 
+from antlr4.tree.Tree import TerminalNodeImpl
+
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.frontend.antlr_files.GrammarParser import GrammarParser
 from compiler.frontend.antlr_files.GrammarVisitor import GrammarVisitor
@@ -66,6 +68,11 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
+    
+    def visitStatement(self, ctx:GrammarParser.StatementContext):
+        if ctx.getChild(0) == TerminalNodeImpl:
+            return None
+        return super().visitStatement(ctx)
 
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())

@@ -4,7 +4,6 @@ int main() {
 
     int* ptr = &x;
     ptr++; // now points to y
-    //++ptr; What does this do?
     ptr--; // now points to x
 
     int is_x = (ptr == &x);
