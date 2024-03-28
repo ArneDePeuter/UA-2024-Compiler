@@ -11,8 +11,8 @@ def test_1() -> None:
         }
     """
 
-    tree = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree)
+    tree, input_stream = tree_from_str(input)
+    constructed_ast = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     assert len(constructed_ast.statements) == 1
@@ -33,8 +33,8 @@ def test_2() -> None:
         }
     """
 
-    tree = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree)
+    tree, input_stream = tree_from_str(input)
+    constructed_ast = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     assert len(constructed_ast.statements) == 1

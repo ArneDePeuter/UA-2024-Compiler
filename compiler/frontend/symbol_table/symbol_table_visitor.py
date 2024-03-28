@@ -27,7 +27,7 @@ class SymbolTableVisitor(AstVisitor):
         return Type(base_type=ast.BaseType.char, line=node.line, position=node.position)
 
     def visit_identifier(self, node: ast.IDENTIFIER):
-        symbol = self.symbol_table.lookup(node.name, current_scope_only=True)
+        symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
         if symbol is None:
             raise SemanticError(f"Undefined identifier '{node.name}'.", node.line, node.position)
         return symbol.type
@@ -36,7 +36,7 @@ class SymbolTableVisitor(AstVisitor):
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         expression_type = self.visit_expression(node.expression)
         targed_cast_type = node.cast_type
-        # TODO: Determine if the cast is valid
+        # TODO: Determine if the cast is valid (currently only n/a)
 
         return Type(base_type=targed_cast_type.base_type, line=node.line, position=node.position)
 
@@ -44,16 +44,7 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        # TODO: Pointer arithmetics, better abstraction should trow for
-        #     int* ptr = &x;
-        #     float* ptr2 = 0;
-        #     float* ptr3 = ptr2 + ptr;
-        # But not for:
-        #     int x = 4;
-        #     int* ptr = &x;
-        #     ptr = ptr + 4*num_skip_elements;
-
-        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
+        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and len(right_type.address_qualifiers) == 0 and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
             # For pointer + integer or pointer - integer, the result is a pointer of the same type
             return Type(base_type=left_type.base_type, line=node.line, position=node.position, address_qualifiers=left_type.address_qualifiers)
         elif len(right_type.address_qualifiers) > 0 and left_type.base_type == ast.BaseType.int and node.operator == ast.BinaryArithmetic.Operator.PLUS:
@@ -70,15 +61,30 @@ class SymbolTableVisitor(AstVisitor):
 
                 return Type(base_type=right_type.base_type, line=node.line, position=node.position,
                             address_qualifiers=right_type.address_qualifiers)
-            raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+            raise SemanticError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position)
 
         return Type(base_type=left_type.base_type, line=node.line, position=node.position)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        ...
+        left_type = self.visit_expression(node.left)
+        right_type = self.visit_expression(node.right)
+
+        if len(left_type.address_qualifiers) > 0 or len(right_type.address_qualifiers) > 0:
+            raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
+
+        if left_type.base_type == ast.BaseType.float or right_type.base_type == ast.BaseType.float:
+            raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+
+        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        ...
+        left_type = self.visit_expression(node.left)
+        right_type = self.visit_expression(node.right)
+
+        if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+            WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
+
+        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         left_type = self.visit_expression(node.left)
@@ -94,7 +100,7 @@ class SymbolTableVisitor(AstVisitor):
 
         # TODO: Possibly implement rest of the unary operations
         if node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
-            # TODO:Ensure the operand is addressable (variables, array elements, etc.)
+            # TODO: Ensure the operand is addressable (variables, array elements, etc.)
             # if not isinstance(node.value, ast.AddressQualifier):
             #     raise SemanticError(f"Cannot take address of non-addressable value.", node.line, node.position)
             new_type = copy.deepcopy(type)
@@ -102,6 +108,8 @@ class SymbolTableVisitor(AstVisitor):
             return new_type
 
         elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            if len(type.address_qualifiers) == 0:
+                raise SemanticError(f"Cannot dereference a non pointer type: {type}.", node.line, node.position)
             new_type = copy.deepcopy(type)
             new_type.address_qualifiers.pop()
             return new_type
@@ -147,7 +155,7 @@ class SymbolTableVisitor(AstVisitor):
             initializer = qualifier.initializer
 
             # Check if the variable is already declared in the current scope
-            if self.symbol_table.lookup(identifier, current_scope_only=True):
+            if self.symbol_table.lookup(identifier, current_scope_only=False):
                 if initializer is None:
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
@@ -155,7 +163,7 @@ class SymbolTableVisitor(AstVisitor):
             # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
             if initializer is not None:
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration
-                initializer_type = self.visit(initializer)
+                initializer_type = self.visit_expression(initializer)
 
                 # Check if the (left)type is compatible with the initializer
                 if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):

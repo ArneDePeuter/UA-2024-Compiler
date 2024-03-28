@@ -6,7 +6,7 @@ int* non_const_pointer = &x;
 
 *non_const_pointer = 36941;
 
-non_const_pointer = &b; // Is allowed because,
+non_const_pointer = &b;
 
 
 char c = 'x';

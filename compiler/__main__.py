@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--render_ast', help='Render the AST of the input file. Specify output folder.')
     parser.add_argument('--render_symb', help='Render the symbol table of the input file. Specify output folder.')
     parser.add_argument('--no-optimise', action='store_true', help='Dont optimise the ast if this flag is provided.')
+    parser.add_argument('--target_llvm', help='LLvm Target. Specify output folder.')
 
     args = parser.parse_args()
 
@@ -30,14 +31,16 @@ def main():
     if not args.no_optimise:
         ast = optimise_ast(ast)
 
-    # Generate LLVM IR
-    llvm_ir_generator = LLVMIRGenerator()
-    llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
+    if args.target_llvm:
+        # Generate LLVM IR
+        llvm_ir_generator = LLVMIRGenerator()
+        llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
 
-    # Write LLVM IR to a file
-    output_file = args.input.rsplit(".", 1)[0] + ".ll"
-    with open(output_file, "w") as file:
-        file.write(llvm_ir)
+        # Write LLVM IR to a file
+        filename = str(args.input).split("/")[-1][:-2]
+        output_file = f"{args.target_llvm}/{filename}.ll"
+        with open(output_file, "w") as file:
+            file.write(llvm_ir)
 
     # Perform actions based on the command line arguments
     if args.render_ast:

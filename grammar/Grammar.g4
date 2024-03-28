@@ -30,6 +30,7 @@ statement
     | assignmentStatement
     | comment
     | typedefStatement
+    | ';'
     ;
 
 typedefStatement

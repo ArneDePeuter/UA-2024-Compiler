@@ -31,7 +31,7 @@ class SymbolTableDotVisitor():
             # Symbol nodes are plain text
             symbol_node_id = f"{node_id}_{symbol.name}"
             output += f'  {node_id} -> {symbol_node_id} [color=black];\n'
-            output += f'  {symbol_node_id} [label="{symbol.name}", shape=box, style=filled, fillcolor=white];\n'
+            output += f'  {symbol_node_id} [label="{symbol.type} {symbol.name}", shape=box, style=filled, fillcolor=white];\n'
 
         for child in scope.children.values():
             output += self.traverse_scope(child, node_id)
