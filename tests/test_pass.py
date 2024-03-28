@@ -2,6 +2,7 @@ import os
 
 from compiler.frontend import tree_from_file, tree_to_ast
 from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor, SymbolTable
+from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
 
 
 def test_pass() -> None:
@@ -20,3 +21,6 @@ def test_pass() -> None:
 
         symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
         symbol_table_visitor.visit(ast)
+
+        llvm_ir_generator = LLVMIRGenerator()
+        llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)

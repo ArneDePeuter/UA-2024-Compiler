@@ -72,8 +72,7 @@ class LLVMIRGenerator(AstVisitor):
                     elif isinstance(var_type, ir.DoubleType) and isinstance(init_value.type, ir.IntType):
                         init_value = self.builder.sitofp(init_value, var_type)
                     else:
-                        raise TypeError(
-                            f"Cannot cast initializer value of type {init_value.type} to variable type {var_type}")
+                        raise TypeError(f"Cannot cast initializer value of type {init_value.type} to variable type {var_type}")
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
