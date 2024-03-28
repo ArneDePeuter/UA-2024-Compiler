@@ -32,7 +32,11 @@ class SymbolTableVisitor(AstVisitor):
 
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
-        ...
+        expression_type = self.visit_expression(node.expression)
+        targed_cast_type = node.cast_type
+        # TODO: Determine if the cast is valid
+
+        return Type(base_type=targed_cast_type.base_type, line=node.line, position=node.position)
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left_type = self.visit_expression(node.left)
@@ -46,6 +50,7 @@ class SymbolTableVisitor(AstVisitor):
         #     int x = 4;
         #     int* ptr = &x;
         #     ptr = ptr + 4*num_skip_elements;
+        # Now fixed by first checking the base type, than the rest but not clean
         if left_type.base_type != right_type.base_type:
             raise SemanticError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position)
         elif len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
@@ -78,7 +83,7 @@ class SymbolTableVisitor(AstVisitor):
     def visit_unary_expression(self, node: ast.UnaryExpression):
         type = self.visit_expression(node.value)
 
-        # TODO: Implement rest of the unary operations
+        # TODO: Possibly implement rest of the unary operations
         if node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
             # TODO:Ensure the operand is addressable (variables, array elements, etc.)
             # if not isinstance(node.value, ast.AddressQualifier):
