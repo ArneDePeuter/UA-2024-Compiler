@@ -121,7 +121,9 @@ class ConstantPropagationVisitor(AstVisitor):
         return node
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
+        self.lock_propagation = True
         node.left = self.visit_expression(node.left)
+        self.lock_propagation = False
         node.right = self.visit_expression(node.right)
         return node
 
@@ -130,6 +132,7 @@ class ConstantPropagationVisitor(AstVisitor):
         return node
 
     def visit_printf_call(self, node: ast.PrintFCall):
+        node.expression = self.visit_expression(node.expression)
         return node
 
     def visit_comment_statement(self, node: ast.CommentStatement):
