@@ -1,9 +1,19 @@
 # Compiler
 
-## How to Run the Program
+## Venv with poetry
 
+- `pip install poetry`
+- `poetry install --no-root`
+- `poetry shell`
+
+## How to Run the Program
+**!You must have poetry env enabled!**
 - To run the program, execute the following command: `python3 -m compiler`
 - To run all the files in **./input** and output to **./output**: `python3 scripts/create_all_pass.py`
+
+## How to run tests
+**!You must have poetry env enabled!**
+- run command `pytest`
 
 ## Command Line Flags
 

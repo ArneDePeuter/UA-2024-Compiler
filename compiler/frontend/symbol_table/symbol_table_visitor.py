@@ -73,7 +73,7 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
 
         if left_type.base_type == ast.BaseType.float or right_type.base_type == ast.BaseType.float:
-            raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+            raise SemanticError(f"Cannot execute binary bitwise expression with arguments of type: {left_type} and {right_type}.", node.line, node.position)
 
         return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
@@ -117,7 +117,16 @@ class SymbolTableVisitor(AstVisitor):
         return type
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        ...
+        value_type = self.visit_expression(node.value)
+        amount_type = self.visit_expression(node.amount)
+
+        if len(value_type.address_qualifiers) > 0 or len(amount_type.address_qualifiers) > 0:
+            raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
+
+        if value_type.base_type == ast.BaseType.float or amount_type.base_type == ast.BaseType.float:
+            raise SemanticError(f"Cannot execute shift-expression with arguments of type: {value_type} and {amount_type}.", node.line, node.position)
+
+        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
@@ -177,7 +186,6 @@ class SymbolTableVisitor(AstVisitor):
                         right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(initializer_type.base_type)
                         if right_expression_hierarchy > left_expression_hierarchy:
                             WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line, node.position).warn()
-                            return
                     else:
                         raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
 
