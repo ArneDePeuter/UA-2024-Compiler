@@ -19,7 +19,7 @@ class SymbolTableVisitor(AstVisitor):
         return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_float(self, node: ast.FLOAT):
-        ...
+        return Type(base_type=ast.BaseType.float, line=node.line, position=node.position)
 
     def visit_char(self, node: ast.CHAR):
         ...
@@ -38,11 +38,20 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        # Pointer arithmetics
-        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
+        # TODO: Pointer arithmetics, better abstraction should trow for
+        #     int* ptr = &x;
+        #     float* ptr2 = 0;
+        #     float* ptr3 = ptr2 + ptr;
+        # But not for:
+        #     int x = 4;
+        #     int* ptr = &x;
+        #     ptr = ptr + 4*num_skip_elements;
+        if left_type.base_type != right_type.base_type:
+            raise SemanticError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position)
+        elif len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
             # For pointer + integer or pointer - integer, the result is a pointer of the same type
             return left_type
-        elif len(right_type.address_qualifiers) > 0 and left_type.base_type == ast.BaseType.int and node.operator ==ast.BinaryArithmetic.Operator.PLUS:
+        elif len(right_type.address_qualifiers) > 0 and left_type.base_type == ast.BaseType.int and node.operator == ast.BinaryArithmetic.Operator.PLUS:
             # For integer + pointer (valid only for addition), the result is a pointer of the same type
             return right_type
         elif left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
@@ -77,6 +86,8 @@ class SymbolTableVisitor(AstVisitor):
             new_type = copy.deepcopy(type)
             new_type.address_qualifiers.append(ast.AddressQualifier.pointer)
             return new_type
+
+        return type
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
         ...
@@ -120,16 +131,18 @@ class SymbolTableVisitor(AstVisitor):
             if self.symbol_table.lookup(identifier, current_scope_only=True):
                 raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
 
-            # Get the type of the initializer, to make sure it is compatible with the variable declaration
-            initializer_type = self.visit(initializer)
+            # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
+            if initializer is not None:
+                # Get the type of the initializer, to make sure it is compatible with the variable declaration
+                initializer_type = self.visit(initializer)
 
-            # Check if the (left)type is compatible with the initializer
-            if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
-                # Add the exception to allow null pointers
-                if isinstance(initializer, ast.INT) and initializer.value == 0 and len(node.var_type.address_qualifiers) > 0:
-                    pass
-                else:
-                    raise SemanticError(f"Incompatible types for variable '{identifier}': {initializer_type} and {node.var_type}.", node.line, node.position)
+                # Check if the (left)type is compatible with the initializer
+                if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
+                    # Add the exception to allow null pointers
+                    if isinstance(initializer, ast.INT) and initializer.value == 0 and len(node.var_type.address_qualifiers) > 0:
+                        pass
+                    else:
+                        raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
 
             # Define the variable in the symbol table
             self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
@@ -139,7 +152,7 @@ class SymbolTableVisitor(AstVisitor):
         right_type = self.visit(node.right)
 
         if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
-            raise SemanticError(f"Type mismatch in assignment: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+            raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         ...
