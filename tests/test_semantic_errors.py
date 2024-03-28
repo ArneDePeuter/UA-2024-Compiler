@@ -5,7 +5,7 @@ from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisit
 from compiler.core.errors.semantic_error import SemanticError
 
 error_dict = {
-    "proj2_man_semanticErr_constAssignment.c": None,
+    "proj2_man_semanticErr_constAssignment.c": SemanticError("Cannot assign to a const variable.", 4, 0),
     "proj2_man_semanticErr_constPointerRessignment.c": None,
     "proj2_man_semanticErr_incompatibleTypes1.c": SemanticError("Type mismatch in assignment: int** and int*.", 9, 0),
     "proj2_man_semanticErr_incompatibleTypes2.c": SemanticError("Incompatible types for variable 'x_ptr': int** and int*.", 6, 0),

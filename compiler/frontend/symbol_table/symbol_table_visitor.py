@@ -22,7 +22,7 @@ class SymbolTableVisitor(AstVisitor):
         return Type(base_type=ast.BaseType.float, line=node.line, position=node.position)
 
     def visit_char(self, node: ast.CHAR):
-        ...
+        return Type(base_type=ast.BaseType.char, line=node.line, position=node.position)
 
     def visit_identifier(self, node: ast.IDENTIFIER):
         symbol = self.symbol_table.lookup(node.name, current_scope_only=True)
@@ -92,6 +92,11 @@ class SymbolTableVisitor(AstVisitor):
             new_type.address_qualifiers.append(ast.AddressQualifier.pointer)
             return new_type
 
+        elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            new_type = copy.deepcopy(type)
+            new_type.address_qualifiers.pop()
+            return new_type
+
         return type
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
@@ -149,6 +154,15 @@ class SymbolTableVisitor(AstVisitor):
                     else:
                         raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
 
+                # TODO: Check on const* int types meaning the pointer is read-only, but the variable it is pointing to becomes const
+                if node.var_type.const and len(initializer_type.address_qualifiers) > 0:
+                    print(f"The pointer '{identifier}' is read-only.")
+                    node.var_type.const = False
+                    symbol = self.symbol_table.lookup(initializer.value.name)
+                    symbol.type.const = True
+                    print(f"Symbol: {symbol.name}, {symbol.type.const}")
+
+
             # Define the variable in the symbol table
             self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
@@ -158,6 +172,10 @@ class SymbolTableVisitor(AstVisitor):
 
         if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
+
+        # Check if the variable is const
+        if left_type.const:
+            raise SemanticError(f"Cannot assign to a const variable.", node.line, node.position)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         ...
