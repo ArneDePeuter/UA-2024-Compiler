@@ -9,10 +9,17 @@ class BaseType(Enum):
     int = "int"
     char = "char"
     float = "float"
+    bool = "bool"
+
+    def __str__(self):
+        return self.value
 
 
 class AddressQualifier(Enum):
     pointer = "*"
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass
@@ -24,3 +31,6 @@ class Type(AST):
     def __post_init__(self):
         if self.address_qualifiers is None:
             self.address_qualifiers = []
+
+    def __str__(self):
+        return ("const " if self.const else "")+str(self.base_type)+''.join(str(qualifier) for qualifier in self.address_qualifiers)

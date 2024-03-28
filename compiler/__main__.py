@@ -23,6 +23,9 @@ def main():
     tree, input_stream = tree_from_file(filename=args.input)
     ast = tree_to_ast(tree, input_stream)
 
+    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+    symbol_table_visitor.visit_program(ast)
+
     # middle end
     if not args.no_optimise:
         ast = optimise_ast(ast)
@@ -47,8 +50,6 @@ def main():
         subprocess.run(command, shell=True, check=True)
 
     if args.render_symb:
-        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
-        symbol_table_visitor.visit_program(ast)
         symbol_table_tree = symbol_table_visitor.symbol_table.global_scope
         dot_visitor = SymbolTableDotVisitor()
         dot_visitor.generate_dot(symbol_table_tree)
