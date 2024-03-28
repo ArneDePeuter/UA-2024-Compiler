@@ -36,7 +36,7 @@ class SymbolTableVisitor(AstVisitor):
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         expression_type = self.visit_expression(node.expression)
         targed_cast_type = node.cast_type
-        # TODO: Determine if the cast is valid
+        # TODO: Determine if the cast is valid (currently only n/a)
 
         return Type(base_type=targed_cast_type.base_type, line=node.line, position=node.position)
 
@@ -100,7 +100,7 @@ class SymbolTableVisitor(AstVisitor):
 
         # TODO: Possibly implement rest of the unary operations
         if node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
-            # TODO:Ensure the operand is addressable (variables, array elements, etc.)
+            # TODO: Ensure the operand is addressable (variables, array elements, etc.)
             # if not isinstance(node.value, ast.AddressQualifier):
             #     raise SemanticError(f"Cannot take address of non-addressable value.", node.line, node.position)
             new_type = copy.deepcopy(type)
