@@ -2,12 +2,14 @@
 
 ## How to Run the Program
 
-To run the program, execute the following command: `python3 -m compiler`
+- To run the program, execute the following command: `python3 -m compiler`
+- To run all the files in **./input** and output to **./output**: `python3 scripts/create_all_pass.py`
 
 ## Command Line Flags
 
 - `--input`: (**required**) Specifies the input file to compile.
 - `--render_ast`: Renders the Abstract Syntax Tree (AST) of the input file. Specify the output folder
+- `--render_symb`: Renders the Symbol table of the input file. Specify the output folder
 - `--no-optimise`: If provided, the AST will not be optimized.
 - `--target_llvm`: Output llvm target to specified output folder.
 
@@ -44,12 +46,12 @@ To run the program, execute the following command: `python3 -m compiler`
 - [X] Increment/Decrement operations
 - [X] Constant folding with conversions
 - [X] Constant Propagation
-- [ ] Semantic Errors
+- [X] Semantic Errors
 
 ### Project 3
 - [X] Single line and multi line comments
-- [ ] Comments output to LLVM
-- [ ] C statement in LLVM output as comment
+- [X] Comments output to LLVM
+- [X] C statement in LLVM output as comment
 - [X] Printf
 - [X] Typedef
 - [ ] LLVM code generation
