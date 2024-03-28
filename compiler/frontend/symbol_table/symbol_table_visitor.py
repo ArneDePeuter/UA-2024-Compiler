@@ -27,7 +27,7 @@ class SymbolTableVisitor(AstVisitor):
         return Type(base_type=ast.BaseType.char, line=node.line, position=node.position)
 
     def visit_identifier(self, node: ast.IDENTIFIER):
-        symbol = self.symbol_table.lookup(node.name, current_scope_only=True)
+        symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
         if symbol is None:
             raise SemanticError(f"Undefined identifier '{node.name}'.", node.line, node.position)
         return symbol.type
@@ -155,7 +155,7 @@ class SymbolTableVisitor(AstVisitor):
             initializer = qualifier.initializer
 
             # Check if the variable is already declared in the current scope
-            if self.symbol_table.lookup(identifier, current_scope_only=True):
+            if self.symbol_table.lookup(identifier, current_scope_only=False):
                 if initializer is None:
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
