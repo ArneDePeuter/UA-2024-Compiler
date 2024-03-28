@@ -6,18 +6,16 @@ from compiler.core.errors.semantic_error import SemanticError
 
 error_dict = {
     "proj2_man_semanticErr_constAssignment.c": SemanticError("Cannot assign to a const variable.", 4, 0),
-    "proj2_man_semanticErr_constPointerRessignment.c": None,
+    "proj2_man_semanticErr_constPointerRessignment.c": SemanticError("Cannot assign to a const variable.", 8, 0),
     "proj2_man_semanticErr_incompatibleTypes1.c": SemanticError("Type mismatch in assignment: int** and int*.", 9, 0),
     "proj2_man_semanticErr_incompatibleTypes2.c": SemanticError("Incompatible types for variable 'x_ptr': int** and int*.", 6, 0),
     "proj2_man_semanticErr_incompatibleTypes3.c": SemanticError("Incompatible types for variable 'y': float and int*.", 5, 0),
     "proj2_man_semanticErr_incompatibleTypes4.c": SemanticError("Type mismatch in binary operation: float* and int*.", 7, 18),
     "proj2_man_semanticErr_incompatibleTypes5.c": SemanticError("Type mismatch in assignment: int* and int.", 9, 0),
     "proj2_man_semanticErr_redeclaration.c": SemanticError("Variable 'x' is already declared.", 5, 0),
-    "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already declared.", 4, 0), # TODO: We might find a way to split redefinition and redeclaration inside variable_declaration
-    # TODO: Implement proj2_man_semanticErr_rvalueAssignment1.c
-    "proj2_man_semanticErr_rvalueAssignment1.c": None,
-    # TODO: Implement proj2_man_semanticErr_rvalueAssignment2.c
-    "proj2_man_semanticErr_rvalueAssignment2.c": None,
+    "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already defined.", 4, 0),
+    "proj2_man_semanticErr_rvalueAssignment1.c": SemanticError("Cannot assign to an expression.", 4, 0),
+    "proj2_man_semanticErr_rvalueAssignment2.c": SemanticError("Cannot assign to an expression.", 4, 0),
     "proj2_man_semanticErr_undeclaredVariable1.c": SemanticError("Undefined identifier 'x'.", 6, 16),
     "proj2_man_semanticErr_undeclaredVariable2.c": SemanticError("Undefined identifier 'x'.", 3, 0),
     "proj2_man_semanticErr_undeclaredVariable3.c": SemanticError("Undefined identifier 'z'.", 2, 12)
