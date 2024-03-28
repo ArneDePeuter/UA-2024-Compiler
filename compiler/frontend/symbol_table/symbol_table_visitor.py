@@ -75,10 +75,25 @@ class SymbolTableVisitor(AstVisitor):
         return Type(base_type=left_type.base_type, line=node.line, position=node.position)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        ...
+        left_type = self.visit_expression(node.left)
+        right_type = self.visit_expression(node.right)
+
+        if len(left_type.address_qualifiers) > 0 or len(right_type.address_qualifiers) > 0:
+            raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
+
+        if left_type.base_type == ast.BaseType.float or right_type.base_type == ast.BaseType.float:
+            raise SemanticError(f"Type mismatch in binary operation: {left_type.base_type} and {right_type.base_type}.", node.line, node.position)
+
+        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        ...
+        left_type = self.visit_expression(node.left)
+        right_type = self.visit_expression(node.right)
+
+        if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+            WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
+
+        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         left_type = self.visit_expression(node.left)
