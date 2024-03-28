@@ -1,14 +1,23 @@
 from antlr4 import *
 import copy
 
+from compiler.core.errors.semantic_error import SemanticError
 from compiler.frontend.antlr_files.GrammarParser import GrammarParser
 from compiler.frontend.antlr_files.GrammarVisitor import GrammarVisitor
 from compiler.core import ast
 
 
 class TreeVisitor(GrammarVisitor):
-    def __init__(self):
-        self.typedef_scope: dict[str, ast.BaseType] = {}
+    def __init__(self, input_stream: InputStream):
+        self.typedef_scope: dict[str, ast.Type] = {
+            "float": ast.Type(base_type=ast.BaseType.float),
+            "int": ast.Type(base_type=ast.BaseType.int),
+            "char": ast.Type(base_type=ast.BaseType.char)
+        }
+        self.input_stream = input_stream
+
+    def get_original_text(self, ctx):
+        return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
 
     def visitProgram(self, ctx) -> ast.Program:
         statements = []
@@ -66,7 +75,8 @@ class TreeVisitor(GrammarVisitor):
             var_type=var_type,
             qualifiers=qualifiers,
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
 
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
@@ -77,8 +87,14 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitType(self, ctx):
+        if ctx.ID():
+            text = ctx.ID().getText()
+            if text in self.typedef_scope:
+                return copy.deepcopy(self.typedef_scope[text])
+            else:
+                raise RuntimeError("Typedef not defined")
         return ast.Type(
-            base_type=self.visit(ctx.baseType()),
+            base_type=ast.BaseType((ctx.baseType().getText())),
             const=ctx.const() is not None,
             address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
             line=ctx.start.line,
@@ -90,19 +106,15 @@ class TreeVisitor(GrammarVisitor):
         return ast.AddressQualifier(text)
 
     def visitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
-        base_type = self.visitBaseType(ctx.baseType())
+        my_type = self.visitType(ctx.type_())
         name = ctx.ID().getText()
-        self.typedef_scope[name] = base_type
-
-    def visitBaseType(self, ctx):
-        if ctx.ID():
-            text = ctx.ID().getText()
-            if text in self.typedef_scope:
-                return self.typedef_scope[text]
-            else:
-                raise RuntimeError("Typedef not defined")
-        text = ctx.getText()
-        return ast.BaseType(text)
+        if name in self.typedef_scope:
+            raise SemanticError(
+                f"Typedef redefinition: {name} already defined",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        self.typedef_scope[name] = my_type
 
     def visitExpression(self, ctx: GrammarParser.ExpressionContext):
         return self.visitChildren(ctx)
@@ -140,7 +152,8 @@ class TreeVisitor(GrammarVisitor):
             left=left,
             right=right,
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
 
     def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):
@@ -266,7 +279,8 @@ class TreeVisitor(GrammarVisitor):
 
     @staticmethod
     def remove_dashes(input):
-        return input[1:-1]
+        out = input[1:-1].replace("\\n", "\n").replace("\\t", "\t").replace("\\0", "\0")
+        return out
 
     def visitPrimary(self, ctx: GrammarParser.PrimaryContext):
         line = ctx.start.line
@@ -288,7 +302,7 @@ class TreeVisitor(GrammarVisitor):
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
-            content=ctx.getText(),
+            content=ctx.getText()[:-1],
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -298,5 +312,6 @@ class TreeVisitor(GrammarVisitor):
             replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
             expression=self.visitLogicalExpression(ctx.logicalExpression()),
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )

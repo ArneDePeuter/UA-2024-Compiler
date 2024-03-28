@@ -33,7 +33,7 @@ statement
     ;
 
 typedefStatement
-    : 'typedef' baseType ID ';';
+    : 'typedef' type ID ';';
 
 expressionStatement
     : expression ';'
@@ -99,14 +99,13 @@ primary
     ;
 
 type
-    : const? baseType addressQualifier*
+    : const? baseType addressQualifier* | ID
     ;
 
 baseType
     : 'int'
     | 'float'
     | 'char'
-    | ID
     ;
 
 const
