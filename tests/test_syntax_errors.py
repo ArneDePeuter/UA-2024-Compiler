@@ -4,9 +4,14 @@ from compiler.frontend import tree_from_file
 
 
 def test_syntax_err() -> None:
-    directory = os.fsencode("./files/syntax_err")
+    directory = os.fsencode("./files")
 
     for file in os.listdir(directory):
+        file_str = file.decode("utf-8")
+        str_list = file_str.split("_")
+        if (str_list[2] != "syntaxErr"):
+            continue
+
         filename = os.fsdecode(file)
         print(f"Testing {filename}")
 

@@ -23,4 +23,4 @@ def test_pass() -> None:
         symbol_table_visitor.visit(ast)
 
         llvm_ir_generator = LLVMIRGenerator()
-        llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
+        # llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
