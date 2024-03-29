@@ -46,7 +46,7 @@ class LLVMIRGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
-
+        self.builder.comment(node.c_syntax)
         for qualifier in node.qualifiers:
             var_name = qualifier.identifier
             var_type = self._get_llvm_type(node.var_type)
@@ -65,23 +65,50 @@ class LLVMIRGenerator(AstVisitor):
 
                 # Cast the initializer value to the variable type if necessary
                 if init_value.type != var_type:
-                    if isinstance(var_type, ir.PointerType) and isinstance(init_value.type, ir.PointerType):
+                    if isinstance(var_type, ir.IntType) and isinstance(init_value.type,
+                                                                       ir.IntType) and init_value.type.width == 1:
+                        # Convert boolean value to integer value
+                        init_value = self.builder.zext(init_value, var_type)
+                    elif isinstance(var_type, ir.PointerType) and isinstance(init_value.type,
+                                                                             ir.IntType) and init_value.type.width == 32:
+                        # Create a null pointer constant if initializing a pointer with 0
+                        init_value = ir.Constant(var_type, None)
+                    elif isinstance(var_type, ir.PointerType) and isinstance(init_value.type, ir.PointerType):
                         init_value = self.builder.bitcast(init_value, var_type)
                     elif isinstance(var_type, ir.IntType) and isinstance(init_value.type, ir.DoubleType):
                         init_value = self.builder.fptosi(init_value, var_type)
                     elif isinstance(var_type, ir.DoubleType) and isinstance(init_value.type, ir.IntType):
                         init_value = self.builder.sitofp(init_value, var_type)
                     else:
-                        raise TypeError(f"Cannot cast initializer value of type {init_value.type} to variable type {var_type}")
+                        raise TypeError(
+                            f"Cannot cast initializer value of type {init_value.type} to variable type {var_type}")
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-
-        # Visit the right expression to get the value to be assigned
-        value = self.visit(node.right)
-
         # Visit the left expression to get the assignment target
         target = self.visit(node.left)
+
+        # Check if the right-hand side is a binary arithmetic operation with pointer arithmetic
+        if isinstance(node.right, ast.BinaryArithmetic):
+            left_type = self._get_expression_type(node.right.left)
+            if isinstance(left_type, ir.PointerType):
+                # Visit the left and right operands of the binary operation
+                ptr = self.visit(node.right.left)
+                offset = self.visit(node.right.right)
+
+                # Check if the operator is multiplication (ptr + 4 * num_skip_elements)
+                if node.right.operator == ast.BinaryArithmetic.Operator.MUL:
+                    # Multiply the offset by the size of the element (assuming 4 bytes)
+                    offset = self.builder.mul(offset, ir.Constant(ir.IntType(32), 4))
+
+                # Calculate the new pointer value using getelementptr
+                value = self.builder.gep(ptr, [offset])
+            else:
+                # If it's not pointer arithmetic, visit the right-hand side as usual
+                value = self.visit(node.right)
+        else:
+            # If it's not a binary arithmetic operation, visit the right-hand side as usual
+            value = self.visit(node.right)
 
         # Get the target type
         target_type = target.type
@@ -107,9 +134,30 @@ class LLVMIRGenerator(AstVisitor):
             if isinstance(node.left, ast.IDENTIFIER):
                 self.variables[node.left.name] = alloca
 
+    def _get_expression_type(self, expr: ast.Expression):
+        if isinstance(expr, ast.IDENTIFIER):
+            var_addr = self.variables.get(expr.name)
+            if var_addr:
+                return var_addr.type
+        # Add more cases for other expression types if needed
+        return None
+
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left = self.visit(node.left)
         right = self.visit(node.right)
+
+        if isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.IntType):
+            # Pointer arithmetic: pointer + integer
+            element_type = left.type.pointee
+            element_size = self._size_of(element_type)
+            scaled_offset = self.builder.mul(right, ir.Constant(ir.IntType(64), element_size))
+            return self.builder.gep(left, [scaled_offset])
+        elif isinstance(left.type, ir.IntType) and isinstance(right.type, ir.PointerType):
+            # Pointer arithmetic: integer + pointer
+            element_type = right.type.pointee
+            element_size = self._size_of(element_type)
+            scaled_offset = self.builder.mul(left, ir.Constant(ir.IntType(64), element_size))
+            return self.builder.gep(right, [scaled_offset])
 
         # Perform type conversion if necessary
         if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.DoubleType):
@@ -142,6 +190,17 @@ class LLVMIRGenerator(AstVisitor):
                 return self.builder.srem(left, right)
             else:
                 return self.builder.frem(left, right)
+
+    def _size_of(self, ty):
+        # Helper method to calculate the size of a type in bytes
+        if isinstance(ty, ir.IntType):
+            return ty.width // 8
+        elif isinstance(ty, ir.DoubleType):
+            return 8
+        elif isinstance(ty, ir.PointerType):
+            return 8  # Assuming 64-bit pointers
+        else:
+            raise NotImplementedError(f"Size calculation for type {ty} is not implemented")
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         left = self.visit(node.left)
@@ -219,24 +278,57 @@ class LLVMIRGenerator(AstVisitor):
             raise NotImplementedError(f"Unsupported logical operator: {operator}")
 
     def _handle_comparison_operation(self, operator, left, right):
-        if operator == ast.ComparisonOperation.Operator.EQ:
-            return self.builder.icmp_signed('==', left, right)
-        elif operator == ast.ComparisonOperation.Operator.NEQ:
-            return self.builder.icmp_signed('!=', left, right)
-        elif operator == ast.ComparisonOperation.Operator.LT:
-            return self.builder.icmp_signed('<', left, right)
-        elif operator == ast.ComparisonOperation.Operator.LTE:
-            return self.builder.icmp_signed('<=', left, right)
-        elif operator == ast.ComparisonOperation.Operator.GT:
-            return self.builder.icmp_signed('>', left, right)
-        elif operator == ast.ComparisonOperation.Operator.GTE:
-            return self.builder.icmp_signed('>=', left, right)
+        if isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.PointerType):
+            # Compare two pointers
+            left = self.builder.ptrtoint(left, ir.IntType(64))  # Convert pointer to int64
+            right = self.builder.ptrtoint(right, ir.IntType(64))  # Convert pointer to int64
+            return self.builder.icmp_unsigned(operator.value, left, right)
+        elif isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.IntType):
+            # Compare pointer with integer
+            left = self.builder.ptrtoint(left, ir.IntType(64))  # Convert pointer to int64
+            right = self.builder.zext(right, ir.IntType(64))  # Zero-extend integer to int64
+            return self.builder.icmp_unsigned(operator.value, left, right)
+        elif isinstance(left.type, ir.IntType) and isinstance(right.type, ir.PointerType):
+            # Compare integer with pointer
+            left = self.builder.zext(left, ir.IntType(64))  # Zero-extend integer to int64
+            right = self.builder.ptrtoint(right, ir.IntType(64))  # Convert pointer to int64
+            return self.builder.icmp_unsigned(operator.value, left, right)
         else:
-            raise NotImplementedError(f"Unsupported comparison operator: {operator}")
+            # Compare two non-pointers
+            if operator == ast.ComparisonOperation.Operator.EQ:
+                return self.builder.icmp_signed('==', left, right)
+            elif operator == ast.ComparisonOperation.Operator.NEQ:
+                return self.builder.icmp_signed('!=', left, right)
+            elif operator == ast.ComparisonOperation.Operator.LT:
+                return self.builder.icmp_signed('<', left, right)
+            elif operator == ast.ComparisonOperation.Operator.LTE:
+                return self.builder.icmp_signed('<=', left, right)
+            elif operator == ast.ComparisonOperation.Operator.GT:
+                return self.builder.icmp_signed('>', left, right)
+            elif operator == ast.ComparisonOperation.Operator.GTE:
+                return self.builder.icmp_signed('>=', left, right)
+            else:
+                raise NotImplementedError(f"Unsupported comparison operator: {operator}")
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         operand = self.visit(node.value)
-        if node.operator == ast.UnaryExpression.Operator.POSITIVE:
+        if node.operator == ast.UnaryExpression.Operator.INCREMENT:
+            if isinstance(operand.type, ir.PointerType):
+                incremented_value = self.builder.gep(operand, [ir.Constant(ir.IntType(32), 1)])
+                return incremented_value
+            else:
+                incremented_value = self.builder.add(operand, ir.Constant(operand.type, 1))
+                self.builder.store(incremented_value, operand)
+                return incremented_value
+        elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
+            if isinstance(operand.type, ir.PointerType):
+                decremented_value = self.builder.gep(operand, [ir.Constant(ir.IntType(32), -1)])
+                return decremented_value
+            else:
+                decremented_value = self.builder.sub(operand, ir.Constant(operand.type, 1))
+                self.builder.store(decremented_value, operand)
+                return decremented_value
+        elif node.operator == ast.UnaryExpression.Operator.POSITIVE:
             return operand
         elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
             return self.builder.neg(operand)
@@ -362,6 +454,9 @@ class LLVMIRGenerator(AstVisitor):
             return self.builder.fptosi(value, target_type)
         elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.DoubleType):
             return value  # No casting needed for double to double
+        elif isinstance(value_type, ir.PointerType) and isinstance(target_type, ir.IntType):
+            # Convert pointer to integer
+            return self.builder.ptrtoint(value, target_type)
 
         raise NotImplementedError(f"Casting from {value_type} to {target_type} is not implemented")
 

@@ -83,6 +83,7 @@ class TreeVisitor(GrammarVisitor):
             qualifiers=qualifiers,
             line=ctx.start.line,
             position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
 
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
