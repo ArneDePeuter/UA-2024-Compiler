@@ -415,7 +415,8 @@ class LLVMIRGenerator(AstVisitor):
             self.visit(statement)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
-        self.builder.comment(f"C Syntax: {node.c_syntax.replace('\n', '')}")
+        modified_c_syntax = node.c_syntax.replace('\n', '')
+        self.builder.comment(f"C Syntax: {modified_c_syntax}")
         self.visit(node.expression)
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
