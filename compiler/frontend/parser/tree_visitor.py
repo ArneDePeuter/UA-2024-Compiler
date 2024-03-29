@@ -90,7 +90,8 @@ class TreeVisitor(GrammarVisitor):
         return ast.ExpressionStatement(
             expression=self.visitExpression(ctx.expression()),
             line=ctx.start.line,
-            position=ctx.start.column
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
         )
 
     def visitType(self, ctx):
@@ -159,8 +160,7 @@ class TreeVisitor(GrammarVisitor):
             left=left,
             right=right,
             line=ctx.start.line,
-            position=ctx.start.column,
-            c_syntax=self.get_original_text(ctx)
+            position=ctx.start.column
         )
 
     def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):
@@ -319,6 +319,5 @@ class TreeVisitor(GrammarVisitor):
             replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
             expression=self.visitLogicalExpression(ctx.logicalExpression()),
             line=ctx.start.line,
-            position=ctx.start.column,
-            c_syntax=self.get_original_text(ctx)
+            position=ctx.start.column
         )

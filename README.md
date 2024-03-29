@@ -64,4 +64,4 @@
 - [X] C statement in LLVM output as comment
 - [X] Printf
 - [X] Typedef
-- [ ] LLVM code generation
+- [ ] LLVM code generation (partly, see tests)
