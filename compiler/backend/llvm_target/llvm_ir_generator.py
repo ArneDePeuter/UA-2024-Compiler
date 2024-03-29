@@ -85,54 +85,68 @@ class LLVMIRGenerator(AstVisitor):
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        # Visit the left expression to get the assignment target
-        target = self.visit(node.left)
+        # Visit the left and right expressions recursively
+        left = self.visit(node.left)
+        right = self.visit(node.right)
 
-        # Check if the right-hand side is a binary arithmetic operation with pointer arithmetic
-        if isinstance(node.right, ast.BinaryArithmetic):
-            left_type = self._get_expression_type(node.right.left)
-            if isinstance(left_type, ir.PointerType):
-                # Visit the left and right operands of the binary operation
-                ptr = self.visit(node.right.left)
-                offset = self.visit(node.right.right)
-
-                # Check if the operator is multiplication (ptr + 4 * num_skip_elements)
-                if node.right.operator == ast.BinaryArithmetic.Operator.MUL:
-                    # Multiply the offset by the size of the element (assuming 4 bytes)
-                    offset = self.builder.mul(offset, ir.Constant(ir.IntType(32), 4))
-
-                # Calculate the new pointer value using getelementptr
-                value = self.builder.gep(ptr, [offset])
-            else:
-                # If it's not pointer arithmetic, visit the right-hand side as usual
-                value = self.visit(node.right)
-        else:
-            # If it's not a binary arithmetic operation, visit the right-hand side as usual
-            value = self.visit(node.right)
-
-        # Get the target type
-        target_type = target.type
+        # Get the target type from the left expression
+        target_type = left.type
 
         # Check if the target is a pointer type
         if isinstance(target_type, ir.PointerType):
             # If the target is a pointer, we need to store the value directly
             # Cast the value to the target's pointee type if necessary
             pointee_type = target_type.pointee
-            if value.type != pointee_type:
-                value = self._cast_value(value, pointee_type)
-            self.builder.store(value, target)
+            if right.type != pointee_type:
+                right = self._cast_value(right, pointee_type)
+            self.builder.store(right, left)
         else:
             # If the target is not a pointer, we need to allocate memory for it
             # and store the value in the allocated memory
             alloca = self.builder.alloca(target_type)
             # Cast the value to the target type if necessary
-            if value.type != target_type:
-                value = self._cast_value(value, target_type)
-            self.builder.store(value, alloca)
+            if right.type != target_type:
+                right = self._implicit_cast(right, target_type)
+            self.builder.store(right, alloca)
 
             # Update the variables dictionary only if the left side is an identifier
             if isinstance(node.left, ast.IDENTIFIER):
                 self.variables[node.left.name] = alloca
+
+    def _implicit_cast(self, value, target_type):
+        value_type = value.type
+
+        if value_type == target_type:
+            return value
+
+        if isinstance(value_type, ir.IntType) and isinstance(target_type, ir.IntType):
+            if value_type.width < target_type.width:
+                return self.builder.sext(value, target_type)
+            elif value_type.width > target_type.width:
+                return self.builder.trunc(value, target_type)
+        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.DoubleType):
+            return self.builder.sitofp(value, target_type)
+        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.IntType):
+            return self.builder.fptosi(value, target_type)
+        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.DoubleType):
+            return value  # No casting needed for double to double
+        elif isinstance(value_type, ir.PointerType) and isinstance(target_type, ir.IntType):
+            # Convert pointer to integer
+            return self.builder.ptrtoint(value, target_type)
+        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.PointerType):
+            # Convert integer to pointer
+            return self.builder.inttoptr(value, target_type)
+
+        # Recursive casting for nested types
+        if isinstance(value_type, ir.PointerType) and isinstance(target_type, ir.PointerType):
+            # Recursively cast the pointee types
+            pointee_value = self.builder.load(value)
+            casted_pointee = self._implicit_cast(pointee_value, target_type.pointee)
+            casted_pointer = self.builder.alloca(target_type.pointee)
+            self.builder.store(casted_pointee, casted_pointer)
+            return casted_pointer
+
+        raise NotImplementedError(f"Implicit casting from {value_type} to {target_type} is not implemented")
 
     def _get_expression_type(self, expr: ast.Expression):
         if isinstance(expr, ast.IDENTIFIER):
@@ -150,14 +164,25 @@ class LLVMIRGenerator(AstVisitor):
             # Pointer arithmetic: pointer + integer
             element_type = left.type.pointee
             element_size = self._size_of(element_type)
-            scaled_offset = self.builder.mul(right, ir.Constant(ir.IntType(64), element_size))
+            scaled_offset = self.builder.mul(right, ir.Constant(right.type, element_size))
             return self.builder.gep(left, [scaled_offset])
         elif isinstance(left.type, ir.IntType) and isinstance(right.type, ir.PointerType):
             # Pointer arithmetic: integer + pointer
             element_type = right.type.pointee
             element_size = self._size_of(element_type)
-            scaled_offset = self.builder.mul(left, ir.Constant(ir.IntType(64), element_size))
+            scaled_offset = self.builder.mul(left, ir.Constant(left.type, element_size))
             return self.builder.gep(right, [scaled_offset])
+        elif isinstance(left.type, ir.DoubleType) and isinstance(right.type, ir.IntType):
+            # Arithmetic operation between DoubleType and IntType
+            right = self.builder.sitofp(right, ir.DoubleType())
+            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                return self.builder.fadd(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                return self.builder.fsub(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                return self.builder.fmul(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                return self.builder.fdiv(left, right)
 
         # Perform type conversion if necessary
         if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.DoubleType):
@@ -165,31 +190,30 @@ class LLVMIRGenerator(AstVisitor):
         elif isinstance(left.type, ir.DoubleType) and isinstance(right.type, ir.IntType):
             right = self.builder.sitofp(right, left.type)
 
-        if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-            if isinstance(left.type, ir.IntType):
+        if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.IntType):
+            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
                 return self.builder.add(left, right)
-            else:
-                return self.builder.fadd(left, right)
-        elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-            if isinstance(left.type, ir.IntType):
+            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
                 return self.builder.sub(left, right)
-            else:
-                return self.builder.fsub(left, right)
-        elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-            if isinstance(left.type, ir.IntType):
+            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
                 return self.builder.mul(left, right)
-            else:
-                return self.builder.fmul(left, right)
-        elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-            if isinstance(left.type, ir.IntType):
+            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
                 return self.builder.sdiv(left, right)
-            else:
-                return self.builder.fdiv(left, right)
-        elif node.operator == ast.BinaryArithmetic.Operator.MOD:
-            if isinstance(left.type, ir.IntType):
+            elif node.operator == ast.BinaryArithmetic.Operator.MOD:
                 return self.builder.srem(left, right)
-            else:
+        elif isinstance(left.type, ir.DoubleType) and isinstance(right.type, ir.DoubleType):
+            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                return self.builder.fadd(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                return self.builder.fsub(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                return self.builder.fmul(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                return self.builder.fdiv(left, right)
+            elif node.operator == ast.BinaryArithmetic.Operator.MOD:
                 return self.builder.frem(left, right)
+
+        raise NotImplementedError(f"Unsupported binary arithmetic operation: {node.operator}")
 
     def _size_of(self, ty):
         # Helper method to calculate the size of a type in bytes
@@ -215,7 +239,20 @@ class LLVMIRGenerator(AstVisitor):
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return self._handle_comparison_operation(node.operator, left, right)
+
+        if isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.IntType):
+            # Compare pointer with integer
+            right = self.builder.zext(right, ir.IntType(64))  # Zero-extend integer to int64
+            left = self.builder.ptrtoint(left, ir.IntType(64))  # Convert pointer to int64
+            return self.builder.icmp_unsigned(node.operator.value, left, right)
+        elif isinstance(left.type, ir.IntType) and isinstance(right.type, ir.PointerType):
+            # Compare integer with pointer
+            left = self.builder.zext(left, ir.IntType(64))  # Zero-extend integer to int64
+            right = self.builder.ptrtoint(right, ir.IntType(64))  # Convert pointer to int64
+            return self.builder.icmp_unsigned(node.operator.value, left, right)
+        else:
+            # Compare two non-pointers
+            return self._handle_comparison_operation(node.operator, left, right)
 
     def visit_binary_operation(self, node: ast.BinaryOperation):
         left = self.visit(node.left)
@@ -315,19 +352,21 @@ class LLVMIRGenerator(AstVisitor):
         if node.operator == ast.UnaryExpression.Operator.INCREMENT:
             if isinstance(operand.type, ir.PointerType):
                 incremented_value = self.builder.gep(operand, [ir.Constant(ir.IntType(32), 1)])
-                return incremented_value
+                self.builder.store(incremented_value, operand)
+                return incremented_value if node.prefix else operand
             else:
                 incremented_value = self.builder.add(operand, ir.Constant(operand.type, 1))
-                self.builder.store(incremented_value, operand)
-                return incremented_value
+                self.builder.store(incremented_value, self.variables[node.value.name])
+                return incremented_value if node.prefix else operand
         elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
             if isinstance(operand.type, ir.PointerType):
                 decremented_value = self.builder.gep(operand, [ir.Constant(ir.IntType(32), -1)])
-                return decremented_value
+                self.builder.store(decremented_value, operand)
+                return decremented_value if node.prefix else operand
             else:
                 decremented_value = self.builder.sub(operand, ir.Constant(operand.type, 1))
-                self.builder.store(decremented_value, operand)
-                return decremented_value
+                self.builder.store(decremented_value, self.variables[node.value.name])
+                return decremented_value if node.prefix else operand
         elif node.operator == ast.UnaryExpression.Operator.POSITIVE:
             return operand
         elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
