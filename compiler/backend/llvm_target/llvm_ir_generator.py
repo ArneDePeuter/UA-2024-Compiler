@@ -46,7 +46,7 @@ class LLVMIRGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
-        self.builder.comment(f"C Syntax: {node.c_syntax}")
+
         for qualifier in node.qualifiers:
             var_name = qualifier.identifier
             var_type = self._get_llvm_type(node.var_type)
@@ -76,7 +76,6 @@ class LLVMIRGenerator(AstVisitor):
                 self.builder.store(init_value, var_addr)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        self.builder.comment(node.c_syntax)
 
         # Visit the right expression to get the value to be assigned
         value = self.visit(node.right)
@@ -324,6 +323,7 @@ class LLVMIRGenerator(AstVisitor):
             self.visit(statement)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
+        self.builder.comment(f"C Syntax: {node.c_syntax}")
         self.visit(node.expression)
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
