@@ -410,48 +410,6 @@ class LLVMIRGenerator(AstVisitor):
         )
         return format_string_constant
 
-<<<<<<< HEAD
-        # Generate the IR for the expression to be printed
-        value = self.visit(node.expression)
-
-        # Declare the printf function
-        printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-        printf_func = ir.Function(self.module, printf_type, name="printf")
-
-        # Call the printf function with the format string and the value
-        self.builder.call(printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value])
-
-    def visit_comment_statement(self, node: ast.CommentStatement):
-        for line in node.content.split("\n"):
-            self.builder.comment(line)
-
-    def _get_llvm_type(self, node_type: ast.Type):
-        if node_type.base_type == ast.BaseType.int:
-            return ir.IntType(32)
-        elif node_type.base_type == ast.BaseType.float:
-            return ir.DoubleType()
-        elif node_type.base_type == ast.BaseType.char:
-            return ir.IntType(8)
-        else:
-            raise NotImplementedError(f"Type {node_type.base_type} not supported")
-
-    def visit_body(self, node: ast.Body):
-        for statement in node.statements:
-            self.visit(statement)
-
-    def visit_expression_statement(self, node: ast.ExpressionStatement):
-        modified_c_syntax = node.c_syntax.replace('\n', '')
-        self.builder.comment(f"C Syntax: {modified_c_syntax}")
-        self.visit(node.expression)
-
-    def visit_shift_expression(self, node: ast.ShiftExpression):
-        value = self.visit(node.value)
-        amount = self.visit(node.amount)
-        if node.operator == ast.ShiftExpression.Operator.LEFT:
-            return self.builder.shl(value, amount)
-        elif node.operator == ast.ShiftExpression.Operator.RIGHT:
-            return self.builder.ashr(value, amount)
-=======
     def _size_of(self, ty):
         """Calculate the size of a type in bytes."""
         if isinstance(ty, ir.IntType):
@@ -460,7 +418,6 @@ class LLVMIRGenerator(AstVisitor):
             return 8
         elif isinstance(ty, ir.PointerType):
             return 8
->>>>>>> refactor. Increment, decrement, advanced pointer operations and special characters still need to be fixed.
         else:
             raise NotImplementedError(f"Size calculation for type {ty} is not implemented")
 
