@@ -9,4 +9,4 @@ for file in os.listdir(directory):
     if (str_list[2] != "pass"):
         continue
 
-    subprocess.run(f"python3 -m compiler --input ./input/{file_str} --render_ast ./output --render_symb ./output --target_llvm ./output", shell=True, check=True)
+    subprocess.run(f"python3 -m compiler --input ./input/{file_str} --render_ast ./output --render_symb ./output", shell=True, check=True)

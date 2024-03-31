@@ -1,0 +1,19 @@
+digraph SymbolTable {
+  node1 [label="Scope Level 0", style=filled, fillcolor=lightblue];
+  node1 -> node1_main [color=black];
+  node1_main [label="int main", shape=box, style=filled, fillcolor=white];
+  node2 [label="Scope Level 1", style=filled, fillcolor=lightblue];
+  node1 -> node2;
+  node2 -> node2_b [color=black];
+  node2_b [label="const int b", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_x [color=black];
+  node2_x [label="const int x", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_non_const_pointer [color=black];
+  node2_non_const_pointer [label="int* non_const_pointer", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_c [color=black];
+  node2_c [label="char c", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_nl [color=black];
+  node2_nl [label="char nl", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_char_ptr [color=black];
+  node2_char_ptr [label="char* char_ptr", shape=box, style=filled, fillcolor=white];
+}

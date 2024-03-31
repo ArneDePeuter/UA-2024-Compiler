@@ -1,0 +1,15 @@
+digraph SymbolTable {
+  node1 [label="Scope Level 0", style=filled, fillcolor=lightblue];
+  node1 -> node1_main [color=black];
+  node1_main [label="int main", shape=box, style=filled, fillcolor=white];
+  node2 [label="Scope Level 1", style=filled, fillcolor=lightblue];
+  node1 -> node2;
+  node2 -> node2_x [color=black];
+  node2_x [label="int x", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_f [color=black];
+  node2_f [label="float f", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_z [color=black];
+  node2_z [label="int z", shape=box, style=filled, fillcolor=white];
+  node2 -> node2_k [color=black];
+  node2_k [label="int k", shape=box, style=filled, fillcolor=white];
+}
