@@ -30,6 +30,7 @@ statement
     | assignmentStatement
     | comment
     | typedefStatement
+    | ifStatement
     | ';'
     ;
 
@@ -86,6 +87,10 @@ shiftExpression
 unaryExpression
     : ('+' | '-' | '!' | '*' | '&' | '++' | '--') unaryExpression
     | primary ('++' | '--')?
+    ;
+
+ifStatement
+    : 'if' '(' expression ')' body ('else' body)?
     ;
 
 
