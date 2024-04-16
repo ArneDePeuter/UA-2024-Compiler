@@ -7,6 +7,14 @@ mainFunction : 'int' 'main' '(' ')' body ;
 
 body : '{' statement* '}' ;
 
+whileStatement
+    : 'while' '(' expression ')' statement
+    ;
+
+forStatement
+    : 'for' '(' expression? ';' expression? ';' expression ')' statement
+    ;
+
 variableDeclaration
     : type variableDeclarationQualifiers ';'
     ;
@@ -30,6 +38,8 @@ statement
     | assignmentStatement
     | comment
     | typedefStatement
+    | whileStatement
+    | forStatement
     | ';'
     ;
 
