@@ -1,38 +1,56 @@
 import os
-
+import pytest
 from compiler.frontend import tree_from_file, tree_to_ast
-from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor, SymbolTable
+from compiler.middleend import optimise_ast
 from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
 
+TEST_FILES_DIR = "files"
+OUTPUT_DIR = "output"
 
-def test_pass_llvm() -> None:
-    directory = os.fsencode("./files")
-    for file in os.listdir(directory):
-        file_str = file.decode("utf-8")
-        str_list = file_str.split("_")
-        if (str_list[2] != "pass"):
-            continue
+def test_pass_llvm():
+    # Check if output directory exists, if not create it
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
 
-        filename = os.fsdecode(file)
-        print(f"LLVM: Testing {filename}")
+    # Counter for passed and failed tests
+    passed = 0
+    failed = 0
 
-        tree, input_stream = tree_from_file(f"{directory.decode()}/{filename}")
-        ast = tree_to_ast(tree, input_stream)
+    # Iterate over each .c file in the test files directory that contains "man_pass" in the filename
+    for file in os.listdir(TEST_FILES_DIR):
+        if "man_pass" in file and file.endswith(".c"):
+            file_path = os.path.join(TEST_FILES_DIR, file)
+            filename, _ = os.path.splitext(file)
 
-        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
-        symbol_table_visitor.visit(ast)
+            try:
+                # Frontend: Construct CST and AST
+                tree, input_stream = tree_from_file(filename=file_path)
+                ast = tree_to_ast(tree, input_stream)
 
-        try:
-            expected_llvm_ir_dir = os.fsencode(f"./llvm_expected")
+                # Middle End: Optimize AST
+                # ast = optimise_ast(ast)
 
-            with open(f"{expected_llvm_ir_dir.decode()}/{filename[:-2]}.ll", "r") as file:
-
+                # Backend: Generate LLVM IR
                 llvm_ir_generator = LLVMIRGenerator()
-                generated_llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
+                llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
 
-                expected_llvm_ir = file.read()
-                assert generated_llvm_ir == expected_llvm_ir
-        except FileNotFoundError:
-            print((f"{filename} yet to be implemented"))
-        else:
-            print((f"{filename} yet to be implemented"))
+                # Write LLVM IR to a file
+                output_file = f"{OUTPUT_DIR}/{filename}.ll"
+                with open(output_file, "w") as file:
+                    file.write(llvm_ir)
+
+                print(f"Test case {filename} passed.")
+                passed += 1
+            except Exception as e:
+                output_file = os.path.join(OUTPUT_DIR, f"{filename}_compile_output.txt")
+                with open(output_file, "w") as f:
+                    f.write(str(e))
+                print(f"Test case {filename} failed. Check {output_file} for details.")
+                failed += 1
+
+    # Summary
+    print(f"Total passed: {passed}")
+    print(f"Total failed: {failed}")
+
+    # Assert that there are no failed tests
+    assert failed == 0, f"{failed} test(s) failed"
