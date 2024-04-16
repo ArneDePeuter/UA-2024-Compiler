@@ -110,16 +110,6 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
-        expression = self.visit(ctx.expression())
-        to_execute = self.visit(ctx.statement())
-        return ast.WhileStatement(
-            expression=expression,
-            to_execute=to_execute,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
     def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         text = ctx.getText()
         return ast.AddressQualifier(text)
@@ -331,6 +321,82 @@ class TreeVisitor(GrammarVisitor):
         return ast.PrintFCall(
             replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
             expression=self.visitLogicalExpression(ctx.logicalExpression()),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
+        if ctx.WHILE():
+            return self.visit_while_statement(ctx)
+        else:
+            return self.visit_for_statement(ctx)
+
+    def visit_while_statement(self, ctx:GrammarParser.IterationStatementContext):
+        expression = self.visit(ctx.expression())
+        to_execute = self.visit(ctx.statement())
+        return ast.WhileStatement(
+            expression=expression,
+            to_execute=to_execute,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitForFirst(self, ctx:GrammarParser.ForFirstContext):
+        if node := ctx.variableDeclaration():
+            return self.visitVariableDeclaration(node)
+        elif node := ctx.expressionStatement():
+            return self.visitExpressionStatement(node)
+        elif node := ctx.assignmentStatement():
+            return self.visitAssignmentStatement(node)
+        return None
+
+    def visitForSecond(self, ctx:GrammarParser.ForSecondContext):
+        if node := ctx.expressionStatement():
+            return self.visitExpressionStatement(node).expression
+        return None
+
+    def visitForThird(self, ctx:GrammarParser.ForThirdContext):
+        if node := ctx.expression():
+            return ast.ExpressionStatement(self.visitExpression(node))
+        return None
+
+    def visitForCondition(self, ctx:GrammarParser.ForConditionContext):
+        return self.visitForFirst(ctx.forFirst()), self.visitForSecond(ctx.forSecond()), self.visitForThird(ctx.forThird())
+
+    def visit_for_statement(self, ctx: GrammarParser.IterationStatementContext):
+        first, second, third = self.visitForCondition(ctx.forCondition())
+        statement = self.visitStatement(ctx.statement())
+
+        if third:
+            if isinstance(statement, ast.Body):
+                statement.statements.append(third)
+                to_execute = statement
+            else:
+                to_execute = ast.Body(
+                    statements=[
+                        statement,
+                        third
+                    ],
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+        else:
+            to_execute = statement
+
+        while_statement = ast.WhileStatement(
+            expression=second if second else ast.INT(1),
+            to_execute=to_execute,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+        if not first:
+            return while_statement
+        return ast.Body(
+            statements=[
+                first,
+                while_statement
+            ],
             line=ctx.start.line,
             position=ctx.start.column
         )

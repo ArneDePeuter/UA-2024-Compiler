@@ -7,12 +7,29 @@ mainFunction : 'int' 'main' '(' ')' body ;
 
 body : '{' statement* '}' ;
 
-whileStatement
-    : 'while' '(' expression ')' statement
+iterationStatement
+    : WHILE '(' expression ')' statement
+    | FOR '(' forCondition ')' statement
     ;
 
-forStatement
-    : 'for' '(' expression? ';' expression? ';' expression ')' statement
+forCondition
+    : forFirst forSecond forThird
+    ;
+
+forFirst
+    : variableDeclaration
+    | assignmentStatement
+    | expressionStatement
+    | TERMINAL
+    ;
+
+forSecond
+    : expressionStatement
+    | TERMINAL
+    ;
+
+forThird
+    : expression?
     ;
 
 variableDeclaration
@@ -38,8 +55,7 @@ statement
     | assignmentStatement
     | comment
     | typedefStatement
-    | whileStatement
-    | forStatement
+    | iterationStatement
     | ';'
     ;
 
@@ -149,6 +165,9 @@ comment
 
 
 // Lexer rules
+WHILE  : 'while' ;
+FOR    : 'for' ;
+TERMINAL: ';';
 NUMBER : '0' | [1-9][0-9]* ;
 FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
 ID     : [a-zA-Z_][a-zA-Z_0-9]* ;

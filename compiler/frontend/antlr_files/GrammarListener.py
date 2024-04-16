@@ -35,21 +35,48 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#whileStatement.
-    def enterWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
+    # Enter a parse tree produced by GrammarParser#iterationStatement.
+    def enterIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#whileStatement.
-    def exitWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
+    # Exit a parse tree produced by GrammarParser#iterationStatement.
+    def exitIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#forStatement.
-    def enterForStatement(self, ctx:GrammarParser.ForStatementContext):
+    # Enter a parse tree produced by GrammarParser#forCondition.
+    def enterForCondition(self, ctx:GrammarParser.ForConditionContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#forStatement.
-    def exitForStatement(self, ctx:GrammarParser.ForStatementContext):
+    # Exit a parse tree produced by GrammarParser#forCondition.
+    def exitForCondition(self, ctx:GrammarParser.ForConditionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forFirst.
+    def enterForFirst(self, ctx:GrammarParser.ForFirstContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forFirst.
+    def exitForFirst(self, ctx:GrammarParser.ForFirstContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forSecond.
+    def enterForSecond(self, ctx:GrammarParser.ForSecondContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forSecond.
+    def exitForSecond(self, ctx:GrammarParser.ForSecondContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forThird.
+    def enterForThird(self, ctx:GrammarParser.ForThirdContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forThird.
+    def exitForThird(self, ctx:GrammarParser.ForThirdContext):
         pass
 
 
