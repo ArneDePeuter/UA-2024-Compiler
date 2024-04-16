@@ -54,3 +54,9 @@ class AssignmentStatement(Statement):
 @dataclass
 class CommentStatement(Statement):
     content: str
+
+
+@dataclass
+class WhileStatement(Statement):
+    expression: Expression
+    to_execute: Statement
