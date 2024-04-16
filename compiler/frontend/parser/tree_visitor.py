@@ -18,6 +18,7 @@ class TreeVisitor(GrammarVisitor):
         }
         self.input_stream = input_stream
 
+
     def get_original_text(self, ctx):
         return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
 
@@ -135,7 +136,9 @@ class TreeVisitor(GrammarVisitor):
         self.typedef_scope[name] = my_type
 
     def visitExpression(self, ctx: GrammarParser.ExpressionContext):
-        return self.visitChildren(ctx)
+        ast = self.visitChildren(ctx)
+        ast.c_syntax = self.get_original_text(ctx)
+        return ast
 
     def visitVariableDeclarationQualifiers(self, ctx):
         return [self.visit(qualifier) for qualifier in ctx.variableDeclarationQualifier()]

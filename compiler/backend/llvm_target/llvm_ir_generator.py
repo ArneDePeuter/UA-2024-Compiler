@@ -7,7 +7,7 @@ class LLVMIRGenerator(AstVisitor):
     def __init__(self):
         super().__init__()
         self.module = ir.Module()
-        self.builder = None
+        self.builder: ir.IRBuilder = None
         self.variables = {}
 
     def generate_llvm_ir(self, node):
@@ -31,12 +31,11 @@ class LLVMIRGenerator(AstVisitor):
 
         self.visit(func_node.body)
 
-        if not block.is_terminated:
-            if return_type == ir.VoidType():
-                self.builder.ret_void()
-            else:
-                default_value = ir.Constant(return_type, None)
-                self.builder.ret(default_value)
+        if return_type == ir.VoidType():
+            self.builder.ret_void()
+        else:
+            default_value = ir.Constant(return_type, None)
+            self.builder.ret(default_value)
 
         self.builder = None
 
@@ -430,3 +429,18 @@ class LLVMIRGenerator(AstVisitor):
             return self.builder.sitofp(right, left.type)
         else:
             return left
+
+    def visit_while_statement(self, node: ast.WhileStatement):
+        w_body_block = self.builder.append_basic_block("w_body")
+        w_after_block = self.builder.append_basic_block("w_after")
+
+        # head
+        cond_head = self.visit_expression(node.expression)
+        self.builder.cbranch(cond_head, w_body_block, w_after_block)
+        # body
+        self.builder.position_at_start(w_body_block)
+        self.visit_statement(node.to_execute)
+        cond_body = self.visit_expression(node.expression)
+        self.builder.cbranch(cond_body, w_body_block, w_after_block)
+        # after
+        self.builder.position_at_start(w_after_block)
