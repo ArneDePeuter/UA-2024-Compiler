@@ -180,3 +180,16 @@ class AstDotVisitor(AstVisitor):
         node_name = id(node)
 
         self.total += f"{node_name} [label=\"Comment: \n {node.content}\"];\n"
+
+    def visit_while_statement(self, node: ast.WhileStatement):
+        node_name = id(node)
+
+        self.total += f"{node_name} [label=\"While\"];\n"
+
+        expression_node_name = str(id(node.expression))
+        self.total += f'{node_name} -> {expression_node_name};\n'
+        self.visit_expression(node.expression)
+
+        statement_node_name = str(id(node.to_execute))
+        self.total += f'{node_name} -> {statement_node_name};\n'
+        self.visit_statement(node.to_execute)

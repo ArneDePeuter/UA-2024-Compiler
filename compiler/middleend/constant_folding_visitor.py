@@ -253,3 +253,8 @@ class ConstantFoldingVisitor(AstVisitor):
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         return node
+
+    def visit_while_statement(self, node: ast.WhileStatement):
+        node.expression = self.visit_expression(node.expression)
+        node.to_execute = self.visit_statement(node.to_execute)
+        return node
