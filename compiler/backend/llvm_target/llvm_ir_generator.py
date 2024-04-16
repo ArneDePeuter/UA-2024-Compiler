@@ -178,7 +178,8 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_expression_statement(self, expr_node: ast.ExpressionStatement):
         """Visit an expression statement node and generate LLVM IR code for the expression."""
-        self.builder.comment(f"C Syntax: {expr_node.c_syntax.replace('\n', '')}")
+        syntax = expr_node.c_syntax.replace('\n', '')
+        self.builder.comment(f"C Syntax: {syntax}")
         self.visit(expr_node.expression)
 
     def visit_shift_expression(self, shift_node: ast.ShiftExpression):
