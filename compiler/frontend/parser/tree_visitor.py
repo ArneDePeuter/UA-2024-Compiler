@@ -352,12 +352,20 @@ class TreeVisitor(GrammarVisitor):
 
     def visitForSecond(self, ctx:GrammarParser.ForSecondContext):
         if node := ctx.expressionStatement():
-            return self.visitExpressionStatement(node).expression
+            expression = self.visitExpressionStatement(node).expression
+            expression.c_syntax = self.get_original_text(ctx)
+            return expression
         return None
 
     def visitForThird(self, ctx:GrammarParser.ForThirdContext):
         if node := ctx.expression():
-            return ast.ExpressionStatement(self.visitExpression(node))
+            expr = self.visitExpression(node)
+            return ast.ExpressionStatement(
+                expression=expr,
+                line=ctx.start.line,
+                position=ctx.start.column,
+                c_syntax=expr.c_syntax
+            )
         return None
 
     def visitForCondition(self, ctx:GrammarParser.ForConditionContext):
