@@ -35,6 +35,24 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#whileStatement.
+    def enterWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#whileStatement.
+    def exitWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forStatement.
+    def enterForStatement(self, ctx:GrammarParser.ForStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forStatement.
+    def exitForStatement(self, ctx:GrammarParser.ForStatementContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#variableDeclaration.
     def enterVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
         pass

@@ -24,6 +24,16 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#whileStatement.
+    def visitWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#forStatement.
+    def visitForStatement(self, ctx:GrammarParser.ForStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#variableDeclaration.
     def visitVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
         return self.visitChildren(ctx)

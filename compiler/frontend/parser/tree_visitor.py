@@ -109,6 +109,16 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
+    def visitWhileStatement(self, ctx:GrammarParser.WhileStatementContext):
+        expression = self.visit(ctx.expression())
+        to_execute = self.visit(ctx.statement())
+        return ast.WhileStatement(
+            expression=expression,
+            to_execute=to_execute,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
     def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         text = ctx.getText()
         return ast.AddressQualifier(text)
