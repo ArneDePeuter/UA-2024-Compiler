@@ -1,5 +1,5 @@
 int main () {
-    for (int a = 0; a < 10; a++) {
+    for (; ; ) {
         printf("%d", a);
     }
 }
