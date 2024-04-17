@@ -193,3 +193,11 @@ class AstDotVisitor(AstVisitor):
         statement_node_name = str(id(node.to_execute))
         self.total += f'{node_name} -> {statement_node_name};\n'
         self.visit_statement(node.to_execute)
+
+    def visit_break_statement(self, node: ast.BreakStatement):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"Break\"];\n"
+
+    def visit_continue_statement(self, node: ast.ContinueStatement):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"Continue\"];\n"

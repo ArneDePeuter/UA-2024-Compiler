@@ -32,6 +32,14 @@ forThird
     : expression?
     ;
 
+breakStatement
+    : BREAK TERMINAL
+    ;
+
+continueStatement
+    : CONTINUE TERMINAL
+    ;
+
 variableDeclaration
     : type variableDeclarationQualifiers ';'
     ;
@@ -56,6 +64,8 @@ statement
     | comment
     | typedefStatement
     | iterationStatement
+    | breakStatement
+    | continueStatement
     | ';'
     ;
 
@@ -165,6 +175,8 @@ comment
 
 
 // Lexer rules
+BREAK : 'break' ;
+CONTINUE : 'continue' ;
 WHILE  : 'while' ;
 FOR    : 'for' ;
 TERMINAL: ';';

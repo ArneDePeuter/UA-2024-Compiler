@@ -18,7 +18,6 @@ class TreeVisitor(GrammarVisitor):
         }
         self.input_stream = input_stream
 
-
     def get_original_text(self, ctx):
         return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
 
@@ -405,6 +404,18 @@ class TreeVisitor(GrammarVisitor):
                 first,
                 while_statement
             ],
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        return ast.BreakStatement(
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        return ast.ContinueStatement(
             line=ctx.start.line,
             position=ctx.start.column
         )

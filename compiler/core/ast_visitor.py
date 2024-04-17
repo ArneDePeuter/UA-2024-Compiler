@@ -28,7 +28,9 @@ class AstVisitor(ABC):
             ast.VariableDeclaration: self.visit_variable_declaration,
             ast.AssignmentStatement: self.visit_assignment_statement,
             ast.CommentStatement: self.visit_comment_statement,
-            ast.WhileStatement: self.visit_while_statement
+            ast.WhileStatement: self.visit_while_statement,
+            ast.BreakStatement: self.visit_break_statement,
+            ast.ContinueStatement: self.visit_continue_statement
         }
 
     def visit(self, node: ast.AST):
@@ -132,4 +134,12 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_while_statement(self, node: ast.WhileStatement):
+        ...
+
+    @abstractmethod
+    def visit_break_statement(self, node: ast.BreakStatement):
+        ...
+
+    @abstractmethod
+    def visit_continue_statement(self, node: ast.ContinueStatement):
         ...

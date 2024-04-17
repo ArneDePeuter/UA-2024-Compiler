@@ -9,6 +9,7 @@ class LLVMIRGenerator(AstVisitor):
         self.module = ir.Module()
         self.builder: ir.IRBuilder = None
         self.variables = {}
+        self.while_fd = {}
 
     def generate_llvm_ir(self, node):
         """Generate LLVM IR code for the given AST node."""
@@ -173,6 +174,7 @@ class LLVMIRGenerator(AstVisitor):
     def visit_body(self, body_node: ast.Body):
         """Visit a body node and generate LLVM IR code for its statements."""
         for statement in body_node.statements:
+            if self.builder.block.is_terminated: continue
             self.visit(statement)
 
     def visit_expression_statement(self, expr_node: ast.ExpressionStatement):
@@ -431,16 +433,47 @@ class LLVMIRGenerator(AstVisitor):
             return left
 
     def visit_while_statement(self, node: ast.WhileStatement):
+        w_condition_block = self.builder.append_basic_block("w_condition")
         w_body_block = self.builder.append_basic_block("w_body")
         w_after_block = self.builder.append_basic_block("w_after")
 
-        # head
-        cond_head = self.visit_expression(node.expression)
+        # Store the blocks for break and continue
+        self.while_fd[(node.line, node.position)] = (w_condition_block, w_after_block)
+
+        self.builder.branch(w_condition_block)
+
+        # Condition block
+        self.builder.position_at_start(w_condition_block)
+        cond_head = self.to_bool_expr(node.expression)
         self.builder.cbranch(cond_head, w_body_block, w_after_block)
-        # body
+
+        # Body block
         self.builder.position_at_start(w_body_block)
         self.visit_statement(node.to_execute)
-        cond_body = self.visit_expression(node.expression)
-        self.builder.cbranch(cond_body, w_body_block, w_after_block)
-        # after
+        if not w_body_block.is_terminated:
+            self.builder.branch(w_condition_block)
+
+        # After block
         self.builder.position_at_start(w_after_block)
+
+    def to_bool_expr(self, node: ast.Expression):
+        ir_node = self.visit_expression(node)
+        if isinstance(ir_node, ir.CompareInstr):
+            return ir_node
+        ir_node: ir.Constant
+        if isinstance(ir_node.type, ir.IntType):
+            return self.builder.icmp_signed("!=", ir_node, ir.Constant(ir.IntType(32), 0))
+        elif isinstance(ir_node.type, ir.DoubleType):
+            return self.builder.fcmp_ordered("!=", ir_node, ir.Constant(ir.DoubleType(), 0.0))
+        elif isinstance(ir_node.type, ir.PointerType):
+            return self.builder.icmp_unsigned("!=", ir_node, ir.Constant(ir.PointerType(ir.IntType(8)), 0))
+        else:
+            raise NotImplementedError(f"Conversion to bool for {node} is not implemented")
+
+    def visit_break_statement(self, node: ast.BreakStatement):
+        _, w_after_block = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.branch(w_after_block)
+
+    def visit_continue_statement(self, node: ast.ContinueStatement):
+        w_condition_block, _ = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.branch(w_condition_block)

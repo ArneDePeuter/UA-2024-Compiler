@@ -80,6 +80,24 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#breakStatement.
+    def enterBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#breakStatement.
+    def exitBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#continueStatement.
+    def enterContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#continueStatement.
+    def exitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#variableDeclaration.
     def enterVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
         pass

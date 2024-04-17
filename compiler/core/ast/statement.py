@@ -60,3 +60,24 @@ class CommentStatement(Statement):
 class WhileStatement(Statement):
     expression: Expression
     to_execute: Statement
+
+    def __post_init__(self):
+        if not isinstance(self.to_execute, Body):
+            stmts = [self.to_execute]
+        else:
+            stmts = self.to_execute.statements
+        for stmt in stmts:
+            if isinstance(stmt, BreakStatement):
+                stmt.while_statement = self
+            elif isinstance(stmt, ContinueStatement):
+                stmt.while_statement = self
+
+
+@dataclass
+class BreakStatement(Statement):
+    while_statement: Optional[WhileStatement] = None
+
+
+@dataclass
+class ContinueStatement(Statement):
+    while_statement: Optional[WhileStatement] = None
