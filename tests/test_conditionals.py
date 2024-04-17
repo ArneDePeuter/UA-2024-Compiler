@@ -24,13 +24,14 @@ def test_if1() -> None:
     declaration = if_statement.body.statements[0]
     assert isinstance(declaration, ast.VariableDeclaration)
 
-def test_if_else_1() -> None:
+
+def test_if_with_else() -> None:
     input = """
         int main() {
-            if (1) {
-                int a = 5;
+            if (0) {
+                int b = 10;
             } else {
-                int b = 6;
+                int c = 20;
             }
         }
     """
@@ -42,25 +43,30 @@ def test_if_else_1() -> None:
     assert len(constructed_ast.statements) == 1
     main_func = constructed_ast.statements[0]
     assert isinstance(main_func, ast.FunctionDeclaration)
+    assert len(main_func.body.statements) == 1
+
     if_statement = main_func.body.statements[0]
     assert isinstance(if_statement, ast.IfStatement)
-    assert if_statement.condition.value == 1
+    assert if_statement.condition.value == 0
     assert len(if_statement.body.statements) == 1
-    declaration = if_statement.body.statements[0]
-    assert isinstance(declaration, ast.VariableDeclaration)
-    else_statement = main_func.body.statements[1]
-    assert isinstance(else_statement, ast.ElseStatement)
-    assert len(else_statement.body.statements) == 1
-    declaration = else_statement.body.statements[0]
-    assert isinstance(declaration, ast.VariableDeclaration)
+    assert isinstance(if_statement.body.statements[0], ast.VariableDeclaration)
+    assert if_statement.body.statements[0].qualifiers[0].identifier == 'b'
 
-def test_if_nested() -> None:
+    assert isinstance(if_statement.else_statement, ast.ElseStatement)
+    assert len(if_statement.else_statement.body.statements) == 1
+    assert isinstance(if_statement.else_statement.body.statements[0], ast.VariableDeclaration)
+    assert if_statement.else_statement.body.statements[0].qualifiers[0].identifier == 'c'
+
+
+def test_if_with_else_if() -> None:
     input = """
         int main() {
-            if (1) {
-                if (0) {
-                    int a = 10;
-                }
+            if (0) {
+                int d = 30;
+            } else if (1) {
+                int e = 40;
+            } else {
+                int f = 50;
             }
         }
     """
@@ -70,15 +76,16 @@ def test_if_nested() -> None:
 
     assert isinstance(constructed_ast, ast.Program)
     main_func = constructed_ast.statements[0]
-    outer_if_statement = main_func.body.statements[0]
-    assert isinstance(outer_if_statement, ast.IfStatement)
-    assert outer_if_statement.condition.value == 1
+    if_statement = main_func.body.statements[0]
+    assert isinstance(if_statement, ast.IfStatement)
+    assert if_statement.condition.value == 0
+    assert len(if_statement.else_statement.body.statements) == 1
 
-    inner_if_statement = outer_if_statement.body.statements[0]
-    assert isinstance(inner_if_statement, ast.IfStatement)
-    assert inner_if_statement.condition.value == 0
-    assert len(inner_if_statement.body.statements) == 1
-    inner_declaration = inner_if_statement.body.statements[0]
-    assert isinstance(inner_declaration, ast.VariableDeclaration)
-    assert inner_declaration.qualifiers[0].identifier == "a"
-    assert inner_declaration.qualifiers[0].initializer.value == 10
+    assert isinstance(if_statement.else_statement, ast.IfStatement)
+    else_if_statement = if_statement.else_statement
+    assert else_if_statement.condition.value == 1
+    assert len(else_if_statement.body.statements) == 1
+    assert else_if_statement.body.statements[0].qualifiers[0].identifier == 'e'
+
+    assert isinstance(else_if_statement.else_statement, ast.ElseStatement)
+    assert else_if_statement.else_statement.body.statements[0].qualifiers[0].identifier == 'f'
