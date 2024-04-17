@@ -206,14 +206,6 @@ class LLVMIRGenerator(AstVisitor):
         """Visit a variable declaration qualifier node. No LLVM IR code is generated for variable declaration qualifiers."""
         pass
 
-    def visit_if_statement(self, if_node: ast.IfStatement):
-        """Visit an if statement node and generate LLVM IR code for the if statement."""
-        pass
-
-    def visit_else_statement(self, else_node: ast.ElseStatement):
-        """Visit an else statement node. No LLVM IR code is generated for else statements."""
-        pass
-
     def _get_llvm_type(self, node_type: ast.Type):
         """Get the corresponding LLVM IR type for a given AST type."""
         if node_type.base_type == ast.BaseType.int:
@@ -438,3 +430,19 @@ class LLVMIRGenerator(AstVisitor):
             return self.builder.sitofp(right, left.type)
         else:
             return left
+
+    def visit_if_statement(self, if_node: ast.IfStatement):
+        """Visit an if statement node and generate LLVM IR code for the if statement."""
+        condition_value = self.visit(if_node.condition)
+
+        with self.builder.if_else(condition_value) as (then, otherwise):
+            with then:
+                self.visit(if_node.body)
+            with otherwise:
+                self.visit(if_node.else_body) # Currently this doesn't have an else body
+
+
+    def visit_else_statement(self, else_node: ast.ElseStatement):
+        """Visit an else statement node. No LLVM IR code is generated for else statements."""
+        pass
+

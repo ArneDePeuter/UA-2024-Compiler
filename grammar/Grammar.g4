@@ -62,7 +62,6 @@ elseStatement
     : 'else' (body | ifStatement)
     ;
 
-
 logicalExpression
     : logicalExpression ('&&' | '||') comparisonExpression
     | comparisonExpression
