@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .type_translator import TypeTranslator
-from .ir_types import IrIntType, IrFloatType, IrCharType, IrBoolType
+from .ir_types import IrIntType, IrFloatType, IrCharType
 
 
 @dataclass
@@ -328,7 +328,7 @@ class LLVMIRGenerator(AstVisitor):
         self.builder.position_at_start(w_after_block)
 
     def to_bool_expr(self, node: ast.Expression):
-        ir_node_eval: ExpressionEval= self.visit_expression(node)
+        ir_node_eval: ExpressionEval = self.visit_expression(node)
 
         ir_node = ir_node_eval.r_value
         if not ir_node:
