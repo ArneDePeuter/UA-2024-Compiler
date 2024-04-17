@@ -46,12 +46,10 @@ class TypeTranslator:
         elif target.width < value.type.width:
             return builder.trunc(value, target)
         else:
-            print(target, value.type)
             raise NotImplementedError(f"Type cast from {value} to {target} is not supported")
 
     @staticmethod
     def cast_to_common_type(builder: ir.IRBuilder, left: ir.Constant, right: ir.Constant) -> tuple[ir.Constant, ir.Constant]:
-        print(left.type, right.type)
         if left.type == right.type:
             return left, right
         if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.FloatType):
