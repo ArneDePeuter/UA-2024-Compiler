@@ -41,10 +41,12 @@ class LLVMIRGenerator(AstVisitor):
         return super().visit_expression(node)
 
     def visit_statement(self, node: ast.Statement):
+        if self.builder.block is not None and self.builder.block.is_terminated:
+            return
         if node.c_syntax:
             comment = node.c_syntax.split("\n")
             self.builder.comment(f"C Syntax: {'-'.join(comment)}")
-        return super().visit_statement(node)
+        super().visit_statement(node)
 
     def visit_type(self, node: ast.Type) -> ir.types.Type:
         return TypeTranslator.translate_ast_type(node)
