@@ -1,6 +1,6 @@
 int main () {
     int a = 0;
-    while (!a) {
-        printf("%d", a);
+    while (a<10) {
+        printf("%d", ++a);
     }
 }
