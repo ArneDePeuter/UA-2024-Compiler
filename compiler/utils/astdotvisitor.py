@@ -182,21 +182,31 @@ class AstDotVisitor(AstVisitor):
         self.total += f"{node_name} [label=\"Comment: \n {node.content}\"];\n"
 
     def visit_if_statement(self, node: ast.IfStatement):
-        node_name = id(node)
+        node_name = str(id(node))
         self.total += f"{node_name} [label=\"If\"];\n"
 
         condition_node_name = str(id(node.condition))
-        self.total += f'{node_name} -> {condition_node_name};\n'
+        self.total += f'{node_name} -> {condition_node_name} [label="condition"];\n'
         self.visit_expression(node.condition)
 
         body_node_name = str(id(node.body))
-        self.total += f'{node_name} -> {body_node_name};\n'
+        self.total += f'{node_name} -> {body_node_name} [label="body"];\n'
         self.visit_body(node.body)
 
-    def visit_else_statement(self, node: ast.ElseStatement):
-        node_name = id(node)
+        if hasattr(node, 'else_statement') and node.else_statement:
+            else_node_name = str(id(node.else_statement))
+            self.total += f'{node_name} -> {else_node_name} [label="else"];\n'
+            self.visit(node.else_statement)
+
+    def visit_else_statement(self, node):
+        node_name = str(id(node))
         self.total += f"{node_name} [label=\"Else\"];\n"
 
-        body_node_name = str(id(node.body))
-        self.total += f'{node_name} -> {body_node_name};\n'
-        self.visit_body(node.body)
+        if isinstance(node.body, ast.IfStatement):
+            self.total += f'{node_name} -> {str(id(node.body))} [label="elseif"];\n'
+            self.visit_if_statement(node.body)
+        else:
+            body_node_name = str(id(node.body))
+            self.total += f'{node_name} -> {body_node_name} [label="body"];\n'
+            self.visit_body(node.body)
+

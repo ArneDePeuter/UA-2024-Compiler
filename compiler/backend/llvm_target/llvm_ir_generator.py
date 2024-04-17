@@ -435,11 +435,11 @@ class LLVMIRGenerator(AstVisitor):
         """Visit an if statement node and generate LLVM IR code for the if statement."""
         condition_value = self.visit(if_node.condition)
 
-        with self.builder.if_else(condition_value) as (then, otherwise):
-            with then:
-                self.visit(if_node.body)
-            with otherwise:
-                self.visit(if_node.else_body) # Currently this doesn't have an else body
+        #with self.builder.if_else(condition_value) as (then, otherwise):
+        #    with then:
+        #        self.visit(if_node.body)
+        #    with otherwise:
+        #        self.visit(if_node.else_statement) # Currently this doesn't have an else body
 
 
     def visit_else_statement(self, else_node: ast.ElseStatement):

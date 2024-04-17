@@ -323,21 +323,37 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitIfStatement(self, ctx: GrammarParser.IfStatementContext):
-        condition = self.visit(ctx.expression())  # Visit the condition expression
-        body = self.visit(ctx.body())  # Visit the body of the if statement
+        condition = self.visit(ctx.expression())
+        body = self.visit(ctx.body())
+        else_statement = None
+
+        if ctx.elseStatement():
+            else_statement = self.visitElseStatement(ctx.elseStatement())
+
 
         return ast.IfStatement(
             condition=condition,
             body=body,
+            else_statement=else_statement,
             line=ctx.start.line,
             position=ctx.start.column
         )
 
     def visitElseStatement(self, ctx: GrammarParser.ElseStatementContext):
-        body = self.visit(ctx.body())  # Visit the body of the else statement
+        if ctx.body():
+            body = self.visit(ctx.body())
 
-        return ast.ElseStatement(
-            body=body,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+            return ast.ElseStatement(
+                body=body,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif ctx.ifStatement():
+            if_statement = self.visitIfStatement(ctx.ifStatement())
+            return ast.IfStatement(
+                condition=if_statement.condition,
+                body=if_statement.body,
+                else_statement=if_statement.else_statement,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
 from .ast import AST
 from .expression import Expression
@@ -9,7 +9,6 @@ from .type import Type, AddressQualifier
 @dataclass
 class Statement(AST):
     pass
-
 
 @dataclass
 class Program(Statement):
@@ -56,10 +55,11 @@ class CommentStatement(Statement):
     content: str
 
 @dataclass
-class IfStatement(Statement):
-    condition: Expression
+class ElseStatement(Statement):
     body: Body
 
 @dataclass
-class ElseStatement(Statement):
+class IfStatement(Statement):
+    condition: Expression
     body: Body
+    else_statement: ElseStatement or None
