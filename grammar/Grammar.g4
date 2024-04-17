@@ -31,6 +31,7 @@ statement
     | comment
     | typedefStatement
     | ifStatement
+    | elseStatement
     | ';'
     ;
 
@@ -53,6 +54,15 @@ printCall
 assignmentStatement
     : expression assignmentOperator expression ';'
     ;
+
+ifStatement
+    : 'if' '(' expression ')' body
+    ;
+
+elseStatement
+    : 'else' body
+    ;
+
 
 logicalExpression
     : logicalExpression ('&&' | '||') comparisonExpression
@@ -89,10 +99,6 @@ unaryExpression
     | primary ('++' | '--')?
     ;
 
-ifStatement
-    : 'if' '(' expression ')' body ('else' body)?
-    ;
-
 
 primary
     : NUMBER
@@ -121,7 +127,6 @@ const
 addressQualifier
     : '*'
     ;
-
 
 assignmentOperator
     : '='
