@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .ast import AST
-from .expression import Expression
-from .type import Type, AddressQualifier
+from .expression import Expression, INT, CHAR, FLOAT
+from .type import Type, AddressQualifier, BaseType
 
 
 @dataclass
@@ -32,6 +32,16 @@ class FunctionDeclaration(Statement):
 class VariableDeclarationQualifier(Statement):
     identifier: str
     initializer: Expression or None
+
+    def set_default_initializer(self, type: Type):
+        if len(type.address_qualifiers) > 0:
+            self.initializer = INT(value=0)
+        elif type.base_type == BaseType.int:
+            self.initializer = INT(value=0)
+        elif type.base_type == BaseType.float:
+            self.initializer = FLOAT(value=0.0)
+        elif type.base_type == BaseType.char:
+            self.initializer = CHAR(value='')
 
 
 @dataclass

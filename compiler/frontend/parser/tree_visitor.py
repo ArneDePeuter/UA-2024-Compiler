@@ -72,7 +72,10 @@ class TreeVisitor(GrammarVisitor):
     def visitStatement(self, ctx:GrammarParser.StatementContext):
         if ctx.getChild(0) == TerminalNodeImpl:
             return None
-        return super().visitStatement(ctx)
+        ast = super().visitStatement(ctx)
+        if ast is not None:
+            ast.c_syntax = self.get_original_text(ctx)
+        return ast
 
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())

@@ -30,6 +30,18 @@ class LLVMIRGenerator(AstVisitor):
         self.visit(node)
         return str(self.module)
 
+    def visit_expression(self, node: ast.Expression):
+        if node.c_syntax:
+            comment = node.c_syntax.split("\n")
+            self.builder.comment(f"C Syntax: {comment[0]}")
+        return super().visit_expression(node)
+
+    def visit_statement(self, node: ast.Statement):
+        if node.c_syntax:
+            comment = node.c_syntax.split("\n")
+            self.builder.comment(f"C Syntax: {'-'.join(comment)}")
+        return super().visit_statement(node)
+
     def visit_type(self, node: ast.Type) -> ir.types.Type:
         return TypeTranslator.translate_ast_type(node)
 
@@ -77,27 +89,44 @@ class LLVMIRGenerator(AstVisitor):
         if node.operator == ast.BinaryArithmetic.Operator.PLUS:
             if isinstance(left_value.type, ir.PointerType):
                 element_size = left_value.type.pointee.width
-                offset = self.builder.mul(ir.Constant(IrIntType, right_value), ir.Constant(IrIntType, element_size))
+                right_value = TypeTranslator.match_llvm_type(self.builder, IrIntType, right_value)
+                offset = self.builder.mul(right_value, ir.Constant(IrIntType, element_size))
                 result = self.builder.gep(left_value, [offset])
             else:
                 left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
-                result = self.builder.add(left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fadd(left_value, right_value)
+                else:
+                    result = self.builder.add(left_value, right_value)
         elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
             if isinstance(left_value.type, ir.PointerType):
                 element_size = left_value.type.pointee.width
-                offset = self.builder.mul(ir.Constant(IrIntType, right_value), ir.Constant(IrIntType, element_size))
+                right_value = TypeTranslator.match_llvm_type(self.builder, IrIntType, right_value)
+                offset = self.builder.mul(right_value, ir.Constant(IrIntType, element_size))
                 result = self.builder.gep(left_value, [self.builder.neg(offset)])
             else:
                 left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
-                result = self.builder.sub(left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fsub(left_value, right_value)
+                else:
+                    result = self.builder.sub(left_value, right_value)
         else:
             left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
             if node.operator == ast.BinaryArithmetic.Operator.MUL:
-                result = self.builder.mul(left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fmul(left_value, right_value)
+                else:
+                    result = self.builder.mul(left_value, right_value)
             elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                result = self.builder.sdiv(left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fdiv(left_value, right_value)
+                else:
+                    result = self.builder.sdiv(left_value, right_value)
             elif node.operator == ast.BinaryArithmetic.Operator.MOD:
-                result = self.builder.srem(left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.frem(left_value, right_value)
+                else:
+                    result = self.builder.srem(left_value, right_value)
             else:
                 raise NotImplementedError(f"Binary arithmetic operator {node.operator} is not supported")
 
@@ -152,8 +181,16 @@ class LLVMIRGenerator(AstVisitor):
 
         if not left_value or not right_value:
             raise NotImplementedError("Cannot perform comparison operation, r_value is None")
-
-        return ExpressionEval(r_value=self.builder.icmp_signed(node.operator.value, left_value, right_value))
+        if isinstance(left_value.type, ir.PointerType):
+            left_value = self.builder.ptrtoint(left_value, IrIntType)
+        if isinstance(right_value.type, ir.PointerType):
+            right_value = self.builder.ptrtoint(right_value, IrIntType)
+        left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
+        if isinstance(left_value.type, ir.FloatType):
+            result = self.builder.fcmp_ordered(node.operator.value, left_value, right_value)
+        else:
+            result = self.builder.icmp_signed(node.operator.value, left_value, right_value)
+        return ExpressionEval(r_value=result)
 
     def visit_unary_expression(self, node: ast.UnaryExpression) -> ExpressionEval:
         value: ExpressionEval = self.visit_expression(node.value)
@@ -181,7 +218,10 @@ class LLVMIRGenerator(AstVisitor):
                     result = self.builder.gep(value.r_value, [offset])
                 else:
                     left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, value.r_value, ir.Constant(value.r_value.type, 1))
-                    result = self.builder.add(left_value, right_value)
+                    if isinstance(value.r_value.type, ir.FloatType):
+                        result = self.builder.fadd(left_value, right_value)
+                    else:
+                        result = self.builder.add(left_value, right_value)
 
                 self.builder.store(result, value.l_value)
 
@@ -197,7 +237,10 @@ class LLVMIRGenerator(AstVisitor):
                     result = self.builder.gep(value.r_value, [self.builder.neg(offset)])
                 else:
                     left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, value.r_value, ir.Constant(value.r_value.type, 1))
-                    result = self.builder.sub(left_value, right_value)
+                    if isinstance(value.r_value.type, ir.FloatType):
+                        result = self.builder.fsub(left_value, right_value)
+                    else:
+                        result = self.builder.sub(left_value, right_value)
 
                 self.builder.store(result, value.l_value)
 
@@ -263,9 +306,15 @@ class LLVMIRGenerator(AstVisitor):
         for qualifier in node.qualifiers:
             alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
             self.var_addresses[qualifier.identifier] = alloc
-            expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer) if qualifier.initializer else ExpressionEval(r_value=ir.Constant(decl_type, 0))
+            if qualifier.initializer is None:
+                qualifier.set_default_initializer(node.var_type)
+            expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
+            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
+                null_ptr = ir.Constant(decl_type, None)
+                self.builder.store(null_ptr, alloc)
+                continue
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             self.builder.store(value, alloc)
 
@@ -277,6 +326,10 @@ class LLVMIRGenerator(AstVisitor):
         if not right_eval.r_value:
             raise NotImplementedError("Cannot assign value to variable, r_value is None")
         left_type = left_eval.l_value.type.pointee
+        if isinstance(left_type, ir.PointerType) and not isinstance(right_eval.r_value.type, ir.PointerType):
+            null_ptr = ir.Constant(left_type, None)
+            self.builder.store(null_ptr, left_eval.l_value)
+            return
         value = TypeTranslator.match_llvm_type(self.builder, left_type, right_eval.r_value)
         self.builder.store(value, left_eval.l_value)
 
