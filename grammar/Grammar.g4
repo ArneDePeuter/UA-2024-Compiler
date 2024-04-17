@@ -31,7 +31,6 @@ statement
     | comment
     | typedefStatement
     | ifStatement
-    | elseStatement
     | ';'
     ;
 
@@ -56,11 +55,11 @@ assignmentStatement
     ;
 
 ifStatement
-    : 'if' '(' expression ')' body
+    : 'if' '(' expression ')' body (elseStatement)?
     ;
 
 elseStatement
-    : 'else' body
+    : 'else' (body | ifStatement)
     ;
 
 
