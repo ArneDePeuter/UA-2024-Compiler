@@ -100,12 +100,12 @@ class TreeVisitor(GrammarVisitor):
     def visitType(self, ctx):
         if ctx.baseType():
             return ast.Type(
-            base_type=ast.BaseType((ctx.baseType().getText())),
-            const=ctx.const() is not None,
-            address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+                base_type=ast.BaseType((ctx.baseType().getText())),
+                const=ctx.const() is not None,
+                address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
         replace = copy.deepcopy(self.typedef_scope.get(ctx.ID().getText()))
         replace.const = replace.const or ctx.const() is not None
         replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
