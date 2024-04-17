@@ -32,8 +32,8 @@ def serializedATN():
         24,1,24,1,24,1,24,5,24,244,8,24,10,24,12,24,247,9,24,1,25,1,25,1,
         25,1,25,1,25,1,25,5,25,255,8,25,10,25,12,25,258,9,25,1,26,1,26,1,
         26,1,26,3,26,264,8,26,3,26,266,8,26,1,27,1,27,1,27,1,27,1,27,1,27,
-        1,27,1,27,1,27,1,27,3,27,278,8,27,1,28,3,28,281,8,28,1,28,1,28,5,
-        28,285,8,28,10,28,12,28,288,9,28,1,28,3,28,291,8,28,1,29,1,29,1,
+        1,27,1,27,1,27,1,27,3,27,278,8,27,1,28,3,28,281,8,28,1,28,1,28,3,
+        28,285,8,28,1,28,5,28,288,8,28,10,28,12,28,291,9,28,1,29,1,29,1,
         30,1,30,1,31,1,31,1,32,1,32,1,33,1,33,1,33,0,6,40,42,44,46,48,50,
         34,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,
         44,46,48,50,52,54,56,58,60,62,64,66,0,11,1,0,47,48,1,0,41,46,1,0,
@@ -45,7 +45,7 @@ def serializedATN():
         1,0,0,0,30,169,1,0,0,0,32,174,1,0,0,0,34,179,1,0,0,0,36,181,1,0,
         0,0,38,188,1,0,0,0,40,193,1,0,0,0,42,204,1,0,0,0,44,215,1,0,0,0,
         46,226,1,0,0,0,48,237,1,0,0,0,50,248,1,0,0,0,52,265,1,0,0,0,54,277,
-        1,0,0,0,56,290,1,0,0,0,58,292,1,0,0,0,60,294,1,0,0,0,62,296,1,0,
+        1,0,0,0,56,280,1,0,0,0,58,292,1,0,0,0,60,294,1,0,0,0,62,296,1,0,
         0,0,64,298,1,0,0,0,66,300,1,0,0,0,68,70,3,28,14,0,69,68,1,0,0,0,
         70,73,1,0,0,0,71,69,1,0,0,0,71,72,1,0,0,0,72,74,1,0,0,0,73,71,1,
         0,0,0,74,78,3,2,1,0,75,77,3,28,14,0,76,75,1,0,0,0,77,80,1,0,0,0,
@@ -108,14 +108,14 @@ def serializedATN():
         278,5,34,0,0,275,278,5,35,0,0,276,278,3,26,13,0,277,267,1,0,0,0,
         277,268,1,0,0,0,277,269,1,0,0,0,277,273,1,0,0,0,277,274,1,0,0,0,
         277,275,1,0,0,0,277,276,1,0,0,0,278,55,1,0,0,0,279,281,3,60,30,0,
-        280,279,1,0,0,0,280,281,1,0,0,0,281,282,1,0,0,0,282,286,3,58,29,
-        0,283,285,3,62,31,0,284,283,1,0,0,0,285,288,1,0,0,0,286,284,1,0,
-        0,0,286,287,1,0,0,0,287,291,1,0,0,0,288,286,1,0,0,0,289,291,5,33,
-        0,0,290,280,1,0,0,0,290,289,1,0,0,0,291,57,1,0,0,0,292,293,7,8,0,
+        280,279,1,0,0,0,280,281,1,0,0,0,281,284,1,0,0,0,282,285,3,58,29,
+        0,283,285,5,33,0,0,284,282,1,0,0,0,284,283,1,0,0,0,285,289,1,0,0,
+        0,286,288,3,62,31,0,287,286,1,0,0,0,288,291,1,0,0,0,289,287,1,0,
+        0,0,289,290,1,0,0,0,290,57,1,0,0,0,291,289,1,0,0,0,292,293,7,8,0,
         0,293,59,1,0,0,0,294,295,5,15,0,0,295,61,1,0,0,0,296,297,5,38,0,
         0,297,63,1,0,0,0,298,299,7,9,0,0,299,65,1,0,0,0,300,301,7,10,0,0,
         301,67,1,0,0,0,24,71,78,91,108,118,122,125,142,145,150,167,179,201,
-        212,223,234,245,256,263,265,277,280,286,290
+        212,223,234,245,256,263,265,277,280,284,289
     ]
 
 class GrammarParser ( Parser ):
@@ -2396,6 +2396,9 @@ class GrammarParser ( Parser ):
             return self.getTypedRuleContext(GrammarParser.BaseTypeContext,0)
 
 
+        def ID(self):
+            return self.getToken(GrammarParser.ID, 0)
+
         def const(self):
             return self.getTypedRuleContext(GrammarParser.ConstContext,0)
 
@@ -2406,9 +2409,6 @@ class GrammarParser ( Parser ):
             else:
                 return self.getTypedRuleContext(GrammarParser.AddressQualifierContext,i)
 
-
-        def ID(self):
-            return self.getToken(GrammarParser.ID, 0)
 
         def getRuleIndex(self):
             return GrammarParser.RULE_type
@@ -2436,39 +2436,38 @@ class GrammarParser ( Parser ):
         self.enterRule(localctx, 56, self.RULE_type)
         self._la = 0 # Token type
         try:
-            self.state = 290
+            self.enterOuterAlt(localctx, 1)
+            self.state = 280
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            if _la==15:
+                self.state = 279
+                self.const()
+
+
+            self.state = 284
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [1, 13, 14, 15]:
-                self.enterOuterAlt(localctx, 1)
-                self.state = 280
-                self._errHandler.sync(self)
-                _la = self._input.LA(1)
-                if _la==15:
-                    self.state = 279
-                    self.const()
-
-
+            if token in [1, 13, 14]:
                 self.state = 282
                 self.baseType()
-                self.state = 286
-                self._errHandler.sync(self)
-                _la = self._input.LA(1)
-                while _la==38:
-                    self.state = 283
-                    self.addressQualifier()
-                    self.state = 288
-                    self._errHandler.sync(self)
-                    _la = self._input.LA(1)
-
                 pass
             elif token in [33]:
-                self.enterOuterAlt(localctx, 2)
-                self.state = 289
+                self.state = 283
                 self.match(GrammarParser.ID)
                 pass
             else:
                 raise NoViableAltException(self)
+
+            self.state = 289
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while _la==38:
+                self.state = 286
+                self.addressQualifier()
+                self.state = 291
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
 
         except RecognitionException as re:
             localctx.exception = re

@@ -28,7 +28,11 @@ class LLVMIRGenerator(AstVisitor):
 
     def generate_llvm_ir(self, node):
         self.visit(node)
-        return str(self.module)
+        result = str(self.module)
+        lines = result.split("\n")
+        lines.remove(lines[1])
+        lines.remove(lines[1])
+        return "\n".join(lines)
 
     def visit_expression(self, node: ast.Expression):
         if node.c_syntax:
@@ -337,7 +341,7 @@ class LLVMIRGenerator(AstVisitor):
         self.visit_expression(node.expression)
 
     def visit_printf_call(self, node: ast.PrintFCall) -> None:
-        format_string = node.replacer.value + "\n"
+        format_string = node.replacer.value
         format_string_constant = ir.GlobalVariable(
             self.module, ir.ArrayType(ir.IntType(8), len(format_string)),
             name=f"printf_format_{node.line}_{node.position}"

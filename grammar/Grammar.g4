@@ -136,7 +136,7 @@ primary
     ;
 
 type
-    : const? baseType addressQualifier* | ID
+    : const? (baseType | ID) addressQualifier*
     ;
 
 baseType
