@@ -125,6 +125,24 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#ifStatement.
+    def enterIfStatement(self, ctx:GrammarParser.IfStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#ifStatement.
+    def exitIfStatement(self, ctx:GrammarParser.IfStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#elseStatement.
+    def enterElseStatement(self, ctx:GrammarParser.ElseStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#elseStatement.
+    def exitElseStatement(self, ctx:GrammarParser.ElseStatementContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#logicalExpression.
     def enterLogicalExpression(self, ctx:GrammarParser.LogicalExpressionContext):
         pass

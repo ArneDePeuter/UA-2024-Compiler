@@ -54,3 +54,12 @@ class AssignmentStatement(Statement):
 @dataclass
 class CommentStatement(Statement):
     content: str
+
+@dataclass
+class IfStatement(Statement):
+    condition: Expression
+    body: Body
+
+@dataclass
+class ElseStatement(Statement):
+    body: Body

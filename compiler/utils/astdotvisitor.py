@@ -180,3 +180,23 @@ class AstDotVisitor(AstVisitor):
         node_name = id(node)
 
         self.total += f"{node_name} [label=\"Comment: \n {node.content}\"];\n"
+
+    def visit_if_statement(self, node: ast.IfStatement):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"If\"];\n"
+
+        condition_node_name = str(id(node.condition))
+        self.total += f'{node_name} -> {condition_node_name};\n'
+        self.visit_expression(node.condition)
+
+        body_node_name = str(id(node.body))
+        self.total += f'{node_name} -> {body_node_name};\n'
+        self.visit_body(node.body)
+
+    def visit_else_statement(self, node: ast.ElseStatement):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"Else\"];\n"
+
+        body_node_name = str(id(node.body))
+        self.total += f'{node_name} -> {body_node_name};\n'
+        self.visit_body(node.body)

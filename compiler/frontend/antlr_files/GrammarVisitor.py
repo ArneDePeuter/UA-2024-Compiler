@@ -74,6 +74,16 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#ifStatement.
+    def visitIfStatement(self, ctx:GrammarParser.IfStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#elseStatement.
+    def visitElseStatement(self, ctx:GrammarParser.ElseStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#logicalExpression.
     def visitLogicalExpression(self, ctx:GrammarParser.LogicalExpressionContext):
         return self.visitChildren(ctx)

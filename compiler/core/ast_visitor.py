@@ -27,7 +27,9 @@ class AstVisitor(ABC):
             ast.VariableDeclarationQualifier: self.visit_variable_declaration_qualifier,
             ast.VariableDeclaration: self.visit_variable_declaration,
             ast.AssignmentStatement: self.visit_assignment_statement,
-            ast.CommentStatement: self.visit_comment_statement
+            ast.CommentStatement: self.visit_comment_statement,
+            ast.IfStatement: self.visit_if_statement,
+            ast.ElseStatement: self.visit_else_statement
         }
 
     def visit(self, node: ast.AST):
@@ -127,4 +129,12 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_comment_statement(self, node: ast.CommentStatement):
+        ...
+
+    @abstractmethod
+    def visit_if_statement(self, node: ast.IfStatement):
+        ...
+
+    @abstractmethod
+    def visit_else_statement(self, node: ast.ElseStatement):
         ...
