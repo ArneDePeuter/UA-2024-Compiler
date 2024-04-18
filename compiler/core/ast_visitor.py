@@ -29,7 +29,7 @@ class AstVisitor(ABC):
             ast.AssignmentStatement: self.visit_assignment_statement,
             ast.CommentStatement: self.visit_comment_statement,
             ast.IfStatement: self.visit_if_statement,
-            ast.ElseStatement: self.visit_else_statement
+            ast.ElseStatement: self.visit_else_statement,
             ast.CommentStatement: self.visit_comment_statement,
             ast.WhileStatement: self.visit_while_statement,
             ast.BreakStatement: self.visit_break_statement,

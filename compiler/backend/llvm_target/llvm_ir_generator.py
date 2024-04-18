@@ -412,3 +412,43 @@ class LLVMIRGenerator(AstVisitor):
     def visit_continue_statement(self, node: ast.ContinueStatement):
         w_condition_block, _ = self.while_fd[(node.while_statement.line, node.while_statement.position)]
         self.builder.branch(w_condition_block)
+
+    def visit_if_statement(self, node: ast.IfStatement):
+        if node.else_statement:
+            if_block = self.builder.append_basic_block("if")
+            else_block = self.builder.append_basic_block("else")
+            after_block = self.builder.append_basic_block("after")
+
+            cond_head = self.to_bool_expr(node.condition)
+            self.builder.cbranch(cond_head, if_block, else_block)
+
+            self.builder.position_at_start(if_block)
+            self.visit_body(node.body)
+            if not if_block.is_terminated:
+                self.builder.branch(after_block)
+
+            self.builder.position_at_start(else_block)
+            self.visit(node.else_statement)
+            if not else_block.is_terminated:
+                self.builder.branch(after_block)
+
+            self.builder.position_at_start(after_block)
+        else:
+            if_block = self.builder.append_basic_block("if")
+            after_block = self.builder.append_basic_block("after")
+
+            cond_head = self.to_bool_expr(node.condition)
+            self.builder.cbranch(cond_head, if_block, after_block)
+
+            self.builder.position_at_start(if_block)
+            self.visit_body(node.body)
+            if not if_block.is_terminated:
+                self.builder.branch(after_block)
+
+            self.builder.position_at_start(after_block)
+
+    def visit_else_statement(self, node: ast.ElseStatement):
+        if isinstance(node.body, ast.IfStatement):
+            self.visit_if_statement(node.body)
+        else:
+            self.visit_body(node.body)
