@@ -364,6 +364,75 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
 
+    def visitSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
+        switch_expression = self.visit(ctx.expression())
+        cases = ctx.caseStatement()
+        default_case = ctx.defaultCaseStatement()
+
+        switch_if_statements = []
+
+        if_statement = None
+        else_statement = None
+
+        # Default case
+        if default_case:
+            default_body_list = [self.visit(stmt) for stmt in default_case.statement()]
+            else_statement = ast.ElseStatement(
+                body=ast.Body(
+                    statements=default_body_list,
+                    line=default_case.start.line,
+                    position=default_case.start.column
+                ),
+                line=default_case.start.line,
+                position=default_case.start.column
+            )
+
+        # Cases
+        for case in reversed(cases):
+            case_expression = self.visit(case.expression())
+            case_body_list = [self.visit(stmt) for stmt in case.statement()]
+
+            case_body = ast.Body(
+                statements=copy.deepcopy(case_body_list),
+                line=case.start.line,
+                position=case.start.column
+            )
+
+            for stmt in case_body.statements:
+                if isinstance(stmt, ast.BreakStatement):
+                    case_body.statements.remove(stmt)
+
+            condition = ast.ComparisonOperation(
+                left=switch_expression,
+                operator=ast.ComparisonOperation.Operator.EQ,
+                right=case_expression,
+                line=case.start.line,
+                position=case.start.column
+            )
+
+            if_statement = ast.IfStatement(
+                condition=condition,
+                body=case_body,
+                else_statement=else_statement,
+                line=case.start.line,
+                position=case.start.column
+            )
+
+
+            switch_if_statements.append(if_statement)
+            else_statement = if_statement
+
+            for stmt in case_body_list:
+                if isinstance(stmt, ast.BreakStatement):
+                    else_statement = None
+                    break
+
+        return ast.Body(
+            statements=switch_if_statements,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
     def visitIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
         if ctx.WHILE():
             return self.visit_while_statement(ctx)

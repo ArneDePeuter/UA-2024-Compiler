@@ -75,6 +75,13 @@ class IfStatement(Statement):
     body: Body
     else_statement: ElseStatement or None
 
+    def __post_init__(self):
+        for stmt in self.body.statements:
+            if isinstance(stmt, BreakStatement):
+                stmt.if_statement = self
+            elif isinstance(stmt, ContinueStatement):
+                stmt.if_statement = self
+
 @dataclass
 class WhileStatement(Statement):
     expression: Expression
@@ -95,8 +102,10 @@ class WhileStatement(Statement):
 @dataclass
 class BreakStatement(Statement):
     while_statement: Optional[WhileStatement] = None
+    if_statement: Optional[IfStatement] = None
 
 
 @dataclass
 class ContinueStatement(Statement):
     while_statement: Optional[WhileStatement] = None
+    if_statement: Optional[IfStatement] = None
