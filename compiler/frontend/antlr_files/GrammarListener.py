@@ -134,6 +134,33 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#switchStatement.
+    def enterSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#switchStatement.
+    def exitSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#caseStatement.
+    def enterCaseStatement(self, ctx:GrammarParser.CaseStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#caseStatement.
+    def exitCaseStatement(self, ctx:GrammarParser.CaseStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#defaultCaseStatement.
+    def enterDefaultCaseStatement(self, ctx:GrammarParser.DefaultCaseStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#defaultCaseStatement.
+    def exitDefaultCaseStatement(self, ctx:GrammarParser.DefaultCaseStatementContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#statement.
     def enterStatement(self, ctx:GrammarParser.StatementContext):
         pass
