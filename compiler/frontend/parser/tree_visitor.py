@@ -371,36 +371,18 @@ class TreeVisitor(GrammarVisitor):
 
         switch_if_statements = []
 
-        if_statement = None
-        else_statement = None
-
-        # Default case
-        if default_case:
-            default_body_list = [self.visit(stmt) for stmt in default_case.statement()]
-            else_statement = ast.ElseStatement(
-                body=ast.Body(
-                    statements=default_body_list,
-                    line=default_case.start.line,
-                    position=default_case.start.column
-                ),
-                line=default_case.start.line,
-                position=default_case.start.column
-            )
+        last_if_statement = None
 
         # Cases
-        for case in reversed(cases):
+        for case in cases:
             case_expression = self.visit(case.expression())
             case_body_list = [self.visit(stmt) for stmt in case.statement()]
 
             case_body = ast.Body(
-                statements=copy.deepcopy(case_body_list),
+                statements=case_body_list,
                 line=case.start.line,
                 position=case.start.column
             )
-
-            for stmt in case_body.statements:
-                if isinstance(stmt, ast.BreakStatement):
-                    case_body.statements.remove(stmt)
 
             condition = ast.ComparisonOperation(
                 left=switch_expression,
@@ -410,22 +392,53 @@ class TreeVisitor(GrammarVisitor):
                 position=case.start.column
             )
 
+            has_break = False
+            for stmt in list(case_body.statements):
+                if isinstance(stmt, ast.BreakStatement):
+                    case_body.statements.remove(stmt)
+                    has_break = True
+
             if_statement = ast.IfStatement(
                 condition=condition,
                 body=case_body,
-                else_statement=else_statement,
+                else_statement=None,
                 line=case.start.line,
                 position=case.start.column
             )
 
+            if has_break:
+                # Add the new if to the deepest else of the last if in switch_if_statements
+                if last_if_statement:
+                    last_if_statement.else_statement = if_statement
+                switch_if_statements.append(if_statement)
+                last_if_statement = if_statement
+            else:
+                # If there is no break, we fall through to this case
+                # If there's a previous if statement, attach this if statement as its else_statement
+                if last_if_statement:
+                    last_if_statement.else_statement = if_statement
+                else:
+                    # If this is the first case, simply add it to the list
+                    switch_if_statements.append(if_statement)
+                last_if_statement = None  # Reset last_if_statement since we don't want to attach anything to this block's else
 
-            switch_if_statements.append(if_statement)
-            else_statement = if_statement
-
-            for stmt in case_body_list:
-                if isinstance(stmt, ast.BreakStatement):
-                    else_statement = None
-                    break
+        # Default case
+        if default_case:
+            default_body_list = [self.visit(stmt) for stmt in default_case.statement()]
+            default_statement = ast.ElseStatement(
+                body=ast.Body(
+                    statements=default_body_list,
+                    line=default_case.start.line,
+                    position=default_case.start.column
+                ),
+                line=default_case.start.line,
+                position=default_case.start.column
+            )
+            if last_if_statement:
+                last_if_statement.else_statement = default_statement
+            else:
+                # If no if statements, the default statement is the body
+                switch_if_statements.append(default_statement)
 
         return ast.Body(
             statements=switch_if_statements,
