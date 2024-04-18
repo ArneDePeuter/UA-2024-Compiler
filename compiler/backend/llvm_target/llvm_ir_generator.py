@@ -178,8 +178,8 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_expression_statement(self, expr_node: ast.ExpressionStatement):
         """Visit an expression statement node and generate LLVM IR code for the expression."""
-        c_syntax_cleaned = expr_node.c_syntax.replace('\n', '\\n')
-        self.builder.comment(f"C Syntax: {c_syntax_cleaned}")
+        syntax = expr_node.c_syntax.replace('\n', '')
+        self.builder.comment(f"C Syntax: {syntax}")
         self.visit(expr_node.expression)
 
     def visit_shift_expression(self, shift_node: ast.ShiftExpression):
@@ -430,19 +430,3 @@ class LLVMIRGenerator(AstVisitor):
             return self.builder.sitofp(right, left.type)
         else:
             return left
-
-    def visit_if_statement(self, if_node: ast.IfStatement):
-        """Visit an if statement node and generate LLVM IR code for the if statement."""
-        condition_value = self.visit(if_node.condition)
-
-        #with self.builder.if_else(condition_value) as (then, otherwise):
-        #    with then:
-        #        self.visit(if_node.body)
-        #    with otherwise:
-        #        self.visit(if_node.else_statement) # Currently this doesn't have an else body
-
-
-    def visit_else_statement(self, else_node: ast.ElseStatement):
-        """Visit an else statement node. No LLVM IR code is generated for else statements."""
-        pass
-

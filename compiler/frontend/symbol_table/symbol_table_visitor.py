@@ -133,8 +133,10 @@ class SymbolTableVisitor(AstVisitor):
             self.visit(statement)
 
     def visit_body(self, node: ast.Body):
+        self.symbol_table.enter_scope()
         for statement in node.statements:
             self.visit(statement)
+        self.symbol_table.exit_scope()
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         # Check if function is already declared
@@ -143,16 +145,10 @@ class SymbolTableVisitor(AstVisitor):
         # Define the function in the symbol table
         self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level))
 
-        # Create a new scope
-        self.symbol_table.enter_scope()
-
         # TODO: Visit each parameter and add it to the symbol table as a variable with the function's scope level
 
         # Visit the function body
         self.visit(node.body)
-
-        # Exit the function scope
-        self.symbol_table.exit_scope()
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
         ...
