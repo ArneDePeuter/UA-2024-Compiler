@@ -7,6 +7,39 @@ mainFunction : 'int' 'main' '(' ')' body ;
 
 body : '{' statement* '}' ;
 
+iterationStatement
+    : WHILE '(' expression ')' statement
+    | FOR '(' forCondition ')' statement
+    ;
+
+forCondition
+    : forFirst forSecond forThird
+    ;
+
+forFirst
+    : variableDeclaration
+    | assignmentStatement
+    | expressionStatement
+    | TERMINAL
+    ;
+
+forSecond
+    : expressionStatement
+    | TERMINAL
+    ;
+
+forThird
+    : expression?
+    ;
+
+breakStatement
+    : BREAK TERMINAL
+    ;
+
+continueStatement
+    : CONTINUE TERMINAL
+    ;
+
 variableDeclaration
     : type variableDeclarationQualifiers ';'
     ;
@@ -30,6 +63,9 @@ statement
     | assignmentStatement
     | comment
     | typedefStatement
+    | iterationStatement
+    | breakStatement
+    | continueStatement
     | ';'
     ;
 
@@ -100,7 +136,7 @@ primary
     ;
 
 type
-    : const? baseType addressQualifier* | ID
+    : const? (baseType | ID) addressQualifier*
     ;
 
 baseType
@@ -139,6 +175,11 @@ comment
 
 
 // Lexer rules
+BREAK : 'break' ;
+CONTINUE : 'continue' ;
+WHILE  : 'while' ;
+FOR    : 'for' ;
+TERMINAL: ';';
 NUMBER : '0' | [1-9][0-9]* ;
 FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
 ID     : [a-zA-Z_][a-zA-Z_0-9]* ;

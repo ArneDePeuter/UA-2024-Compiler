@@ -59,6 +59,7 @@ class INT(Expression):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
 @dataclass
 class FLOAT(Expression):
     value: float
