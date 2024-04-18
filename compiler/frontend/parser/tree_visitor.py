@@ -410,7 +410,8 @@ class TreeVisitor(GrammarVisitor):
                 # Add the new if to the deepest else of the last if in switch_if_statements
                 if last_if_statement:
                     last_if_statement.else_statement = if_statement
-                switch_if_statements.append(if_statement)
+                else:
+                    switch_if_statements.append(if_statement)
                 last_if_statement = if_statement
             else:
                 # If there is no break, we fall through to this case
