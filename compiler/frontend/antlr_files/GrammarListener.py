@@ -35,6 +35,69 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#iterationStatement.
+    def enterIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#iterationStatement.
+    def exitIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forCondition.
+    def enterForCondition(self, ctx:GrammarParser.ForConditionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forCondition.
+    def exitForCondition(self, ctx:GrammarParser.ForConditionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forFirst.
+    def enterForFirst(self, ctx:GrammarParser.ForFirstContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forFirst.
+    def exitForFirst(self, ctx:GrammarParser.ForFirstContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forSecond.
+    def enterForSecond(self, ctx:GrammarParser.ForSecondContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forSecond.
+    def exitForSecond(self, ctx:GrammarParser.ForSecondContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forThird.
+    def enterForThird(self, ctx:GrammarParser.ForThirdContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forThird.
+    def exitForThird(self, ctx:GrammarParser.ForThirdContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#breakStatement.
+    def enterBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#breakStatement.
+    def exitBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#continueStatement.
+    def enterContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#continueStatement.
+    def exitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#variableDeclaration.
     def enterVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
         pass

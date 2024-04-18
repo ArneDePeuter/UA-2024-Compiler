@@ -1,432 +1,414 @@
 from llvmlite import ir
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
+from dataclasses import dataclass
+from typing import Optional
+
+from .type_translator import TypeTranslator
+from .ir_types import IrIntType, IrFloatType, IrCharType
+
+
+@dataclass
+class ExpressionEval:
+    l_value: Optional[ir.AllocaInstr] = None
+    r_value: Optional[ir.Constant] = None
 
 
 class LLVMIRGenerator(AstVisitor):
     def __init__(self):
-        super().__init__()
         self.module = ir.Module()
-        self.builder = None
-        self.variables = {}
+        self.builder = ir.IRBuilder()
+        self.var_addresses: dict[str, ir.AllocaInstr] = {}
+        self.while_fd = {}
+
+        printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+        self.printf_func = ir.Function(self.module, printf_type, name="printf")
+
+        super().__init__()
 
     def generate_llvm_ir(self, node):
-        """Generate LLVM IR code for the given AST node."""
         self.visit(node)
-        return str(self.module)
+        result = str(self.module)
+        lines = result.split("\n")
+        lines.remove(lines[1])
+        lines.remove(lines[1])
+        return "\n".join(lines)
 
-    def visit_program(self, program_node: ast.Program):
-        """Visit a program node and generate LLVM IR code for its statements."""
-        for statement in program_node.statements:
-            self.visit(statement)
+    def visit_expression(self, node: ast.Expression):
+        if node.c_syntax:
+            comment = node.c_syntax.split("\n")
+            self.builder.comment(f"C Syntax: {comment[0]}")
+        return super().visit_expression(node)
 
-    def visit_function_declaration(self, func_node: ast.FunctionDeclaration):
-        """Visit a function declaration node and generate LLVM IR code for the function."""
-        return_type = self._get_llvm_type(func_node.return_type)
+    def visit_statement(self, node: ast.Statement):
+        if self.builder.block is not None and self.builder.block.is_terminated:
+            return
+        if node.c_syntax:
+            comment = node.c_syntax.split("\n")
+            self.builder.comment(f"C Syntax: {'-'.join(comment)}")
+        super().visit_statement(node)
+
+    def visit_type(self, node: ast.Type) -> ir.types.Type:
+        return TypeTranslator.translate_ast_type(node)
+
+    def visit_int(self, node: ast.INT) -> ExpressionEval:
+        return ExpressionEval(
+            r_value=ir.Constant(IrIntType, node.value)
+        )
+
+    def visit_float(self, node: ast.FLOAT) -> ExpressionEval:
+        return ExpressionEval(
+            r_value=ir.Constant(IrFloatType, node.value)
+        )
+
+    def visit_char(self, node: ast.CHAR) -> ExpressionEval:
+        return ExpressionEval(
+            r_value=ir.Constant(IrCharType, ord(node.value))
+        )
+
+    def visit_identifier(self, node: ast.IDENTIFIER) -> ExpressionEval:
+        return ExpressionEval(
+            l_value=self.var_addresses[node.name],
+            r_value=self.builder.load(self.var_addresses[node.name])
+        )
+
+    def visit_type_cast_expression(self, node: ast.TypeCastExpression) -> ExpressionEval:
+        expr_eval: ExpressionEval = self.visit_expression(node.expression)
+
+        if not expr_eval.r_value:
+            raise NotImplementedError("Cannot type cast, r_value is None")
+
+        value = expr_eval.r_value
+        target_type = self.visit_type(node.cast_type)
+        return ExpressionEval(r_value=TypeTranslator.match_llvm_type(self.builder, target_type, value))
+
+    def visit_binary_arithmetic(self, node: ast.BinaryArithmetic) -> ExpressionEval:
+        left: ExpressionEval = self.visit_expression(node.left)
+        right: ExpressionEval = self.visit_expression(node.right)
+
+        left_value = left.r_value
+        right_value = right.r_value
+
+        if not left_value or not right_value:
+            raise NotImplementedError("Cannot perform binary arithmetic operation, r_value is None")
+
+        if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+            if isinstance(left_value.type, ir.PointerType):
+                element_size = left_value.type.pointee.width
+                right_value = TypeTranslator.match_llvm_type(self.builder, IrIntType, right_value)
+                offset = self.builder.mul(right_value, ir.Constant(IrIntType, element_size))
+                result = self.builder.gep(left_value, [offset])
+            else:
+                left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fadd(left_value, right_value)
+                else:
+                    result = self.builder.add(left_value, right_value)
+        elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+            if isinstance(left_value.type, ir.PointerType):
+                element_size = left_value.type.pointee.width
+                right_value = TypeTranslator.match_llvm_type(self.builder, IrIntType, right_value)
+                offset = self.builder.mul(right_value, ir.Constant(IrIntType, element_size))
+                result = self.builder.gep(left_value, [self.builder.neg(offset)])
+            else:
+                left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fsub(left_value, right_value)
+                else:
+                    result = self.builder.sub(left_value, right_value)
+        else:
+            left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
+            if node.operator == ast.BinaryArithmetic.Operator.MUL:
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fmul(left_value, right_value)
+                else:
+                    result = self.builder.mul(left_value, right_value)
+            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.fdiv(left_value, right_value)
+                else:
+                    result = self.builder.sdiv(left_value, right_value)
+            elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+                if isinstance(left_value.type, ir.FloatType):
+                    result = self.builder.frem(left_value, right_value)
+                else:
+                    result = self.builder.srem(left_value, right_value)
+            else:
+                raise NotImplementedError(f"Binary arithmetic operator {node.operator} is not supported")
+
+        return ExpressionEval(r_value=result)
+
+    def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic) -> ExpressionEval:
+        left: ExpressionEval = self.visit_expression(node.left)
+        right: ExpressionEval = self.visit_expression(node.right)
+
+        left_value = left.r_value
+        right_value = right.r_value
+
+        if not left_value or not right_value:
+            raise NotImplementedError("Cannot perform binary bitwise operation, r_value is None")
+
+        if node.operator == ast.BinaryBitwiseArithmetic.Operator.AND:
+            result = self.builder.and_(left_value, right_value)
+        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.OR:
+            result = self.builder.or_(left_value, right_value)
+        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
+            result = self.builder.xor(left_value, right_value)
+        else:
+            raise NotImplementedError(f"Binary bitwise arithmetic operator {node.operator} is not supported")
+
+        return ExpressionEval(r_value=result)
+
+    def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation) -> ExpressionEval:
+        left: ExpressionEval = self.visit_expression(node.left)
+        right: ExpressionEval = self.visit_expression(node.right)
+
+        left_value = left.r_value
+        right_value = right.r_value
+
+        if not left_value or not right_value:
+            raise NotImplementedError("Cannot perform binary logical operation, r_value is None")
+
+        if node.operator == ast.BinaryLogicalOperation.Operator.AND:
+            result = self.builder.and_(left_value, right_value)
+        elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
+            result = self.builder.or_(left_value, right_value)
+        else:
+            raise NotImplementedError(f"Binary logical operator {node.operator} is not supported")
+
+        return ExpressionEval(r_value=result)
+
+    def visit_comparison_operation(self, node: ast.ComparisonOperation) -> ExpressionEval:
+        left: ExpressionEval = self.visit_expression(node.left)
+        right: ExpressionEval = self.visit_expression(node.right)
+
+        left_value = left.r_value
+        right_value = right.r_value
+
+        if not left_value or not right_value:
+            raise NotImplementedError("Cannot perform comparison operation, r_value is None")
+        if isinstance(left_value.type, ir.PointerType):
+            left_value = self.builder.ptrtoint(left_value, IrIntType)
+        if isinstance(right_value.type, ir.PointerType):
+            right_value = self.builder.ptrtoint(right_value, IrIntType)
+        left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
+        if isinstance(left_value.type, ir.FloatType):
+            result = self.builder.fcmp_ordered(node.operator.value, left_value, right_value)
+        else:
+            result = self.builder.icmp_signed(node.operator.value, left_value, right_value)
+        return ExpressionEval(r_value=result)
+
+    def visit_unary_expression(self, node: ast.UnaryExpression) -> ExpressionEval:
+        value: ExpressionEval = self.visit_expression(node.value)
+
+        if not value.r_value:
+            raise NotImplementedError("Cannot perform unary operation, r_value is None")
+
+        if node.operator == ast.UnaryExpression.Operator.POSITIVE:
+            result = value.r_value
+        elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
+            result = self.builder.neg(value.r_value)
+        elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
+            result = self.builder.not_(value.r_value)
+        elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
+            result = self.builder.icmp_signed("==", value.r_value, ir.Constant(value.r_value.type, 0))
+        elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            return ExpressionEval(r_value=self.builder.load(value.r_value), l_value=value.r_value)
+        elif value.l_value:
+            if node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
+                result = value.l_value
+            elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
+                if isinstance(value.r_value.type, ir.PointerType):
+                    element_size = value.r_value.type.pointee.width
+                    offset = self.builder.mul(ir.Constant(IrIntType, 1), ir.Constant(IrIntType, element_size))
+                    result = self.builder.gep(value.r_value, [offset])
+                else:
+                    left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, value.r_value, ir.Constant(value.r_value.type, 1))
+                    if isinstance(value.r_value.type, ir.FloatType):
+                        result = self.builder.fadd(left_value, right_value)
+                    else:
+                        result = self.builder.add(left_value, right_value)
+
+                self.builder.store(result, value.l_value)
+
+                if node.prefix:
+                    result = result
+                else:
+                    result = value.r_value
+
+            elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
+                if isinstance(value.r_value.type, ir.PointerType):
+                    element_size = value.r_value.type.pointee.width
+                    offset = self.builder.mul(ir.Constant(IrIntType, 1), ir.Constant(IrIntType, element_size))
+                    result = self.builder.gep(value.r_value, [self.builder.neg(offset)])
+                else:
+                    left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, value.r_value, ir.Constant(value.r_value.type, 1))
+                    if isinstance(value.r_value.type, ir.FloatType):
+                        result = self.builder.fsub(left_value, right_value)
+                    else:
+                        result = self.builder.sub(left_value, right_value)
+
+                self.builder.store(result, value.l_value)
+
+                if node.prefix:
+                    result = result
+                else:
+                    result = value.r_value
+        else:
+            raise NotImplementedError(f"Unary operator {node.operator} is not supported")
+
+        return ExpressionEval(r_value=result)
+
+    def visit_shift_expression(self, node: ast.ShiftExpression) -> ExpressionEval:
+        expression_eval_value: ExpressionEval = self.visit_expression(node.value)
+        expression_eval_amount: ExpressionEval = self.visit_expression(node.amount)
+
+        value = expression_eval_value.r_value
+        amount = expression_eval_amount.r_value
+
+        if not value or not amount:
+            raise NotImplementedError("Cannot perform shift expression, r_value is None")
+
+        if node.operator == ast.ShiftExpression.Operator.LEFT:
+            result = self.builder.shl(value, amount)
+        elif node.operator == ast.ShiftExpression.Operator.RIGHT:
+            result = self.builder.lshr(value, amount)
+        else:
+            raise NotImplementedError(f"Shift operator {node.operator} is not supported")
+
+        return ExpressionEval(r_value=result)
+
+    def visit_program(self, node: ast.Program) -> None:
+        for statement in node.statements:
+            self.visit_statement(statement)
+
+    def visit_body(self, node: ast.Body) -> None:
+        for statement in node.statements:
+            self.visit_statement(statement)
+
+    def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
+        return_type = self.visit_type(node.return_type)
         func_type = ir.FunctionType(return_type, [])
-        func = ir.Function(self.module, func_type, name=func_node.name)
+        func = ir.Function(self.module, func_type, name=node.name)
 
         block = func.append_basic_block(name="entry")
         self.builder = ir.IRBuilder(block)
 
-        self.visit(func_node.body)
+        self.visit_body(node.body)
 
-        if not block.is_terminated:
-            if return_type == ir.VoidType():
-                self.builder.ret_void()
-            else:
-                default_value = ir.Constant(return_type, None)
-                self.builder.ret(default_value)
+        if return_type == ir.VoidType():
+            self.builder.ret_void()
+        else:
+            default_value = ir.Constant(return_type, None)
+            self.builder.ret(default_value)
 
         self.builder = None
 
-    def visit_variable_declaration(self, var_node: ast.VariableDeclaration):
-        """Visit a variable declaration node and generate LLVM IR code for variable allocation and initialization."""
-        self.builder.comment(var_node.c_syntax)
-        for qualifier in var_node.qualifiers:
-            var_name = qualifier.identifier
-            var_type = self._get_llvm_type(var_node.var_type)
+    def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier) -> ir.Constant:
+        ...
 
-            if var_node.var_type.address_qualifiers:
-                for _ in range(len(var_node.var_type.address_qualifiers)):
-                    var_type = ir.PointerType(var_type)
+    def visit_variable_declaration(self, node: ast.VariableDeclaration) -> None:
+        decl_type = self.visit_type(node.var_type)
+        for qualifier in node.qualifiers:
+            alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
+            self.var_addresses[qualifier.identifier] = alloc
+            if qualifier.initializer is None:
+                qualifier.set_default_initializer(node.var_type)
+            expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
+            if not expr_eval.r_value:
+                raise NotImplementedError("Cannot assign value to variable, r_value is None")
+            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
+                null_ptr = ir.Constant(decl_type, None)
+                self.builder.store(null_ptr, alloc)
+                continue
+            value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
+            self.builder.store(value, alloc)
 
-            var_addr = self.builder.alloca(var_type, name=var_name)
-            self.variables[var_name] = var_addr
+    def visit_assignment_statement(self, node: ast.AssignmentStatement) -> None:
+        left_eval = self.visit_expression(node.left)
+        right_eval = self.visit_expression(node.right)
+        if not left_eval.l_value:
+            raise NotImplementedError("Cannot assign value to variable, l_value is None")
+        if not right_eval.r_value:
+            raise NotImplementedError("Cannot assign value to variable, r_value is None")
+        left_type = left_eval.l_value.type.pointee
+        if isinstance(left_type, ir.PointerType) and not isinstance(right_eval.r_value.type, ir.PointerType):
+            null_ptr = ir.Constant(left_type, None)
+            self.builder.store(null_ptr, left_eval.l_value)
+            return
+        value = TypeTranslator.match_llvm_type(self.builder, left_type, right_eval.r_value)
+        self.builder.store(value, left_eval.l_value)
 
-            if qualifier.initializer is not None:
-                init_value = self.visit(qualifier.initializer)
-                casted_init_value = self._cast_value(init_value, var_type)
-                self.builder.store(casted_init_value, var_addr)
+    def visit_expression_statement(self, node: ast.ExpressionStatement) -> None:
+        self.visit_expression(node.expression)
 
-    def visit_assignment_statement(self, assign_node: ast.AssignmentStatement):
-        """Visit an assignment statement node and generate LLVM IR code for the assignment."""
-        target = self.visit(assign_node.left)
-        value = self.visit(assign_node.right)
-
-        target_type = target.type
-
-        if isinstance(target_type, ir.PointerType):
-            casted_value = self._cast_value(value, target_type.pointee)
-            self.builder.store(casted_value, target)
-        else:
-            alloca = self.builder.alloca(target_type)
-            casted_value = self._implicit_cast(value, target_type)
-            self.builder.store(casted_value, alloca)
-
-            if isinstance(assign_node.left, ast.IDENTIFIER):
-                self.variables[assign_node.left.name] = alloca
-
-    def visit_binary_arithmetic(self, binary_node: ast.BinaryArithmetic):
-        """Visit a binary arithmetic node and generate LLVM IR code for the arithmetic operation."""
-        left = self.visit(binary_node.left)
-        right = self.visit(binary_node.right)
-
-        if isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.IntType):
-            return self._handle_pointer_arithmetic(left, right, binary_node.operator)
-        elif isinstance(left.type, ir.IntType) and isinstance(right.type, ir.PointerType):
-            return self._handle_pointer_arithmetic(right, left, binary_node.operator)
-        else:
-            return self._handle_binary_arithmetic(binary_node.operator, left, right)
-
-    def visit_binary_bitwise_arithmetic(self, binary_node: ast.BinaryBitwiseArithmetic):
-        """Visit a binary bitwise arithmetic node and generate LLVM IR code for the bitwise operation."""
-        left = self.visit(binary_node.left)
-        right = self.visit(binary_node.right)
-        return self._handle_binary_bitwise_arithmetic(binary_node.operator, left, right)
-
-    def visit_binary_logical_operation(self, binary_node: ast.BinaryLogicalOperation):
-        """Visit a binary logical operation node and generate LLVM IR code for the logical operation."""
-        left = self.visit(binary_node.left)
-        right = self.visit(binary_node.right)
-        return self._handle_binary_logical_operation(binary_node.operator, left, right)
-
-    def visit_comparison_operation(self, comparison_node: ast.ComparisonOperation):
-        """Visit a comparison operation node and generate LLVM IR code for the comparison."""
-        left = self.visit(comparison_node.left)
-        right = self.visit(comparison_node.right)
-
-        if isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.IntType):
-            right = self.builder.zext(right, ir.IntType(64))
-            left = self.builder.ptrtoint(left, ir.IntType(64))
-            return self.builder.icmp_unsigned(comparison_node.operator.value, left, right)
-        elif isinstance(left.type, ir.IntType) and isinstance(right.type, ir.PointerType):
-            left = self.builder.zext(left, ir.IntType(64))
-            right = self.builder.ptrtoint(right, ir.IntType(64))
-            return self.builder.icmp_unsigned(comparison_node.operator.value, left, right)
-        else:
-            return self._handle_comparison_operation(comparison_node.operator, left, right)
-
-    def visit_unary_expression(self, unary_node: ast.UnaryExpression):
-        """Visit a unary expression node and generate LLVM IR code for the unary operation."""
-        operand = self.visit(unary_node.value)
-
-        if unary_node.operator == ast.UnaryExpression.Operator.INCREMENT:
-            return self._handle_increment(operand, unary_node.prefix)
-        elif unary_node.operator == ast.UnaryExpression.Operator.DECREMENT:
-            return self._handle_decrement(operand, unary_node.prefix)
-        elif unary_node.operator == ast.UnaryExpression.Operator.POSITIVE:
-            return operand
-        elif unary_node.operator == ast.UnaryExpression.Operator.NEGATIVE:
-            return self.builder.neg(operand)
-        elif unary_node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
-            return self.builder.not_(operand)
-        elif unary_node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
-            return self._handle_address_of(operand)
-        elif unary_node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
-            return self._handle_dereference(operand)
-
-    def visit_int(self, int_node: ast.INT):
-        """Visit an integer node and generate LLVM IR code for the constant integer."""
-        return ir.Constant(ir.IntType(32), int_node.value)
-
-    def visit_float(self, float_node: ast.FLOAT):
-        """Visit a float node and generate LLVM IR code for the constant float."""
-        return ir.Constant(ir.DoubleType(), float_node.value)
-
-    def visit_char(self, char_node: ast.CHAR):
-        """Visit a char node and generate LLVM IR code for the constant character."""
-        return ir.Constant(ir.IntType(8), ord(char_node.value))
-
-    def visit_identifier(self, identifier_node: ast.IDENTIFIER):
-        """Visit an identifier node and generate LLVM IR code for loading the variable value."""
-        var_addr = self.variables[identifier_node.name]
-        return self.builder.load(var_addr)
-
-    def visit_printf_call(self, printf_node: ast.PrintFCall):
-        """Visit a printf call node and generate LLVM IR code for the printf function call."""
-        self.builder.comment(printf_node.c_syntax)
-        format_string = self._get_format_string(printf_node.replacer)
-        format_string_constant = self._create_global_string_constant(format_string, printf_node)
-
-        value = self.visit(printf_node.expression)
-
-        printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-        printf_func = ir.Function(self.module, printf_type, name="printf")
-
-        self.builder.call(printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value])
-
-    def visit_comment_statement(self, comment_node: ast.CommentStatement):
-        """Visit a comment statement node and generate LLVM IR code for the comment."""
-        for line in comment_node.content.split("\n"):
-            self.builder.comment(line)
-
-    def visit_body(self, body_node: ast.Body):
-        """Visit a body node and generate LLVM IR code for its statements."""
-        for statement in body_node.statements:
-            self.visit(statement)
-
-    def visit_expression_statement(self, expr_node: ast.ExpressionStatement):
-        """Visit an expression statement node and generate LLVM IR code for the expression."""
-        syntax = expr_node.c_syntax.replace('\n', '')
-        self.builder.comment(f"C Syntax: {syntax}")
-        self.visit(expr_node.expression)
-
-    def visit_shift_expression(self, shift_node: ast.ShiftExpression):
-        """Visit a shift expression node and generate LLVM IR code for the shift operation."""
-        value = self.visit(shift_node.value)
-        amount = self.visit(shift_node.amount)
-
-        if shift_node.operator == ast.ShiftExpression.Operator.LEFT:
-            return self.builder.shl(value, amount)
-        elif shift_node.operator == ast.ShiftExpression.Operator.RIGHT:
-            return self.builder.ashr(value, amount)
-
-    def visit_type(self, type_node: ast.Type):
-        """Visit a type node. No LLVM IR code is generated for type nodes."""
-        pass
-
-    def visit_type_cast_expression(self, cast_node: ast.TypeCastExpression):
-        """Visit a type cast expression node and generate LLVM IR code for the type cast."""
-        value = self.visit(cast_node.expression)
-        target_type = self._get_llvm_type(cast_node.cast_type)
-        return self._cast_value(value, target_type)
-
-    def visit_variable_declaration_qualifier(self, qualifier_node: ast.VariableDeclarationQualifier):
-        """Visit a variable declaration qualifier node. No LLVM IR code is generated for variable declaration qualifiers."""
-        pass
-
-    def _get_llvm_type(self, node_type: ast.Type):
-        """Get the corresponding LLVM IR type for a given AST type."""
-        if node_type.base_type == ast.BaseType.int:
-            return ir.IntType(32)
-        elif node_type.base_type == ast.BaseType.float:
-            return ir.DoubleType()
-        elif node_type.base_type == ast.BaseType.char:
-            return ir.IntType(8)
-        else:
-            raise NotImplementedError(f"Type {node_type.base_type} not supported")
-
-    def _cast_value(self, value, target_type):
-        """Cast a value to the target type."""
-        value_type = value.type
-
-        if value_type == target_type:
-            return value
-
-        if isinstance(value_type, ir.IntType) and isinstance(target_type, ir.IntType):
-            if value_type.width < target_type.width:
-                return self.builder.sext(value, target_type)
-            elif value_type.width > target_type.width:
-                return self.builder.trunc(value, target_type)
-        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.DoubleType):
-            return self.builder.sitofp(value, target_type)
-        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.IntType):
-            return self.builder.fptosi(value, target_type)
-        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.DoubleType):
-            return value
-        elif isinstance(value_type, ir.PointerType) and isinstance(target_type, ir.IntType):
-            return self.builder.ptrtoint(value, target_type)
-
-        raise NotImplementedError(f"Casting from {value_type} to {target_type} is not implemented")
-
-    def _implicit_cast(self, value, target_type):
-        """Perform implicit casting of a value to the target type."""
-        value_type = value.type
-
-        if value_type == target_type:
-            return value
-
-        if isinstance(value_type, ir.IntType) and isinstance(target_type, ir.IntType):
-            if value_type.width < target_type.width:
-                return self.builder.sext(value, target_type)
-            elif value_type.width > target_type.width:
-                return self.builder.trunc(value, target_type)
-        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.DoubleType):
-            return self.builder.sitofp(value, target_type)
-        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.IntType):
-            return self.builder.fptosi(value, target_type)
-        elif isinstance(value_type, ir.DoubleType) and isinstance(target_type, ir.DoubleType):
-            return value
-        elif isinstance(value_type, ir.PointerType) and isinstance(target_type, ir.IntType):
-            return self.builder.ptrtoint(value, target_type)
-        elif isinstance(value_type, ir.IntType) and isinstance(target_type, ir.PointerType):
-            return self.builder.inttoptr(value, target_type)
-        elif isinstance(value_type, ir.PointerType) and isinstance(target_type, ir.PointerType):
-            pointee_value = self.builder.load(value)
-            casted_pointee = self._implicit_cast(pointee_value, target_type.pointee)
-            casted_pointer = self.builder.alloca(target_type.pointee)
-            self.builder.store(casted_pointee, casted_pointer)
-            return casted_pointer
-
-        raise NotImplementedError(f"Implicit casting from {value_type} to {target_type} is not implemented")
-
-    def _handle_pointer_arithmetic(self, pointer, integer, operator):
-        """Handle pointer arithmetic operations."""
-        element_type = pointer.type.pointee
-        element_size = self._size_of(element_type)
-        scaled_offset = self.builder.mul(integer, ir.Constant(integer.type, element_size))
-
-        if operator == ast.BinaryArithmetic.Operator.PLUS:
-            return self.builder.gep(pointer, [scaled_offset])
-        elif operator == ast.BinaryArithmetic.Operator.MINUS:
-            return self.builder.gep(pointer, [self.builder.neg(scaled_offset)])
-
-    def _handle_binary_arithmetic(self, operator, left, right):
-        """Handle binary arithmetic operations."""
-        if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.IntType):
-            if operator == ast.BinaryArithmetic.Operator.PLUS:
-                return self.builder.add(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.MINUS:
-                return self.builder.sub(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.MUL:
-                return self.builder.mul(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.DIV:
-                return self.builder.sdiv(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.MOD:
-                return self.builder.srem(left, right)
-        elif isinstance(left.type, ir.DoubleType) and isinstance(right.type, ir.DoubleType):
-            if operator == ast.BinaryArithmetic.Operator.PLUS:
-                return self.builder.fadd(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.MINUS:
-                return self.builder.fsub(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.MUL:
-                return self.builder.fmul(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.DIV:
-                return self.builder.fdiv(left, right)
-            elif operator == ast.BinaryArithmetic.Operator.MOD:
-                return self.builder.frem(left, right)
-        else:
-            left = self._cast_to_common_type(left, right)
-            right = self._cast_to_common_type(right, left)
-            return self._handle_binary_arithmetic(operator, left, right)
-
-    def _handle_binary_bitwise_arithmetic(self, operator, left, right):
-        """Handle binary bitwise arithmetic operations."""
-        if operator == ast.BinaryBitwiseArithmetic.Operator.AND:
-            return self.builder.and_(left, right)
-        elif operator == ast.BinaryBitwiseArithmetic.Operator.OR:
-            return self.builder.or_(left, right)
-        elif operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
-            return self.builder.xor(left, right)
-
-    def _handle_binary_logical_operation(self, operator, left, right):
-        """Handle binary logical operations."""
-        if operator == ast.BinaryLogicalOperation.Operator.AND:
-            return self.builder.and_(left, right)
-        elif operator == ast.BinaryLogicalOperation.Operator.OR:
-            return self.builder.or_(left, right)
-
-    def _handle_comparison_operation(self, operator, left, right):
-        """Handle comparison operations."""
-        if isinstance(left.type, ir.PointerType) and isinstance(right.type, ir.PointerType):
-            left = self.builder.ptrtoint(left, ir.IntType(64))
-            right = self.builder.ptrtoint(right, ir.IntType(64))
-            return self.builder.icmp_unsigned(operator.value, left, right)
-        else:
-            if operator == ast.ComparisonOperation.Operator.EQ:
-                return self.builder.icmp_signed('==', left, right)
-            elif operator == ast.ComparisonOperation.Operator.NEQ:
-                return self.builder.icmp_signed('!=', left, right)
-            elif operator == ast.ComparisonOperation.Operator.LT:
-                return self.builder.icmp_signed('<', left, right)
-            elif operator == ast.ComparisonOperation.Operator.LTE:
-                return self.builder.icmp_signed('<=', left, right)
-            elif operator == ast.ComparisonOperation.Operator.GT:
-                return self.builder.icmp_signed('>', left, right)
-            elif operator == ast.ComparisonOperation.Operator.GTE:
-                return self.builder.icmp_signed('>=', left, right)
-
-    def _handle_increment(self, operand, prefix):
-        """Handle increment operations."""
-        if isinstance(operand.type, ir.PointerType):
-            incremented_value = self.builder.gep(operand, [ir.Constant(ir.IntType(32), 1)])
-            self.builder.store(incremented_value, operand)
-            return incremented_value if prefix else operand
-        else:
-            incremented_value = self.builder.add(operand, ir.Constant(operand.type, 1))
-            self.builder.store(incremented_value, self.variables[operand.name])
-            return incremented_value if prefix else operand
-
-    def _handle_decrement(self, operand, prefix):
-        """Handle decrement operations."""
-        if isinstance(operand.type, ir.PointerType):
-            decremented_value = self.builder.gep(operand, [ir.Constant(ir.IntType(32), -1)])
-            self.builder.store(decremented_value, operand)
-            return decremented_value if prefix else operand
-        else:
-            decremented_value = self.builder.sub(operand, ir.Constant(operand.type, 1))
-            self.builder.store(decremented_value, self.variables[operand.name])
-            return decremented_value if prefix else operand
-
-    def _handle_address_of(self, operand):
-        """Handle address-of operations."""
-        if isinstance(operand, ir.AllocaInstr):
-            return operand
-        elif isinstance(operand, ir.Argument):
-            return self.builder.alloca(operand.type, name=operand.name)
-        elif isinstance(operand, ir.LoadInstr):
-            return operand.operands[0]
-        else:
-            raise NotImplementedError(f"Unsupported operand type for address-of operator: {type(operand)}")
-
-    def _handle_dereference(self, operand):
-        """Handle dereference operations."""
-        if isinstance(operand.type, ir.PointerType):
-            return self.builder.load(operand)
-        else:
-            raise NotImplementedError(f"Unsupported operand type for dereference operator: {type(operand)}")
-
-    def _get_format_string(self, replacer):
-        """Get the format string based on the replacer."""
-        format_string = {
-            ast.PrintFCall.Replacer.d: "%d\n",
-            ast.PrintFCall.Replacer.c: "%c\n",
-            ast.PrintFCall.Replacer.f: "%f\n",
-            ast.PrintFCall.Replacer.s: "%s\n",
-            ast.PrintFCall.Replacer.x: "%x\n",
-        }[replacer]
-        return format_string
-
-    def _create_global_string_constant(self, format_string, printf_node):
-        """Create a global string constant for the format string."""
+    def visit_printf_call(self, node: ast.PrintFCall) -> None:
+        format_string = node.replacer.value
         format_string_constant = ir.GlobalVariable(
             self.module, ir.ArrayType(ir.IntType(8), len(format_string)),
-            name=f"printf_format_{printf_node.line}_{printf_node.position}"
+            name=f"printf_format_{node.line}_{node.position}"
         )
         format_string_constant.global_constant = True
         format_string_constant.initializer = ir.Constant(
             ir.ArrayType(ir.IntType(8), len(format_string)),
             bytearray(format_string.encode('utf-8'))
         )
-        return format_string_constant
 
-    def _size_of(self, ty):
-        """Calculate the size of a type in bytes."""
-        if isinstance(ty, ir.IntType):
-            return ty.width // 8
-        elif isinstance(ty, ir.DoubleType):
-            return 8
-        elif isinstance(ty, ir.PointerType):
-            return 8
-        else:
-            raise NotImplementedError(f"Size calculation for type {ty} is not implemented")
+        value: ExpressionEval = self.visit(node.expression)
 
-    def _cast_to_common_type(self, left, right):
-        """Cast operands to a common type."""
-        if isinstance(left.type, ir.IntType) and isinstance(right.type, ir.DoubleType):
-            return self.builder.sitofp(left, right.type)
-        elif isinstance(left.type, ir.DoubleType) and isinstance(right.type, ir.IntType):
-            return self.builder.sitofp(right, left.type)
+        self.builder.call(self.printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
+
+    def visit_comment_statement(self, node: ast.CommentStatement) -> None:
+        for line in node.content.split("\n"):
+            self.builder.comment(line)
+
+    def visit_while_statement(self, node: ast.WhileStatement):
+        w_condition_block = self.builder.append_basic_block("w_condition")
+        w_body_block = self.builder.append_basic_block("w_body")
+        w_after_block = self.builder.append_basic_block("w_after")
+
+        # Store the blocks for break and continue
+        self.while_fd[(node.line, node.position)] = (w_condition_block, w_after_block)
+
+        self.builder.branch(w_condition_block)
+
+        # Condition block
+        self.builder.position_at_start(w_condition_block)
+        cond_head = self.to_bool_expr(node.expression)
+        self.builder.cbranch(cond_head, w_body_block, w_after_block)
+
+        # Body block
+        self.builder.position_at_start(w_body_block)
+        self.visit_statement(node.to_execute)
+        if not w_body_block.is_terminated:
+            self.builder.branch(w_condition_block)
+
+        # After block
+        self.builder.position_at_start(w_after_block)
+
+    def to_bool_expr(self, node: ast.Expression):
+        ir_node_eval: ExpressionEval = self.visit_expression(node)
+
+        ir_node = ir_node_eval.r_value
+        if not ir_node:
+            raise NotImplementedError("Cannot convert to bool, r_value is None")
+
+        if isinstance(ir_node, ir.CompareInstr):
+            return ir_node
+        ir_node: ir.Constant
+        if isinstance(ir_node.type, ir.IntType):
+            return self.builder.icmp_signed("!=", ir_node, ir.Constant(ir.IntType(32), 0))
+        elif isinstance(ir_node.type, ir.DoubleType):
+            return self.builder.fcmp_ordered("!=", ir_node, ir.Constant(ir.DoubleType(), 0.0))
+        elif isinstance(ir_node.type, ir.PointerType):
+            return self.builder.icmp_unsigned("!=", ir_node, ir.Constant(ir.PointerType(ir.IntType(8)), 0))
         else:
-            return left
+            raise NotImplementedError(f"Conversion to bool for {node} is not implemented")
+
+    def visit_break_statement(self, node: ast.BreakStatement):
+        _, w_after_block = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.branch(w_after_block)
+
+    def visit_continue_statement(self, node: ast.ContinueStatement):
+        w_condition_block, _ = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.branch(w_condition_block)

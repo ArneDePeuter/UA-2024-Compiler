@@ -19,5 +19,7 @@ jobs:
       - uses: snok/install-poetry@v1
         with:
           version: 1.7.0
+      - name: Install LLVM
+        run: sudo apt-get update && sudo apt-get install llvm
       - run: poetry install --no-interaction --no-root
       - run: poetry run pytest

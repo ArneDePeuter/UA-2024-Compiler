@@ -230,3 +230,15 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit(node.body)
+
+    def visit_while_statement(self, node: ast.WhileStatement):
+        self.visit(node.expression)
+        self.visit(node.to_execute)
+
+    def visit_break_statement(self, node: ast.BreakStatement):
+        if node.while_statement is None:
+            raise SemanticError(f"Break statement outside of loop.", node.line, node.position)
+
+    def visit_continue_statement(self, node: ast.ContinueStatement):
+        if node.while_statement is None:
+            raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)

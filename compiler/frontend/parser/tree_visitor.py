@@ -72,7 +72,10 @@ class TreeVisitor(GrammarVisitor):
     def visitStatement(self, ctx:GrammarParser.StatementContext):
         if ctx.getChild(0) == TerminalNodeImpl:
             return None
-        return super().visitStatement(ctx)
+        ast = super().visitStatement(ctx)
+        if ast is not None:
+            ast.c_syntax = self.get_original_text(ctx)
+        return ast
 
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
@@ -95,19 +98,20 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitType(self, ctx):
-        if ctx.ID():
-            text = ctx.ID().getText()
-            if text in self.typedef_scope:
-                return copy.deepcopy(self.typedef_scope[text])
-            else:
-                raise RuntimeError("Typedef not defined")
-        return ast.Type(
-            base_type=ast.BaseType((ctx.baseType().getText())),
-            const=ctx.const() is not None,
-            address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+        if ctx.baseType():
+            return ast.Type(
+                base_type=ast.BaseType((ctx.baseType().getText())),
+                const=ctx.const() is not None,
+                address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        replace = copy.deepcopy(self.typedef_scope.get(ctx.ID().getText()))
+        replace.const = replace.const or ctx.const() is not None
+        replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+        replace.line=ctx.start.line
+        replace.position=ctx.start.column
+        return replace
 
     def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         text = ctx.getText()
@@ -125,7 +129,9 @@ class TreeVisitor(GrammarVisitor):
         self.typedef_scope[name] = my_type
 
     def visitExpression(self, ctx: GrammarParser.ExpressionContext):
-        return self.visitChildren(ctx)
+        ast = self.visitChildren(ctx)
+        ast.c_syntax = self.get_original_text(ctx)
+        return ast
 
     def visitVariableDeclarationQualifiers(self, ctx):
         return [self.visit(qualifier) for qualifier in ctx.variableDeclarationQualifier()]
@@ -357,3 +363,99 @@ class TreeVisitor(GrammarVisitor):
                 line=ctx.start.line,
                 position=ctx.start.column
             )
+
+    def visitIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
+        if ctx.WHILE():
+            return self.visit_while_statement(ctx)
+        else:
+            return self.visit_for_statement(ctx)
+
+    def visit_while_statement(self, ctx:GrammarParser.IterationStatementContext):
+        expression = self.visit(ctx.expression())
+        to_execute = self.visit(ctx.statement())
+        return ast.WhileStatement(
+            expression=expression,
+            to_execute=to_execute,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitForFirst(self, ctx:GrammarParser.ForFirstContext):
+        if node := ctx.variableDeclaration():
+            return self.visitVariableDeclaration(node)
+        elif node := ctx.expressionStatement():
+            return self.visitExpressionStatement(node)
+        elif node := ctx.assignmentStatement():
+            return self.visitAssignmentStatement(node)
+        return None
+
+    def visitForSecond(self, ctx:GrammarParser.ForSecondContext):
+        if node := ctx.expressionStatement():
+            expression = self.visitExpressionStatement(node).expression
+            expression.c_syntax = self.get_original_text(ctx)
+            return expression
+        return None
+
+    def visitForThird(self, ctx:GrammarParser.ForThirdContext):
+        if node := ctx.expression():
+            expr = self.visitExpression(node)
+            return ast.ExpressionStatement(
+                expression=expr,
+                line=ctx.start.line,
+                position=ctx.start.column,
+                c_syntax=expr.c_syntax
+            )
+        return None
+
+    def visitForCondition(self, ctx:GrammarParser.ForConditionContext):
+        return self.visitForFirst(ctx.forFirst()), self.visitForSecond(ctx.forSecond()), self.visitForThird(ctx.forThird())
+
+    def visit_for_statement(self, ctx: GrammarParser.IterationStatementContext):
+        first, second, third = self.visitForCondition(ctx.forCondition())
+        statement = self.visitStatement(ctx.statement())
+
+        if third:
+            if isinstance(statement, ast.Body):
+                statement.statements.append(third)
+                to_execute = statement
+            else:
+                to_execute = ast.Body(
+                    statements=[
+                        statement,
+                        third
+                    ],
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+        else:
+            to_execute = statement
+
+        while_statement = ast.WhileStatement(
+            expression=second if second else ast.INT(1),
+            to_execute=to_execute,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+        if not first:
+            return while_statement
+        return ast.Body(
+            statements=[
+                first,
+                while_statement
+            ],
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        return ast.BreakStatement(
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        return ast.ContinueStatement(
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
