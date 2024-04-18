@@ -56,6 +56,18 @@ castExpression
     : '(' type ')' unaryExpression
     ;
 
+switchStatement
+    : SWITCH '(' expression ')' '{' caseStatement* defaultCaseStatement? '}'
+    ;
+
+caseStatement
+    : CASE expression ':' statement*
+    ;
+
+defaultCaseStatement
+    : DEFAULT ':' statement*
+    ;
+
 statement
     : expressionStatement
     | body
@@ -67,6 +79,7 @@ statement
     | iterationStatement
     | breakStatement
     | continueStatement
+    | switchStatement
     | ';'
     ;
 
@@ -91,11 +104,11 @@ assignmentStatement
     ;
 
 ifStatement
-    : 'if' '(' expression ')' body (elseStatement)?
+    : IF '(' expression ')' body (elseStatement)?
     ;
 
 elseStatement
-    : 'else' (body | ifStatement)
+    : ELSE (body | ifStatement)
     ;
 
 logicalExpression
@@ -184,6 +197,11 @@ comment
 
 
 // Lexer rules
+SWITCH : 'switch' ;
+CASE   : 'case' ;
+DEFAULT: 'default' ;
+IF     : 'if' ;
+ELSE   : 'else' ;
 BREAK : 'break' ;
 CONTINUE : 'continue' ;
 WHILE  : 'while' ;
