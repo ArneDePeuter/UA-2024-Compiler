@@ -1,9 +1,39 @@
 grammar Grammar;
 
 // Parser rules
-program : statement* mainFunction statement* ;
+program : (statement)* ;
 
-mainFunction : 'int' 'main' '(' ')' body ;
+statement
+    : body
+    | functionDeclaration
+    | forwardDeclaration
+    | variableDeclaration
+    | assignmentStatement
+    | comment
+    | typedefStatement
+    | ifStatement
+    | iterationStatement
+    | breakStatement
+    | continueStatement
+    | switchStatement
+    | returnStatement
+    | expressionStatement
+    | ';'
+    ;
+
+forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
+
+typeList : type (',' type)* ;
+
+returnStatement : RETURN expression? TERMINAL ;
+
+functionDeclaration : type ID '(' paramList? ')' body ;
+
+paramList : type ID (',' type ID)* ;
+
+functionCall : ID '(' argumentList? ')' ;
+
+argumentList : expression (',' expression)* ;
 
 body : '{' statement* '}' ;
 
@@ -68,21 +98,6 @@ defaultCaseStatement
     : DEFAULT ':' statement*
     ;
 
-statement
-    : expressionStatement
-    | body
-    | variableDeclaration
-    | assignmentStatement
-    | comment
-    | typedefStatement
-    | ifStatement
-    | iterationStatement
-    | breakStatement
-    | continueStatement
-    | switchStatement
-    | ';'
-    ;
-
 typedefStatement
     : 'typedef' type ID ';';
 
@@ -92,11 +107,7 @@ expressionStatement
 
 expression
     : logicalExpression
-    | printCall
-    ;
-
-printCall
-    : 'printf' '(' PRINTFREPLACER ',' logicalExpression ')'
+    | functionCall
     ;
 
 assignmentStatement
@@ -154,6 +165,7 @@ primary
     | ID
     | CHAR
     | CHAR_ESC
+    | STRING
     | castExpression
     ;
 
@@ -203,6 +215,7 @@ DEFAULT: 'default' ;
 IF     : 'if' ;
 ELSE   : 'else' ;
 BREAK : 'break' ;
+RETURN : 'return' ;
 CONTINUE : 'continue' ;
 WHILE  : 'while' ;
 FOR    : 'for' ;
@@ -211,6 +224,7 @@ NUMBER : '0' | [1-9][0-9]* ;
 FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
 ID     : [a-zA-Z_][a-zA-Z_0-9]* ;
 CHAR : '\'' [\u0000-\u00FF] '\'' ;
+STRING:  '"' [\u0000-\u00FF]* '"' ;
 CHAR_ESC : '\'' ( '\\n' | '\\t' | '\\0' | . ) '\'' ;
 PLUS   : '+';
 MINUS  : '-';
@@ -232,7 +246,6 @@ BITAND : '&';
 BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
-PRINTFREPLACER: '"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ;
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
 MULTI_LINE_COMMENT : '/*' .*? '*/' ;

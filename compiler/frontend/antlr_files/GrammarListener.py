@@ -17,12 +17,75 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#mainFunction.
-    def enterMainFunction(self, ctx:GrammarParser.MainFunctionContext):
+    # Enter a parse tree produced by GrammarParser#statement.
+    def enterStatement(self, ctx:GrammarParser.StatementContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#mainFunction.
-    def exitMainFunction(self, ctx:GrammarParser.MainFunctionContext):
+    # Exit a parse tree produced by GrammarParser#statement.
+    def exitStatement(self, ctx:GrammarParser.StatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#forwardDeclaration.
+    def enterForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#forwardDeclaration.
+    def exitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#typeList.
+    def enterTypeList(self, ctx:GrammarParser.TypeListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#typeList.
+    def exitTypeList(self, ctx:GrammarParser.TypeListContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#returnStatement.
+    def enterReturnStatement(self, ctx:GrammarParser.ReturnStatementContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#returnStatement.
+    def exitReturnStatement(self, ctx:GrammarParser.ReturnStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#functionDeclaration.
+    def enterFunctionDeclaration(self, ctx:GrammarParser.FunctionDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#functionDeclaration.
+    def exitFunctionDeclaration(self, ctx:GrammarParser.FunctionDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#paramList.
+    def enterParamList(self, ctx:GrammarParser.ParamListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#paramList.
+    def exitParamList(self, ctx:GrammarParser.ParamListContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#functionCall.
+    def enterFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#functionCall.
+    def exitFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#argumentList.
+    def enterArgumentList(self, ctx:GrammarParser.ArgumentListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#argumentList.
+    def exitArgumentList(self, ctx:GrammarParser.ArgumentListContext):
         pass
 
 
@@ -161,15 +224,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#statement.
-    def enterStatement(self, ctx:GrammarParser.StatementContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#statement.
-    def exitStatement(self, ctx:GrammarParser.StatementContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#typedefStatement.
     def enterTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
         pass
@@ -194,15 +248,6 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#expression.
     def exitExpression(self, ctx:GrammarParser.ExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#printCall.
-    def enterPrintCall(self, ctx:GrammarParser.PrintCallContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#printCall.
-    def exitPrintCall(self, ctx:GrammarParser.PrintCallContext):
         pass
 
 

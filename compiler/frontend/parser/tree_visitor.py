@@ -38,17 +38,6 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitMainFunction(self, ctx):
-        body = self.visit(ctx.body())
-
-        return ast.FunctionDeclaration(
-            return_type=ast.Type(base_type=ast.BaseType.int),
-            name='main',
-            body=body,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
     def visitBody(self, ctx):
         typedef_scope_before = copy.deepcopy(self.typedef_scope)
         statements = []
@@ -310,20 +299,14 @@ class TreeVisitor(GrammarVisitor):
             return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
         elif ctx.ID() is not None:
             return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
+        elif ctx.STRING() is not None:
+            return ast.CHAR(ctx.STRING().getText()[1:-1], line=line, position=position)
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
             content=ctx.getText()[:-1],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitPrintCall(self, ctx:GrammarParser.PrintCallContext):
-        return ast.PrintFCall(
-            replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
-            expression=self.visitLogicalExpression(ctx.logicalExpression()),
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -539,6 +522,62 @@ class TreeVisitor(GrammarVisitor):
 
     def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
         return ast.ContinueStatement(
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitParamList(self, ctx:GrammarParser.ParamListContext):
+        return [
+            ast.FunctionParameter(type=self.visitType(param_type), name=param_name.getText())
+            for param_type, param_name in zip(
+                ctx.type_(),
+                ctx.ID()
+            )
+        ]
+
+    def visitFunctionDeclaration(self, ctx:GrammarParser.FunctionDeclarationContext):
+        body = self.visit(ctx.body())
+        return_type = self.visit(ctx.type_())
+        name = ctx.ID().getText()
+        parameters = self.visitParamList(ctx.paramList()) if ctx.paramList() else []
+
+        return ast.FunctionDeclaration(
+            return_type=return_type,
+            name=name,
+            parameters=parameters,
+            body=body,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitReturnStatement(self, ctx:GrammarParser.ReturnStatementContext):
+        return ast.ReturnStatement(
+            expression=self.visit(ctx.expression()) if ctx.expression() else None,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitArgumentList(self, ctx:GrammarParser.ArgumentListContext):
+        return [self.visitExpression(arg) for arg in ctx.expression()]
+
+    def visitFunctionCall(self, ctx: GrammarParser.FunctionCallContext):
+        name = ctx.ID().getText()
+        arguments = self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else []
+        return ast.FunctionCall(
+            name=name,
+            arguments=arguments,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitTypeList(self, ctx:GrammarParser.TypeListContext):
+        return [self.visitType(type_) for type_ in ctx.type_()]
+
+    def visitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
+        return ast.ForwardDeclaration(
+            return_type=self.visitType(ctx.type_()),
+            name=ctx.ID().getText(),
+            parameters=self.visitTypeList(ctx.typeList()) if ctx.typeList() else [],
             line=ctx.start.line,
             position=ctx.start.column
         )

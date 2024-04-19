@@ -113,9 +113,20 @@ class AstDotVisitor(AstVisitor):
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         node_name = str(id(node))
         self.total += f'{node_name} [label="Function: {node.name}"];\n'
+
         return_type_node_name = str(id(node.return_type))
         self.total += f'{node_name} -> {return_type_node_name};\n'
         self.visit_type(node.return_type)
+
+        for param in node.parameters:
+            param_node_name = str(id(param))
+            self.total += f'{param_node_name} [label="Function parameter: {param.name}"];\n'
+            self.total += f'{node_name} -> {param_node_name};\n'
+
+            param_type_name = str(id(param.type))
+            self.total += f'{param_node_name} -> {param_type_name};\n'
+            self.visit_type(param.type)
+
         body_node_name = str(id(node.body))
         self.total += f'{node_name} -> {body_node_name};\n'
         self.visit_body(node.body)
@@ -167,15 +178,6 @@ class AstDotVisitor(AstVisitor):
         self.total += f'{node_name} -> {expression_node_name};\n'
         self.visit_expression(node.expression)
 
-    def visit_printf_call(self, node: ast.PrintFCall):
-        node_name = id(node)
-
-        self.total += f"{node_name} [label=\"PrintFCall {node.replacer.value}\"];\n"
-
-        expression_node_name = str(id(node.expression))
-        self.total += f'{node_name} -> {expression_node_name};\n'
-        self.visit_expression(node.expression)
-
     def visit_comment_statement(self, node: ast.CommentStatement):
         node_name = id(node)
 
@@ -210,7 +212,6 @@ class AstDotVisitor(AstVisitor):
             self.total += f'{node_name} -> {body_node_name} [label="body"];\n'
             self.visit_body(node.body)
 
-
     def visit_while_statement(self, node: ast.WhileStatement):
         node_name = id(node)
 
@@ -231,3 +232,34 @@ class AstDotVisitor(AstVisitor):
     def visit_continue_statement(self, node: ast.ContinueStatement):
         node_name = id(node)
         self.total += f"{node_name} [label=\"Continue\"];\n"
+
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"Return\"];\n"
+
+        if node.expression:
+            expression_node_name = str(id(node.expression))
+            self.total += f'{node_name} -> {expression_node_name};\n'
+            self.visit_expression(node.expression)
+
+    def visit_function_call(self, node: ast.FunctionCall):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"Function Call: {node.name}\"];\n"
+
+        for arg in node.arguments:
+            arg_node_name = str(id(arg))
+            self.total += f'{node_name} -> {arg_node_name};\n'
+            self.visit_expression(arg)
+
+    def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        node_name = id(node)
+        self.total += f"{node_name} [label=\"Forward Declaration: {node.name}\"];\n"
+
+        return_type_name = str(id(node.return_type))
+        self.total += f'{node_name} -> {return_type_name};\n'
+        self.visit_type(node.return_type)
+
+        for param in node.parameters:
+            param_name = str(id(param))
+            self.total += f'{node_name} -> {param_name};\n'
+            self.visit_type(param)
