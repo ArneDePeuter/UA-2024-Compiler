@@ -21,7 +21,8 @@ class TypeTranslator:
         llvm_type = {
             ast.BaseType.int: IrIntType,
             ast.BaseType.float: IrFloatType,
-            ast.BaseType.char: IrCharType
+            ast.BaseType.char: IrCharType,
+            ast.BaseType.void: ir.VoidType(),
         }.get(base_type, None)
 
         if llvm_type is None:

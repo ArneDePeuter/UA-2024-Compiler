@@ -1,3 +1,5 @@
+import copy
+
 from llvmlite import ir
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
@@ -17,9 +19,10 @@ class ExpressionEval:
 class LLVMIRGenerator(AstVisitor):
     def __init__(self):
         self.module = ir.Module()
-        self.builder = ir.IRBuilder()
+        self.builder = None
         self.var_addresses: dict[str, ir.AllocaInstr] = {}
         self.while_fd = {}
+        self.functions = {}
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
         self.printf_func = ir.Function(self.module, printf_type, name="printf")
@@ -41,8 +44,13 @@ class LLVMIRGenerator(AstVisitor):
         return super().visit_expression(node)
 
     def visit_statement(self, node: ast.Statement):
+        if self.builder is None and isinstance(node, ast.FunctionDeclaration) or isinstance(node, ast.Program):
+            super().visit_statement(node)
+            return
+
         if self.builder.block is not None and self.builder.block.is_terminated:
             return
+
         if node.c_syntax:
             comment = node.c_syntax.split("\n")
             try:
@@ -399,8 +407,8 @@ class LLVMIRGenerator(AstVisitor):
             self.builder.position_at_start(else_block)
             self.visit(node.else_statement)
 
-            #if not else_block.is_terminated:
-            self.builder.branch(after_block)
+            if not self.builder.block.is_terminated:
+                self.builder.branch(after_block)
 
             self.builder.position_at_start(after_block)
 
@@ -413,8 +421,9 @@ class LLVMIRGenerator(AstVisitor):
 
             self.builder.position_at_start(if_block)
             self.visit_body(node.body)
-            #if not if_block.is_terminated:
-            self.builder.branch(after_block)
+
+            if not self.builder.block.is_terminated:
+                self.builder.branch(after_block)
 
             self.builder.position_at_start(after_block)
 
@@ -433,31 +442,56 @@ class LLVMIRGenerator(AstVisitor):
 
         value: ExpressionEval = self.visit(node.expression)
 
-        self.builder.call(self.printf_func,[format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
+        self.builder.call(self.printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
+        prev_builder = copy.deepcopy(self.builder)
+
         return_type = self.visit_type(node.return_type)
-        func_type = ir.FunctionType(return_type, [])
+        args = [self.visit_type(param.type) for param in node.parameters]
+        func_type = ir.FunctionType(return_type, args)
         func = ir.Function(self.module, func_type, name=node.name)
+
+        self.functions[node.name] = func
 
         block = func.append_basic_block(name="entry")
         self.builder = ir.IRBuilder(block)
 
+        for param, arg in zip(node.parameters, func.args):
+            # Allocate memory for the argument
+            alloc = self.builder.alloca(arg.type, name=param.name)
+            # Store the argument in the allocated memory
+            self.builder.store(arg, alloc)
+            # Store the pointer to the allocated memory in the dictionary
+            self.var_addresses[param.name] = alloc
+
         self.visit_body(node.body)
 
-        if return_type == ir.VoidType():
-            self.builder.ret_void()
-        else:
-            default_value = ir.Constant(return_type, None)
-            self.builder.ret(default_value)
-
-        self.builder = None
-
-    def visit_return_statement(self, node: ast.ReturnStatement):
-        ...
+        if not self.builder.block.is_terminated:
+            if isinstance(return_type, ir.VoidType):
+                self.builder.ret_void()
+            else:
+                default_value = ir.Constant(return_type, None)
+                self.builder.ret(default_value)
+        # TODO: scoped function declarations
+        self.builder = prev_builder
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         ...
 
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        if node.expression is not None:
+            expr_eval = self.visit_expression(node.expression)
+            if not expr_eval.r_value:
+                raise NotImplementedError("Cannot return value, r_value is None")
+            self.builder.ret(expr_eval.r_value)
+        else:
+            self.builder.ret_void()
+
     def visit_function_call(self, node: ast.FunctionCall):
-        ...
+        func = self.functions.get(node.name)
+        if not func:
+            raise NotImplementedError(f"Function {node.name} not found")
+
+        args = [self.visit_expression(arg).r_value for arg in node.arguments]
+        return ExpressionEval(r_value=self.builder.call(func, args))

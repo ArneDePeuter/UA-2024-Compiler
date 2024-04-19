@@ -77,15 +77,22 @@ def main():
     parser.add_argument('--render_symb', help='Render the symbol table of the input file. Specify output folder.')
     parser.add_argument('--no-optimise', action='store_true', help='Dont optimise the ast if this flag is provided.')
     parser.add_argument('--target_llvm', help='LLvm Target. Specify output folder.')
+    parser.add_argument('--throw', action='store_true', help='Raise python exception.')
 
     args = parser.parse_args()
     try:
         compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm)
     except SemanticError as e:
+        if args.throw:
+            raise e
         generate_cool_error(e, args.input)
     except CompilerSyntaxError as e:
+        if args.throw:
+            raise e
         generate_cool_error(e, args.input)
     except Exception as e:
+        if args.throw:
+            raise e
         print(f"{Fore.red}{e}{Style.reset}")
 
 
