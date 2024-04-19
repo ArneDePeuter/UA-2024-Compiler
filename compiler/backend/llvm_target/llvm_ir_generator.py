@@ -48,6 +48,9 @@ class LLVMIRGenerator(AstVisitor):
             super().visit_statement(node)
             return
 
+        if self.builder is None and isinstance(node, ast.CommentStatement):
+            return
+
         if self.builder.block is not None and self.builder.block.is_terminated:
             return
 
@@ -391,41 +394,16 @@ class LLVMIRGenerator(AstVisitor):
         self.builder.branch(w_condition_block)
 
     def visit_if_statement(self, node: ast.IfStatement):
+        conditional = self.to_bool_expr(node.condition)
         if node.else_statement:
-            if_block = self.builder.append_basic_block("if")
-            else_block = self.builder.append_basic_block("else")
-            after_block = self.builder.append_basic_block("after")
-
-            cond_head = self.to_bool_expr(node.condition)
-            self.builder.cbranch(cond_head, if_block, else_block)
-
-            self.builder.position_at_start(if_block)
-            self.visit_body(node.body)
-            if not if_block.is_terminated:
-                self.builder.branch(after_block)
-
-            self.builder.position_at_start(else_block)
-            self.visit(node.else_statement)
-
-            if not self.builder.block.is_terminated:
-                self.builder.branch(after_block)
-
-            self.builder.position_at_start(after_block)
-
+            with self.builder.if_else(conditional) as (then, otherwise):
+                with then:
+                    self.visit_body(node.body)
+                with otherwise:
+                    self.visit_else_statement(node.else_statement)
         else:
-            if_block = self.builder.append_basic_block("if")
-            after_block = self.builder.append_basic_block("after")
-
-            cond_head = self.to_bool_expr(node.condition)
-            self.builder.cbranch(cond_head, if_block, after_block)
-
-            self.builder.position_at_start(if_block)
-            self.visit_body(node.body)
-
-            if not self.builder.block.is_terminated:
-                self.builder.branch(after_block)
-
-            self.builder.position_at_start(after_block)
+            with self.builder.if_then(conditional):
+                self.visit_body(node.body)
 
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
