@@ -345,14 +345,12 @@ class LLVMIRGenerator(AstVisitor):
     def visit_printf_call(self, node: ast.PrintFCall) -> None:
         format_string = node.replacer.value
         format_string_constant = ir.GlobalVariable(
-            self.module, ir.ArrayType(ir.IntType(8), len(format_string)),
+            self.module, ir.ArrayType(ir.IntType(8), len(format_string) + 1),
             name=f"printf_format_{node.line}_{node.position}"
         )
         format_string_constant.global_constant = True
-        format_string_constant.initializer = ir.Constant(
-            ir.ArrayType(ir.IntType(8), len(format_string)),
-            bytearray(format_string.encode('utf-8'))
-        )
+        format_string_constant.initializer = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
+                                                         bytearray(format_string.encode('utf-8') + b'\00'))
 
         value: ExpressionEval = self.visit(node.expression)
 
