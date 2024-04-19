@@ -218,9 +218,6 @@ class SymbolTableVisitor(AstVisitor):
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         self.visit(node.expression)
 
-    def visit_printf_call(self, node: ast.PrintFCall):
-        ...
-
     def visit_comment_statement(self, node: ast.CommentStatement):
         ...
 
@@ -242,3 +239,13 @@ class SymbolTableVisitor(AstVisitor):
     def visit_continue_statement(self, node: ast.ContinueStatement):
         if node.while_statement is None:
             raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)
+
+    def visit_function_call(self, node: ast.FunctionCall):
+        ...
+
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        ...
+
+    def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        ...
+

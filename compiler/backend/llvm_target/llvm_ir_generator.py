@@ -286,24 +286,6 @@ class LLVMIRGenerator(AstVisitor):
         for statement in node.statements:
             self.visit_statement(statement)
 
-    def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
-        return_type = self.visit_type(node.return_type)
-        func_type = ir.FunctionType(return_type, [])
-        func = ir.Function(self.module, func_type, name=node.name)
-
-        block = func.append_basic_block(name="entry")
-        self.builder = ir.IRBuilder(block)
-
-        self.visit_body(node.body)
-
-        if return_type == ir.VoidType():
-            self.builder.ret_void()
-        else:
-            default_value = ir.Constant(return_type, None)
-            self.builder.ret(default_value)
-
-        self.builder = None
-
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier) -> ir.Constant:
         ...
 
@@ -341,20 +323,6 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_expression_statement(self, node: ast.ExpressionStatement) -> None:
         self.visit_expression(node.expression)
-
-    def visit_printf_call(self, node: ast.PrintFCall) -> None:
-        format_string = node.replacer.value
-        format_string_constant = ir.GlobalVariable(
-            self.module, ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-            name=f"printf_format_{node.line}_{node.position}"
-        )
-        format_string_constant.global_constant = True
-        format_string_constant.initializer = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-                                                         bytearray(format_string.encode('utf-8') + b'\00'))
-
-        value: ExpressionEval = self.visit(node.expression)
-
-        self.builder.call(self.printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
 
     def visit_comment_statement(self, node: ast.CommentStatement) -> None:
         for line in node.content.split("\n"):
@@ -449,3 +417,27 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
+
+    def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
+        return_type = self.visit_type(node.return_type)
+        func_type = ir.FunctionType(return_type, [])
+        func = ir.Function(self.module, func_type, name=node.name)
+
+        block = func.append_basic_block(name="entry")
+        self.builder = ir.IRBuilder(block)
+
+        self.visit_body(node.body)
+
+        if return_type == ir.VoidType():
+            self.builder.ret_void()
+        else:
+            default_value = ir.Constant(return_type, None)
+            self.builder.ret(default_value)
+
+        self.builder = None
+
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        ...
+
+    def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        ...
