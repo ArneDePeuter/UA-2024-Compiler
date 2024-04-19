@@ -102,10 +102,8 @@ class WhileStatement(Statement):
 @dataclass
 class BreakStatement(Statement):
     while_statement: Optional[WhileStatement] = None
-    if_statement: Optional[IfStatement] = None
 
 
 @dataclass
 class ContinueStatement(Statement):
     while_statement: Optional[WhileStatement] = None
-    if_statement: Optional[IfStatement] = None
