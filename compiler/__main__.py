@@ -9,6 +9,8 @@ from compiler.middleend import optimise_ast
 from compiler.utils import AstDotVisitor
 from compiler.utils.symboltabledotvisitor import SymbolTableDotVisitor
 from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
+from compiler.core.errors.semantic_error import SemanticError
+from compiler.core.errors.compiler_syntaxerror import CompilerSyntaxError
 
 
 def compile_file(input_file: str, render_ast: str = None, render_symb: str = None, no_optimise: bool = False, target_llvm: str = None):
@@ -55,6 +57,19 @@ def compile_file(input_file: str, render_ast: str = None, render_symb: str = Non
         subprocess.run(command, shell=True, check=True)
 
 
+def generate_cool_error(e: SemanticError|CompilerSyntaxError, filename: str):
+    print(f"{Fore.red}{e}{Style.reset}")
+    with open(filename, "r") as file:
+        lines = file.readlines()
+        if e.line > 0:
+            print(f"{Fore.red}{e.line - 1}| {lines[e.line - 2]}{Style.reset}", end="")
+        print(f"{Fore.red}{e.line}| {lines[e.line - 1]}{Style.reset}", end="")
+        offset = len(str(e.line)) + len("| ")
+        print(f"{Fore.red}{'-' * (e.position + offset)}^{Style.reset}")
+        if e.line < len(lines):
+            print(f"{Fore.red}{e.line + 1}| {lines[e.line]}{Style.reset}")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Compiler options.')
     parser.add_argument('--input', required=True, help='The input file to compile')
@@ -66,6 +81,10 @@ def main():
     args = parser.parse_args()
     try:
         compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm)
+    except SemanticError as e:
+        generate_cool_error(e, args.input)
+    except CompilerSyntaxError as e:
+        generate_cool_error(e, args.input)
     except Exception as e:
         print(f"{Fore.red}{e}{Style.reset}")
 
