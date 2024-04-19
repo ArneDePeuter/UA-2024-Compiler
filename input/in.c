@@ -1,11 +1,9 @@
-int fib(int);
 
-int main()
-{
-    const int a = 3;
-    printf("%d", fib(a + 1));
-
-    return 0;
+int main () {
 }
 
 
+int fib = 3;
+
+int fib() {
+}

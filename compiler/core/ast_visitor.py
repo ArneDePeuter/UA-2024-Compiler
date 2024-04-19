@@ -17,7 +17,8 @@ class AstVisitor(ABC):
             ast.ComparisonOperation: self.visit_comparison_operation,
             ast.UnaryExpression: self.visit_unary_expression,
             ast.ShiftExpression: self.visit_shift_expression,
-            ast.FunctionCall: self.visit_function_call
+            ast.FunctionCall: self.visit_function_call,
+            ast.PrintFCall: self.visit_printf_call
         }
         self.statement_fd = {
             ast.ExpressionStatement: self.visit_expression_statement,
@@ -34,7 +35,7 @@ class AstVisitor(ABC):
             ast.BreakStatement: self.visit_break_statement,
             ast.ContinueStatement: self.visit_continue_statement,
             ast.ReturnStatement: self.visit_return_statement,
-            ast.ForwardDeclaration: self.visit_forward_declaration
+            ast.ForwardDeclaration: self.visit_forward_declaration,
         }
 
     def visit(self, node: ast.AST):
@@ -162,4 +163,8 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        ...
+
+    @abstractmethod
+    def visit_printf_call(self, node: ast.PrintFCall):
         ...

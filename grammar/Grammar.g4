@@ -66,6 +66,10 @@ breakStatement
     : BREAK TERMINAL
     ;
 
+printfCall
+    : 'printf' '(' PRINTFREPLACER ',' logicalExpression ')'
+    ;
+
 continueStatement
     : CONTINUE TERMINAL
     ;
@@ -107,6 +111,7 @@ expressionStatement
 
 expression
     : logicalExpression
+    | printfCall
     | functionCall
     ;
 
@@ -165,7 +170,6 @@ primary
     | ID
     | CHAR
     | CHAR_ESC
-    | STRING
     | castExpression
     ;
 
@@ -177,6 +181,7 @@ baseType
     : 'int'
     | 'float'
     | 'char'
+    | 'void'
     ;
 
 const
@@ -224,7 +229,6 @@ NUMBER : '0' | [1-9][0-9]* ;
 FLOAT : [0-9]+ '.' [0-9]* | '.' [0-9]+;
 ID     : [a-zA-Z_][a-zA-Z_0-9]* ;
 CHAR : '\'' [\u0000-\u00FF] '\'' ;
-STRING:  '"' [\u0000-\u00FF]* '"' ;
 CHAR_ESC : '\'' ( '\\n' | '\\t' | '\\0' | . ) '\'' ;
 PLUS   : '+';
 MINUS  : '-';
@@ -246,6 +250,7 @@ BITAND : '&';
 BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
+PRINTFREPLACER: '"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ;
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
 MULTI_LINE_COMMENT : '/*' .*? '*/' ;

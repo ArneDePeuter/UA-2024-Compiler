@@ -9,10 +9,12 @@ from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.warning_error import WarningError
 from compiler.core.type_caster import TypeCaster
 
+
 class SymbolTableVisitor(AstVisitor):
     def __init__(self, symbol_table: Optional[SymbolTable] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
+        self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
 
     def visit_type(self, node: ast.Type):
         ...
@@ -31,7 +33,6 @@ class SymbolTableVisitor(AstVisitor):
         if symbol is None:
             raise SemanticError(f"Undefined identifier '{node.name}'.", node.line, node.position)
         return symbol.type
-
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         expression_type = self.visit_expression(node.expression)
@@ -131,24 +132,27 @@ class SymbolTableVisitor(AstVisitor):
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
             self.visit(statement)
+        for symbol in self.symbol_table.global_scope.symbols.values():
+            if isinstance(symbol.ast_ref, ast.ForwardDeclaration):
+                raise SemanticError(f"Function '{symbol.name}' is forward declared but not defined.", node.line, node.position)
+
+        main_symbol=self.symbol_table.global_scope.lookup("main")
+        if not main_symbol:
+            raise SemanticError("Main function is undefined", 0, 0)
+        else:
+            main_func = main_symbol.ast_ref
+            if not main_func:
+                raise SemanticError("Main is not defined as a function", 0, 0)
+            if not isinstance(main_func, ast.FunctionDeclaration):
+                raise SemanticError("Main is not defined as a function", main_func.line, main_func.position)
+            if main_func.return_type != ast.Type(base_type=ast.BaseType.int):
+                raise SemanticError("Return type of main is invalid", main_func.line, main_func.position)
 
     def visit_body(self, node: ast.Body):
         self.symbol_table.enter_scope()
         for statement in node.statements:
             self.visit(statement)
         self.symbol_table.exit_scope()
-
-    def visit_function_declaration(self, node: ast.FunctionDeclaration):
-        # Check if function is already declared
-        if self.symbol_table.lookup(node.name, current_scope_only=True):
-            raise SemanticError(f"Function '{node.name}' is already declared.", node.line, node.position)
-        # Define the function in the symbol table
-        self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level))
-
-        # TODO: Visit each parameter and add it to the symbol table as a variable with the function's scope level
-
-        # Visit the function body
-        self.visit(node.body)
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
         ...
@@ -240,12 +244,104 @@ class SymbolTableVisitor(AstVisitor):
         if node.while_statement is None:
             raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)
 
-    def visit_function_call(self, node: ast.FunctionCall):
+    def visit_printf_call(self, node: ast.PrintFCall):
         ...
 
     def visit_return_statement(self, node: ast.ReturnStatement):
-        ...
+        if node.function is None:
+            raise SemanticError(f"Return statement outside of function.", node.line, node.position)
+        if node.expression is None:
+            return
+
+        expression_type = self.visit_expression(node.expression)
+        function_return_type = node.function.return_type
+        if expression_type.base_type != function_return_type.base_type or len(expression_type.address_qualifiers) != len(function_return_type.address_qualifiers):
+            if len(expression_type.address_qualifiers) == 0 and len(function_return_type.address_qualifiers) == 0:
+                # Determine the type of the expression based on the hierarchy  float, int, char
+                expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.base_type)
+                function_hierarchy = TypeCaster.get_heirarchy_of_base_type(function_return_type.base_type)
+                if expression_hierarchy > function_hierarchy:
+                    WarningError(f"Implicit conversion from {expression_type} to {function_return_type}", node.line, node.position).warn()
+                    return
+            raise SemanticError(f"Type mismatch in return statement: {str(expression_type)} and {str(function_return_type)}.", node.line, node.position)
+
+    def visit_function_declaration(self, node: ast.FunctionDeclaration):
+        symbol = self.symbol_table.lookup(node.name, current_scope_only=True)
+        # Check if function is already declared
+        if symbol:
+            # if the ref already points to a function declaration we have a redefinition
+            if isinstance(symbol.ast_ref, ast.FunctionDeclaration):
+                raise SemanticError(f"Function '{node.name}' is already defined.", node.line, node.position)
+
+            if not isinstance(symbol.ast_ref, ast.ForwardDeclaration):
+                raise SemanticError(f"{node.name} redeclared as different kind of symbol", node.line, node.position)
+
+            # check if the parameters match
+            params_match = True
+            if len(symbol.ast_ref.parameters) == len(node.parameters):
+                for type_fwd, type_decl in zip(symbol.ast_ref.parameters, [param.type for param in node.parameters]):
+                    if type_fwd != type_decl:
+                        params_match = False
+            else:
+                params_match = False
+
+            # if they don't match the declaration was talking about some other thing, so we define the function
+            if not params_match:
+                self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
+            else:
+                # otherwise the forward declaration was talking about this
+                symbol.ast_ref = node
+        else:
+            self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
+
+        self.symbol_table.enter_scope()
+
+        # Visit each parameter and add it to the symbol table as a variable with the function's scope level
+        for param in node.parameters:
+            self.visit_variable_declaration(ast.VariableDeclaration(
+                var_type=param.type,
+                qualifiers=[ast.VariableDeclarationQualifier(identifier=param.name, initializer=None)]
+            ))
+
+        # Visit the function body
+        self.visit(node.body)
+
+        self.symbol_table.exit_scope()
+
+    def visit_function_call(self, node: ast.FunctionCall):
+        function_symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
+        if function_symbol is None:
+            raise SemanticError(f"Undefined function '{node.name}'.", node.line, node.position)
+
+
+        ref = function_symbol.ast_ref
+        if isinstance(ref, ast.ForwardDeclaration):
+            param_types = ref.parameters
+        elif isinstance(ref, ast.FunctionDeclaration):
+            param_types = [param.type for param in ref.parameters]
+        else:
+            raise RuntimeError(f"{node.name} called but is different kind of symbol")
+
+        # Compare the number of arguments with the number of parameters
+        if len(node.arguments) != len(param_types):
+            raise SemanticError(f"Function '{node.name}' expects {len(param_types)} arguments but {len(node.arguments)} were given.", node.line, node.position)
+
+        # Iterate over each argument and each parameter
+        for argument, expected_type in zip(node.arguments, param_types):
+            expression_type = self.visit_expression(argument)
+            if expression_type.base_type != expected_type.base_type or len(expression_type.address_qualifiers) != len(expected_type.address_qualifiers):
+                if len(expression_type.address_qualifiers) == 0 and len(expected_type.address_qualifiers) == 0:
+                    # Determine the type of the expression based on the hierarchy  float, int, char
+                    expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.base_type)
+                    expected_hierarchy = TypeCaster.get_heirarchy_of_base_type(expected_type.base_type)
+                    if expression_hierarchy > expected_hierarchy:
+                        WarningError(f"Implicit conversion from {expression_type} to {expected_hierarchy}", node.line, node.position).warn()
+                        return function_symbol.type
+                raise SemanticError(f"Type mismatch in function parameter: {str(expression_type)} and {str(expected_type)}.",node.line, node.position)
+
+        return function_symbol.type
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
-        ...
-
+        if self.symbol_table.lookup(node.name, current_scope_only=True):
+            return
+        self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))

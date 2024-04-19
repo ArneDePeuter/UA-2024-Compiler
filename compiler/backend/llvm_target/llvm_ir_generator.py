@@ -45,7 +45,10 @@ class LLVMIRGenerator(AstVisitor):
             return
         if node.c_syntax:
             comment = node.c_syntax.split("\n")
-            self.builder.comment(f"C Syntax: {'-'.join(comment)}")
+            try:
+                self.builder.comment(f"C Syntax: {'-'.join(comment)}")
+            except:
+                pass
         super().visit_statement(node)
 
     def visit_type(self, node: ast.Type) -> ir.types.Type:
@@ -418,6 +421,20 @@ class LLVMIRGenerator(AstVisitor):
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
 
+    def visit_printf_call(self, node: ast.PrintFCall) -> None:
+        format_string = node.replacer.value
+        format_string_constant = ir.GlobalVariable(
+            self.module, ir.ArrayType(ir.IntType(8), len(format_string) + 1),
+            name=f"printf_format_{node.line}_{node.position}"
+        )
+        format_string_constant.global_constant = True
+        format_string_constant.initializer = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
+                                                         bytearray(format_string.encode('utf-8') + b'\00'))
+
+        value: ExpressionEval = self.visit(node.expression)
+
+        self.builder.call(self.printf_func,[format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
+
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
         return_type = self.visit_type(node.return_type)
         func_type = ir.FunctionType(return_type, [])
@@ -440,4 +457,7 @@ class LLVMIRGenerator(AstVisitor):
         ...
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        ...
+
+    def visit_function_call(self, node: ast.FunctionCall):
         ...

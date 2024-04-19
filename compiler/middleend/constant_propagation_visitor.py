@@ -168,3 +168,7 @@ class ConstantPropagationVisitor(AstVisitor):
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         return node
+
+    def visit_printf_call(self, node: ast.PrintFCall):
+        node.expression = self.visit_expression(node.expression)
+        return node

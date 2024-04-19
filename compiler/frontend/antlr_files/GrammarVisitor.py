@@ -89,6 +89,11 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#printfCall.
+    def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#continueStatement.
     def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
         return self.visitChildren(ctx)

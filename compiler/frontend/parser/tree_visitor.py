@@ -299,8 +299,6 @@ class TreeVisitor(GrammarVisitor):
             return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
         elif ctx.ID() is not None:
             return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
-        elif ctx.STRING() is not None:
-            return ast.CHAR(ctx.STRING().getText()[1:-1], line=line, position=position)
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
 
@@ -534,6 +532,14 @@ class TreeVisitor(GrammarVisitor):
                 ctx.ID()
             )
         ]
+
+    def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
+        return ast.PrintFCall(
+            replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
+            expression=self.visitLogicalExpression(ctx.logicalExpression()),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
 
     def visitFunctionDeclaration(self, ctx:GrammarParser.FunctionDeclarationContext):
         body = self.visit(ctx.body())

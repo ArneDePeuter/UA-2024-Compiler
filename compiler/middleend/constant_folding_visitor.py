@@ -282,3 +282,7 @@ class ConstantFoldingVisitor(AstVisitor):
         for i, arg in enumerate(node.arguments):
             node.arguments[i] = self.visit_expression(arg)
         return node
+
+    def visit_printf_call(self, node: ast.PrintFCall):
+        node.expression = self.visit_expression(node.expression)
+        return node

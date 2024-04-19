@@ -276,3 +276,15 @@ class FunctionCall(Expression):
     name: str
     arguments: list[Expression]
 
+
+@dataclass
+class PrintFCall(Expression):
+    class Replacer(Enum):
+        s = "%s"
+        d = "%d"
+        x = "%x"
+        f = "%f"
+        c = "%c"
+
+    replacer: Replacer
+    expression: Expression
