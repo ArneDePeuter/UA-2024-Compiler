@@ -13,7 +13,8 @@
 
 ## How to run tests
 **!You must have poetry env enabled!**
-- run command `pytest`
+- Run command `pytest`
+- Generate a report of the test coverage `pytest --cov-report html --cov=.`
 
 ## Command Line Flags
 
@@ -64,4 +65,12 @@
 - [X] C statement in LLVM output as comment
 - [X] Printf
 - [X] Typedef
-- [ ] LLVM code generation (partly, see tests)
+- [X] LLVM code generation
+
+### Project 4
+- [X] Conditional statements: if and else.
+- [X] Else if statements.
+- [X] Loops: while, for, break, and continue.
+- [X] Anonymous scopes
+- [X] Switch, case, break, and default.
+- [ ] Enumerations.

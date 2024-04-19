@@ -254,6 +254,15 @@ class ConstantFoldingVisitor(AstVisitor):
     def visit_comment_statement(self, node: ast.CommentStatement):
         return node
 
+    def visit_if_statement(self, node: ast.IfStatement):
+        node.condition = self.visit_expression(node.condition)
+        node.body = self.visit_body(node.body)
+        return node
+
+    def visit_else_statement(self, node: ast.ElseStatement):
+        node.body = self.visit_body(node.body)
+        return node
+
     def visit_while_statement(self, node: ast.WhileStatement):
         node.expression = self.visit_expression(node.expression)
         node.to_execute = self.visit_statement(node.to_execute)

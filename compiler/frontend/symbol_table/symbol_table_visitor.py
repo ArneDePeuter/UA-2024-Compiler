@@ -224,6 +224,13 @@ class SymbolTableVisitor(AstVisitor):
     def visit_comment_statement(self, node: ast.CommentStatement):
         ...
 
+    def visit_if_statement(self, node: ast.IfStatement):
+        self.visit_expression(node.condition)
+        self.visit(node.body)
+
+    def visit_else_statement(self, node: ast.ElseStatement):
+        self.visit(node.body)
+
     def visit_while_statement(self, node: ast.WhileStatement):
         self.visit(node.expression)
         self.visit(node.to_execute)

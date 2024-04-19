@@ -79,6 +79,21 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#switchStatement.
+    def visitSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#caseStatement.
+    def visitCaseStatement(self, ctx:GrammarParser.CaseStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#defaultCaseStatement.
+    def visitDefaultCaseStatement(self, ctx:GrammarParser.DefaultCaseStatementContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#statement.
     def visitStatement(self, ctx:GrammarParser.StatementContext):
         return self.visitChildren(ctx)
@@ -106,6 +121,16 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#assignmentStatement.
     def visitAssignmentStatement(self, ctx:GrammarParser.AssignmentStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#ifStatement.
+    def visitIfStatement(self, ctx:GrammarParser.IfStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#elseStatement.
+    def visitElseStatement(self, ctx:GrammarParser.ElseStatementContext):
         return self.visitChildren(ctx)
 
 

@@ -20,7 +20,8 @@ error_dict = {
     "proj2_man_semanticErr_undeclaredVariable1.c": SemanticError("Undefined identifier 'x'.", 6, 16),
     "proj2_man_semanticErr_undeclaredVariable2.c": SemanticError("Undefined identifier 'x'.", 3, 0),
     "proj2_man_semanticErr_undeclaredVariable3.c": SemanticError("Undefined identifier 'z'.", 2, 12),
-    "proj3_man_semanticErr_typedef.c": CompilerSyntaxError("mismatched input 'int' expecting ID", 4, 14)
+    "proj3_man_semanticErr_typedef.c": CompilerSyntaxError("mismatched input 'int' expecting ID", 4, 14),
+    "proj4_man_semanticErr_switch_var_decl.c": CompilerSyntaxError("Undefined identifier 'b'.", 8, 4),
 }
 
 

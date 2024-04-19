@@ -149,3 +149,14 @@ class ConstantPropagationVisitor(AstVisitor):
     def visit_continue_statement(self, node: ast.ContinueStatement):
         return node
 
+    def visit_if_statement(self, node: ast.IfStatement):
+        node.condition = self.visit_expression(node.condition)
+        node.body = self.visit_body(node.body)
+        if node.else_statement:
+            node.else_statement = self.visit_statement(node.else_statement)
+        return node
+
+    def visit_else_statement(self, node: ast.ElseStatement):
+        node.body = self.visit_body(node.body)
+        return node
+

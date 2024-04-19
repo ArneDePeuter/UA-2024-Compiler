@@ -65,6 +65,22 @@ class AssignmentStatement(Statement):
 class CommentStatement(Statement):
     content: str
 
+@dataclass
+class ElseStatement(Statement):
+    body: Body
+
+@dataclass
+class IfStatement(Statement):
+    condition: Expression
+    body: Body
+    else_statement: ElseStatement or None
+
+    def __post_init__(self):
+        for stmt in self.body.statements:
+            if isinstance(stmt, BreakStatement):
+                stmt.if_statement = self
+            elif isinstance(stmt, ContinueStatement):
+                stmt.if_statement = self
 
 @dataclass
 class WhileStatement(Statement):
