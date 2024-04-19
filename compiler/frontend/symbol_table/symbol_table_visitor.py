@@ -15,6 +15,7 @@ class SymbolTableVisitor(AstVisitor):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
         self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
+        self.inside_declaration = False
 
     def visit_type(self, node: ast.Type):
         ...
@@ -285,6 +286,11 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Type mismatch in return statement: {str(expression_type)} and {str(function_return_type)}.", node.line, node.position)
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
+        if self.inside_declaration:
+            raise SemanticError("Function definition is not allowed here", node.line, node.position)
+
+        self.inside_declaration = True
+
         symbol = self.symbol_table.lookup(node.name, current_scope_only=True)
         # Check if function is already declared
         if symbol:
@@ -326,6 +332,7 @@ class SymbolTableVisitor(AstVisitor):
         self.visit(node.body)
 
         self.symbol_table.exit_scope()
+        self.inside_declaration = False
 
     def visit_function_call(self, node: ast.FunctionCall):
         function_symbol = self.symbol_table.lookup(node.name, current_scope_only=False)

@@ -423,8 +423,6 @@ class LLVMIRGenerator(AstVisitor):
         self.builder.call(self.printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
-        prev_builder = copy.deepcopy(self.builder)
-
         return_type = self.visit_type(node.return_type)
         args = [self.visit_type(param.type) for param in node.parameters]
         func_type = ir.FunctionType(return_type, args)
@@ -451,8 +449,8 @@ class LLVMIRGenerator(AstVisitor):
             else:
                 default_value = ir.Constant(return_type, None)
                 self.builder.ret(default_value)
-        # TODO: scoped function declarations
-        self.builder = prev_builder
+
+        self.builder = None
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         ...
