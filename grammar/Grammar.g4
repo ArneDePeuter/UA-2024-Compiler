@@ -67,7 +67,7 @@ breakStatement
     ;
 
 printfCall
-    : 'printf' '(' PRINTFREPLACER ',' logicalExpression ')'
+    : 'printf' '(' PRINTFREPLACER ',' expression ')'
     ;
 
 continueStatement
@@ -111,8 +111,6 @@ expressionStatement
 
 expression
     : logicalExpression
-    | printfCall
-    | functionCall
     ;
 
 assignmentStatement
@@ -171,6 +169,8 @@ primary
     | CHAR
     | CHAR_ESC
     | castExpression
+    | printfCall
+    | functionCall
     ;
 
 type

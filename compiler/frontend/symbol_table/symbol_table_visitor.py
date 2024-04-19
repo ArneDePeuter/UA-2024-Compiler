@@ -138,13 +138,13 @@ class SymbolTableVisitor(AstVisitor):
 
         main_symbol=self.symbol_table.global_scope.lookup("main")
         if not main_symbol:
-            raise SemanticError("Main function is undefined", 0, 0)
+            raise SemanticError("main function is undefined", 0, 0)
         else:
             main_func = main_symbol.ast_ref
             if not main_func:
-                raise SemanticError("Main is not defined as a function", 0, 0)
+                raise SemanticError("main is not defined as a function", 0, 0)
             if not isinstance(main_func, ast.FunctionDeclaration):
-                raise SemanticError("Main is not defined as a function", main_func.line, main_func.position)
+                raise SemanticError("main is not defined as a function", main_func.line, main_func.position)
             if main_func.return_type != ast.Type(base_type=ast.BaseType.int):
                 raise SemanticError("Return type of main is invalid", main_func.line, main_func.position)
 
@@ -248,8 +248,6 @@ class SymbolTableVisitor(AstVisitor):
         ...
 
     def visit_return_statement(self, node: ast.ReturnStatement):
-        if node.function is None:
-            raise SemanticError(f"Return statement outside of function.", node.line, node.position)
         if node.expression is None:
             return
 

@@ -41,11 +41,6 @@ class FunctionDeclaration(Statement):
     body: Body
     parameters: list[FunctionParameter]
 
-    def __post_init__(self):
-        for stmt in self.body.statements:
-            if isinstance(stmt, ReturnStatement):
-                stmt.function = self
-
 
 @dataclass
 class VariableDeclarationQualifier(Statement):
@@ -133,5 +128,5 @@ class ContinueStatement(Statement):
 
 @dataclass
 class ReturnStatement(Statement):
-    function: Optional[FunctionDeclaration] = None
+    function: FunctionDeclaration
     expression: Optional[Expression] = None

@@ -4,6 +4,7 @@ from compiler.frontend import tree_from_file, tree_to_ast
 from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor, SymbolTable
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.compiler_syntaxerror import CompilerSyntaxError
+import pytest
 
 error_dict = {
     "proj2_man_semanticErr_constAssignment.c": SemanticError("Cannot assign to a const variable.", 4, 0),
@@ -21,35 +22,28 @@ error_dict = {
     "proj2_man_semanticErr_undeclaredVariable2.c": SemanticError("Undefined identifier 'x'.", 3, 0),
     "proj2_man_semanticErr_undeclaredVariable3.c": SemanticError("Undefined identifier 'z'.", 2, 12),
     "proj3_man_semanticErr_typedef.c": CompilerSyntaxError("mismatched input 'int' expecting ID", 4, 14),
-    "proj4_man_semanticErr_switch_var_decl.c": CompilerSyntaxError("Undefined identifier 'b'.", 8, 4),
+    "proj4_man_semanticErr_switch_var_decl.c": SemanticError("Undefined identifier 'b'.", 8, 4),
+    "proj_5_no_main.c": SemanticError("main function is undefined", 0,0),
+    "proj_5_faulty_main.c": SemanticError("Return type of main is invalid", 1, 0),
+    "proj_5_invalid_return.c": SemanticError("Type mismatch in return statement: int* and int.", 4, 4),
+    "proj_5_double_declare.c": SemanticError("Function 'fib' is already defined.", 7, 0),
+    "proj_5_forward_declare.c": None,
+    "proj_5_return_outside_function.c": SemanticError("Return statement outside of function", 3, 0),
 }
 
 
-def test_semantic_err() -> None:
-    directory = os.fsencode("./files")
+@pytest.mark.parametrize("input_file", os.listdir("./tests/semantic_errors/files"))
+def test_semantic_err(input_file) -> None:
+    expected = error_dict.get(input_file)
 
-    for file in os.listdir(directory):
-        file_str = file.decode("utf-8")
-        str_list = file_str.split("_")
-        if (str_list[2] != "semanticErr"):
-            continue
+    try:
+        tree, input_stream = tree_from_file(f"./files/{input_file}")
+        ast = tree_to_ast(tree, input_stream)
 
-        filename = os.fsdecode(file)
-        print(f"Testing {filename}")
-
-        if error_dict[filename] is None:
-            print(f"{filename} to be implemented")
-        else:
-            try:
-                tree, input_stream = tree_from_file(f"{directory.decode()}/{filename}")
-                ast = tree_to_ast(tree, input_stream)
-
-                symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
-                symbol_table_visitor.visit(ast)
-            except Exception as e:
-                assert str(error_dict[filename]) == str(e)
-                print(f"{filename} failed")
-                assert True
-            else:
-                print(f"{filename} passed")
-                assert False
+        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+        symbol_table_visitor.visit(ast)
+    except Exception as e:
+        print(e)
+        assert str(expected) == str(e)
+    else:
+        assert expected is None

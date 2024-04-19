@@ -17,6 +17,7 @@ class TreeVisitor(GrammarVisitor):
             "char": ast.Type(base_type=ast.BaseType.char)
         }
         self.input_stream = input_stream
+        self.function_decl = None
 
     def get_original_text(self, ctx):
         return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
@@ -301,6 +302,10 @@ class TreeVisitor(GrammarVisitor):
             return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
+        elif ctx.printfCall():
+            return self.visitPrintfCall(ctx.printfCall())
+        elif ctx.functionCall():
+            return self.visitFunctionCall(ctx.functionCall())
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
@@ -536,28 +541,40 @@ class TreeVisitor(GrammarVisitor):
     def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
         return ast.PrintFCall(
             replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
-            expression=self.visitLogicalExpression(ctx.logicalExpression()),
+            expression=self.visitExpression(ctx.expression()),
             line=ctx.start.line,
             position=ctx.start.column
         )
 
-    def visitFunctionDeclaration(self, ctx:GrammarParser.FunctionDeclarationContext):
-        body = self.visit(ctx.body())
+    def visitFunctionDeclaration(self, ctx: GrammarParser.FunctionDeclarationContext):
         return_type = self.visit(ctx.type_())
         name = ctx.ID().getText()
         parameters = self.visitParamList(ctx.paramList()) if ctx.paramList() else []
 
-        return ast.FunctionDeclaration(
+        func_declaration = ast.FunctionDeclaration(
             return_type=return_type,
             name=name,
             parameters=parameters,
-            body=body,
+            body=ast.Body(statements=[]),
             line=ctx.start.line,
             position=ctx.start.column
         )
 
+        decl_b4 = copy.deepcopy(self.function_decl)
+        self.function_decl = func_declaration
+        func_declaration.body = self.visit(ctx.body())
+        self.function_decl = decl_b4
+        return func_declaration
+
     def visitReturnStatement(self, ctx:GrammarParser.ReturnStatementContext):
+        if self.function_decl is None:
+            raise SemanticError(
+                "Return statement outside of function",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
         return ast.ReturnStatement(
+            function=self.function_decl,
             expression=self.visit(ctx.expression()) if ctx.expression() else None,
             line=ctx.start.line,
             position=ctx.start.column
