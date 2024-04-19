@@ -10,7 +10,7 @@ def run_my_compiler(input_file):
         with open("test.c", "w") as file:
             code = code.replace("#include <stdio.h>", "")
             file.write(code)
-    compile_file("test.c", target_llvm=".")
+    compile_file("test.c", target_llvm=".", no_optimise=True)
     os.remove("test.c")
 
 
@@ -34,7 +34,7 @@ def run_clang(input_file):
 def test_compiler(input_file):
     input_file = os.path.join("./files", input_file)
     run_my_compiler(input_file)
-    #print(open("test.ll").read())
+    print(open("test.ll").read())
     my_output = run_lli()
     os.remove("test.ll")
     clang_output = run_clang(input_file)

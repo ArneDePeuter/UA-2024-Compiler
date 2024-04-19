@@ -3,6 +3,7 @@ int main() {
     switch (x) {
         case 1:
             printf("%d", x);
+            break;
         case 2:
             printf("%d", x);
             break;

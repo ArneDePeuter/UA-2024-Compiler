@@ -427,10 +427,12 @@ class LLVMIRGenerator(AstVisitor):
 
             self.builder.position_at_start(else_block)
             self.visit(node.else_statement)
-            if not else_block.is_terminated:
-                self.builder.branch(after_block)
+
+            #if not else_block.is_terminated:
+            self.builder.branch(after_block)
 
             self.builder.position_at_start(after_block)
+
         else:
             if_block = self.builder.append_basic_block("if")
             after_block = self.builder.append_basic_block("after")
@@ -446,7 +448,4 @@ class LLVMIRGenerator(AstVisitor):
             self.builder.position_at_start(after_block)
 
     def visit_else_statement(self, node: ast.ElseStatement):
-        if isinstance(node.body, ast.IfStatement):
-            self.visit_if_statement(node.body)
-        else:
-            self.visit_body(node.body)
+        self.visit_statement(node.body)

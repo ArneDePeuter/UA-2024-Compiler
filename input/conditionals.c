@@ -1,17 +1,20 @@
-int main (){
-    int a = 2;
-    if (a == 1) {
-        // Code block A
-    } else if (a == 2) {
-        // Code block B
-    }
+int main() {
+    int marks = 85;
 
-    int b = 2;
-    if (b == 1) {
-        // Code block A
+    if (marks > 90) {
+        printf("%d", 10);
+    } else if (marks > 80) {
+        printf("%d", 9);
+    } else if (marks > 70) {
+        printf("%d", 8);
+    } else if (marks > 60) {
+        printf("%d", 7);
+    } else if (marks > 50) {
+        printf("%d", 6);
+    } else if (marks > 40) {
+        printf("%d", 5);
     } else {
-        if (b == 2) {
-            // Code block B
-        }
+        printf("%d", 4);
     }
 }
+
