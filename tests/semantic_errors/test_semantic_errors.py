@@ -33,6 +33,7 @@ error_dict = {
     "proj_5_define_void_ptr.c": None,
     "proj_5_assign_void_ptr.c": SemanticError("Type mismatch in assignment: void* and int.", 3, 4),
     "proj_5_void_func_addition.c": SemanticError("Cannot perform arithmetic operations on void type.", 5, 12),
+    "proj_5_variable_call.c": SemanticError("'a' called but it is not a function", 5, 11),
 }
 
 

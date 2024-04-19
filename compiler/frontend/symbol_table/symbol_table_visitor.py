@@ -332,14 +332,13 @@ class SymbolTableVisitor(AstVisitor):
         if function_symbol is None:
             raise SemanticError(f"Undefined function '{node.name}'.", node.line, node.position)
 
-
         ref = function_symbol.ast_ref
         if isinstance(ref, ast.ForwardDeclaration):
             param_types = ref.parameters
         elif isinstance(ref, ast.FunctionDeclaration):
             param_types = [param.type for param in ref.parameters]
         else:
-            raise RuntimeError(f"{node.name} called but is different kind of symbol")
+            raise SemanticError(f"'{node.name}' called but it is not a function", node.line, node.position)
 
         # Compare the number of arguments with the number of parameters
         if len(node.arguments) != len(param_types):
