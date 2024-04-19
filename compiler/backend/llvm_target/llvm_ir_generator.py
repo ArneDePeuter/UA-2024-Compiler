@@ -442,8 +442,8 @@ class LLVMIRGenerator(AstVisitor):
 
             self.builder.position_at_start(if_block)
             self.visit_body(node.body)
-            if not if_block.is_terminated:
-                self.builder.branch(after_block)
+            #if not if_block.is_terminated:
+            self.builder.branch(after_block)
 
             self.builder.position_at_start(after_block)
 
