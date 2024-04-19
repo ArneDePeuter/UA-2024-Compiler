@@ -45,6 +45,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and len(right_type.address_qualifiers) == 0 and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
             # For pointer + integer or pointer - integer, the result is a pointer of the same type
             return Type(base_type=left_type.base_type, line=node.line, position=node.position, address_qualifiers=left_type.address_qualifiers)
@@ -70,6 +73,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if len(left_type.address_qualifiers) > 0 or len(right_type.address_qualifiers) > 0:
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
 
@@ -82,6 +88,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
@@ -91,6 +100,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
@@ -98,6 +110,9 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         type = self.visit_expression(node.value)
+
+        if type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform unary operations on void type.", node.line, node.position)
 
         # TODO: Possibly implement rest of the unary operations
         if node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
@@ -120,6 +135,9 @@ class SymbolTableVisitor(AstVisitor):
     def visit_shift_expression(self, node: ast.ShiftExpression):
         value_type = self.visit_expression(node.value)
         amount_type = self.visit_expression(node.amount)
+
+        if value_type.base_type == ast.BaseType.void or amount_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform shift operations on void type.", node.line, node.position)
 
         if len(value_type.address_qualifiers) > 0 or len(amount_type.address_qualifiers) > 0:
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
@@ -158,6 +176,9 @@ class SymbolTableVisitor(AstVisitor):
         ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        if node.var_type.base_type == ast.BaseType.void and node.var_type.address_qualifiers == []:
+            raise SemanticError(f"Cannot declare a variable of type void.", node.line, node.position)
+
         # Iterate through each qualifier in the variable declaration
         for qualifier in node.qualifiers:
             identifier = qualifier.identifier
@@ -245,7 +266,7 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        ...
+        return ast.Type(ast.BaseType.int)
 
     def visit_return_statement(self, node: ast.ReturnStatement):
         if node.expression is None:

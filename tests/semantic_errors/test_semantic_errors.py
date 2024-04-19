@@ -29,6 +29,10 @@ error_dict = {
     "proj_5_double_declare.c": SemanticError("Function 'fib' is already defined.", 7, 0),
     "proj_5_forward_declare.c": None,
     "proj_5_return_outside_function.c": SemanticError("Return statement outside of function", 3, 0),
+    "proj_5_define_void.c": SemanticError("Cannot declare a variable of type void.", 2, 4),
+    "proj_5_define_void_ptr.c": None,
+    "proj_5_assign_void_ptr.c": SemanticError("Type mismatch in assignment: void* and int.", 3, 4),
+    "proj_5_void_func_addition.c": SemanticError("Cannot perform arithmetic operations on void type.", 5, 12),
 }
 
 
