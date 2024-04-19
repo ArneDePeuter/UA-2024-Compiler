@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+from colored import Fore, Back, Style
 
 from compiler.frontend import tree_from_file, tree_to_ast
 from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor
@@ -63,9 +64,10 @@ def main():
     parser.add_argument('--target_llvm', help='LLvm Target. Specify output folder.')
 
     args = parser.parse_args()
-
-    compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm)
-
+    try:
+        compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm)
+    except Exception as e:
+        print(f"{Fore.red}{e}{Style.reset}")
 
 if __name__ == "__main__":
     main()
