@@ -7,8 +7,8 @@ int add (int a, int b) {
 int main () {
     int b = 'c';
     int c = 2;
-    int d = add(b, c);
-    printf("%d", d);
+    char d = add(b, c);
+    printf("%c", d);
     return 0;
 }
 

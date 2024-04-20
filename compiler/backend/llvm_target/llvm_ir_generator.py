@@ -309,7 +309,10 @@ class LLVMIRGenerator(AstVisitor):
             alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
             self.var_addresses[qualifier.identifier] = alloc
             if qualifier.initializer is None:
-                qualifier.set_default_initializer(node.var_type)
+                default = ir.Constant(decl_type, None)
+                self.builder.store(default, alloc)
+                continue
+
             expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")

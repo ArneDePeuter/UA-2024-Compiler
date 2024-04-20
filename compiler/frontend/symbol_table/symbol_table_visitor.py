@@ -235,7 +235,8 @@ class SymbolTableVisitor(AstVisitor):
                 if right_expression_hierarchy > left_expression_hierarchy:
                     WarningError(f"Implicit conversion from {right_type} to {left_type}", node.line, node.position).warn()
                     return
-            raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
+            else:
+                raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
 
         # Check if the variable is const
         if left_type.const and len(left_type.address_qualifiers) == 0:
@@ -283,7 +284,8 @@ class SymbolTableVisitor(AstVisitor):
                 if expression_hierarchy > function_hierarchy:
                     WarningError(f"Implicit conversion from {expression_type} to {function_return_type}", node.line, node.position).warn()
                     return
-            raise SemanticError(f"Type mismatch in return statement: {str(expression_type)} and {str(function_return_type)}.", node.line, node.position)
+            else:
+                raise SemanticError(f"Type mismatch in return statement: {str(expression_type)} and {str(function_return_type)}.", node.line, node.position)
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         if self.inside_declaration:
@@ -362,7 +364,8 @@ class SymbolTableVisitor(AstVisitor):
                     if expression_hierarchy > expected_hierarchy:
                         WarningError(f"Implicit conversion from {expression_type} to {expected_hierarchy}", node.line, node.position).warn()
                         return function_symbol.type
-                raise SemanticError(f"Type mismatch in function parameter: {str(expression_type)} and {str(expected_type)}.",node.line, node.position)
+                else:
+                    raise SemanticError(f"Type mismatch in function parameter: {str(expression_type)} and {str(expected_type)}.",node.line, node.position)
 
         return function_symbol.type
 
