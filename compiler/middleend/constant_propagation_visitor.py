@@ -172,3 +172,16 @@ class ConstantPropagationVisitor(AstVisitor):
     def visit_printf_call(self, node: ast.PrintFCall):
         node.expression = self.visit_expression(node.expression)
         return node
+
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        node.size = self.visit_expression(node.size)
+        return node
+
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        for i, element in enumerate(node.elements):
+            node.elements[i] = self.visit_expression(element)
+        return node
+
+    def visit_array_access(self, node: ast.ArrayAccess):
+        node.array_name = self.visit_expression(node.array_name)
+        return node

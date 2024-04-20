@@ -183,6 +183,7 @@ class SymbolTableVisitor(AstVisitor):
         # Iterate through each qualifier in the variable declaration
         for qualifier in node.qualifiers:
             identifier = qualifier.identifier
+            array_specifier = qualifier.array_specifier
             initializer = qualifier.initializer
 
             # Check if the variable is already declared in the current scope
@@ -191,8 +192,21 @@ class SymbolTableVisitor(AstVisitor):
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
 
+            if array_specifier is not None:
+                if array_specifier.size is not None:
+                    # Check if the array size is a constant expression
+                    if not isinstance(array_specifier.size, ast.INT):
+                        raise SemanticError(f"Array size must be a constant expression.", node.line, node.position)
+
+                    # Check if the array size is a positive integer
+                    if array_specifier.size.value <= 0:
+                        raise SemanticError(f"Array size must be a positive integer.", node.line, node.position)
+
+                # Define the variable in the symbol table
+                self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
+
             # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
-            if initializer is not None:
+            elif initializer is not None:
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration
                 initializer_type = self.visit_expression(initializer)
 
@@ -327,7 +341,7 @@ class SymbolTableVisitor(AstVisitor):
         for param in node.parameters:
             self.visit_variable_declaration(ast.VariableDeclaration(
                 var_type=param.type,
-                qualifiers=[ast.VariableDeclarationQualifier(identifier=param.name, initializer=None)]
+                qualifiers=[ast.VariableDeclarationQualifier(identifier=param.name, array_specifier=None, initializer=None)]
             ))
 
         # Visit the function body
@@ -373,3 +387,35 @@ class SymbolTableVisitor(AstVisitor):
         if self.symbol_table.lookup(node.name, current_scope_only=True):
             return
         self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
+
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        return ast.Type(base_type=node.base_type, const=node.const, address_qualifiers=[ast.AddressQualifier.array])
+
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        if not node.elements:  # If the initializer is empty, return a default type (e.g., int) or raise an error
+            return ast.Type(base_type=ast.BaseType.int)  # or your language's default array type
+
+        element_types = set()
+        for element in node.elements:
+            element_type = self.visit(element)
+            element_types.add(element_type.base_type)
+
+        # Check if all elements are of the same type
+        if len(element_types) != 1:
+            raise SemanticError("Array initializer elements must all be of the same type.", node.line, node.position)
+
+        # Return the type of the array (the type of the first element and size of the array)
+        array_type = element_types.pop()  # Get the single type from the set
+        return ast.Type(base_type=array_type, const=False, address_qualifiers=None)
+
+
+    def visit_array_access(self, node: ast.ArrayAccess):
+        array_symbol = self.symbol_table.lookup(node.array_name, current_scope_only=False)
+        if array_symbol is None:
+            raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
+
+        index_type = self.visit_expression(node.index)
+        if index_type.base_type != ast.BaseType.int:
+            raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
+
+        return ast.Type(base_type=array_symbol.type.base_type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)

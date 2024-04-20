@@ -134,6 +134,12 @@ class AstDotVisitor(AstVisitor):
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
         node_name = str(id(node))
         self.total += f'{node_name} [label="Declaration Qualifier: {node.identifier}"];\n'
+
+        if node.array_specifier is not None:
+            array_specifier_node_name = str(id(node.array_specifier))
+            self.total += f'{node_name} -> {array_specifier_node_name};\n'
+            self.visit_expression(node.array_specifier)
+
         if node.initializer is not None:
             initializer_node_name = str(id(node.initializer))
             self.total += f'{node_name} -> {initializer_node_name};\n'
@@ -272,3 +278,28 @@ class AstDotVisitor(AstVisitor):
         expression_node_name = str(id(node.expression))
         self.total += f'{node_name} -> {expression_node_name};\n'
         self.visit_expression(node.expression)
+
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        node_id = id(node)
+        size = "Undefined"
+        if node.size is not None:
+            size = str(node.size.value)
+        self.total += f"{node_id} [label=\"ArraySpecifier: (size={size})\"];\n"
+
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        node_id = id(node)
+        self.total += f"{node_id} [label=\"ArrayInitializer\"];\n"
+
+        for element in node.elements:
+            self.visit(element)
+            element_id = id(element)
+            self.total += f"{node_id} -> {element_id};\n"
+
+    def visit_array_access(self, node: ast.ArrayAccess):
+        node_id = id(node)
+        self.total += f"{node_id} [label=\"ArrayAccess: (name={node.array_name})\"];\n"
+
+        self.visit_expression(node.index)
+        index_id = id(node.index)
+        self.total += f"{node_id} -> {index_id} [label=\"index\"];\n"
+

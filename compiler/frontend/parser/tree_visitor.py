@@ -297,8 +297,6 @@ class TreeVisitor(GrammarVisitor):
         position = ctx.start.column
         if ctx.NUMBER() is not None:
             return ast.INT(int(ctx.NUMBER().getText()), line=line, position=position)
-        elif ctx.expression() is not None:
-            return self.visit(ctx.expression())
         elif ctx.FLOAT() is not None:
             return ast.FLOAT(float(ctx.FLOAT().getText()), line=line, position=position)
         elif ctx.CHAR() is not None:
@@ -306,16 +304,14 @@ class TreeVisitor(GrammarVisitor):
         elif ctx.CHAR_ESC() is not None:
             return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
         elif ctx.ID() is not None:
-            if ctx.expression() is not None:  # This means we have an array access
-                index_expression = self.visit(ctx.expression())
-                return ast.ArrayAccess(
-                    array_name=ctx.ID().getText(),
-                    index=index_expression,
-                    line=line,
-                    position=position
-                )
+            identifier = ctx.ID().getText()
+            if ctx.expression():  # This checks for the optional array access
+                index = self.visit(ctx.expression())
+                return ast.ArrayAccess(array_name=identifier, index=index, line=line, position=position)
             else:
-                return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
+                return ast.IDENTIFIER(name=identifier, line=line, position=position)
+        elif ctx.expression() is not None:
+            return self.visit(ctx.expression())
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
         elif ctx.printfCall():

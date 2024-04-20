@@ -511,3 +511,12 @@ class LLVMIRGenerator(AstVisitor):
                 continue
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             ir_global.initializer = value
+
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        ...
+
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        ...
+
+    def visit_array_access(self, node: ast.ArrayAccess):
+        ...
