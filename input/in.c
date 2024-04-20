@@ -1,14 +1,6 @@
-#include <stdio.h>
-
-int add (int a, int b) {
-    return a + b;
-}
 
 int main () {
-    int b = 'c';
-    int c = 2;
-    int d = add(b, c);
-    printf("%d", d);
+    printf("%f", 1.233);
     return 0;
 }
 

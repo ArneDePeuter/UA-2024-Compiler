@@ -416,17 +416,27 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_printf_call(self, node: ast.PrintFCall) -> None:
         format_string = node.replacer.value
-        format_string_constant = ir.GlobalVariable(
-            self.module, ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-            name=f"printf_format_{node.line}_{node.position}"
+
+        # Create the format string constant
+        format_string_constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
+                                             bytearray(format_string.encode('utf-8') + b'\00'))
+
+        # Create the format string global variable
+        format_string_global = ir.GlobalVariable(
+            self.module, format_string_constant.type, name=f"printf_format_{node.line}_{node.position}"
         )
-        format_string_constant.global_constant = True
-        format_string_constant.initializer = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-                                                         bytearray(format_string.encode('utf-8') + b'\00'))
+        format_string_global.linkage = "internal"
+        format_string_global.global_constant = True
+        format_string_global.initializer = format_string_constant
 
-        value: ExpressionEval = self.visit(node.expression)
+        expression_value = self.visit_expression(node.expression).r_value
+        if isinstance(expression_value.type, ir.FloatType):
+            expression_value = self.builder.fpext(expression_value, ir.DoubleType())
 
-        self.builder.call(self.printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
+        self.builder.call(self.printf_func, [
+            format_string_global.bitcast(ir.PointerType(ir.IntType(8))),
+            expression_value
+        ])
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
         func = self.functions.get(node.name) # Check if the function is already declared
