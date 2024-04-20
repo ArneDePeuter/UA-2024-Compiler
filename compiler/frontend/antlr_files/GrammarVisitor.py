@@ -14,8 +14,43 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#mainFunction.
-    def visitMainFunction(self, ctx:GrammarParser.MainFunctionContext):
+    # Visit a parse tree produced by GrammarParser#statement.
+    def visitStatement(self, ctx:GrammarParser.StatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#forwardDeclaration.
+    def visitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#typeList.
+    def visitTypeList(self, ctx:GrammarParser.TypeListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#returnStatement.
+    def visitReturnStatement(self, ctx:GrammarParser.ReturnStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#functionDeclaration.
+    def visitFunctionDeclaration(self, ctx:GrammarParser.FunctionDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#paramList.
+    def visitParamList(self, ctx:GrammarParser.ParamListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#functionCall.
+    def visitFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#argumentList.
+    def visitArgumentList(self, ctx:GrammarParser.ArgumentListContext):
         return self.visitChildren(ctx)
 
 
@@ -51,6 +86,11 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#breakStatement.
     def visitBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#printfCall.
+    def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
         return self.visitChildren(ctx)
 
 
@@ -94,11 +134,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#statement.
-    def visitStatement(self, ctx:GrammarParser.StatementContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#typedefStatement.
     def visitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
         return self.visitChildren(ctx)
@@ -111,11 +146,6 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#expression.
     def visitExpression(self, ctx:GrammarParser.ExpressionContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#printCall.
-    def visitPrintCall(self, ctx:GrammarParser.PrintCallContext):
         return self.visitChildren(ctx)
 
 

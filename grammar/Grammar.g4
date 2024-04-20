@@ -1,9 +1,39 @@
 grammar Grammar;
 
 // Parser rules
-program : statement* mainFunction statement* ;
+program : (statement)* ;
 
-mainFunction : 'int' 'main' '(' ')' body ;
+statement
+    : body
+    | forwardDeclaration
+    | functionDeclaration
+    | variableDeclaration
+    | assignmentStatement
+    | comment
+    | typedefStatement
+    | ifStatement
+    | iterationStatement
+    | breakStatement
+    | continueStatement
+    | switchStatement
+    | returnStatement
+    | expressionStatement
+    | ';'
+    ;
+
+forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
+
+typeList : type ID? (',' type ID?)* ;
+
+returnStatement : RETURN expression? TERMINAL ;
+
+functionDeclaration : type ID '(' paramList? ')' body ;
+
+paramList : type ID (',' type ID)* ;
+
+functionCall : ID '(' argumentList? ')' ;
+
+argumentList : expression (',' expression)* ;
 
 body : '{' statement* '}' ;
 
@@ -36,6 +66,10 @@ breakStatement
     : BREAK TERMINAL
     ;
 
+printfCall
+    : 'printf' '(' PRINTFREPLACER ',' expression ')'
+    ;
+
 continueStatement
     : CONTINUE TERMINAL
     ;
@@ -45,7 +79,7 @@ variableDeclaration
     ;
 
 variableDeclarationQualifiers
-    : (variableDeclarationQualifier (',' variableDeclarationQualifier)*)?
+    : variableDeclarationQualifier (',' variableDeclarationQualifier)*
     ;
 
 variableDeclarationQualifier
@@ -68,21 +102,6 @@ defaultCaseStatement
     : DEFAULT ':' statement*
     ;
 
-statement
-    : expressionStatement
-    | body
-    | variableDeclaration
-    | assignmentStatement
-    | comment
-    | typedefStatement
-    | ifStatement
-    | iterationStatement
-    | breakStatement
-    | continueStatement
-    | switchStatement
-    | ';'
-    ;
-
 typedefStatement
     : 'typedef' type ID ';';
 
@@ -92,11 +111,6 @@ expressionStatement
 
 expression
     : logicalExpression
-    | printCall
-    ;
-
-printCall
-    : 'printf' '(' PRINTFREPLACER ',' logicalExpression ')'
     ;
 
 assignmentStatement
@@ -155,6 +169,8 @@ primary
     | CHAR
     | CHAR_ESC
     | castExpression
+    | printfCall
+    | functionCall
     ;
 
 type
@@ -165,6 +181,7 @@ baseType
     : 'int'
     | 'float'
     | 'char'
+    | 'void'
     ;
 
 const
@@ -203,6 +220,7 @@ DEFAULT: 'default' ;
 IF     : 'if' ;
 ELSE   : 'else' ;
 BREAK : 'break' ;
+RETURN : 'return' ;
 CONTINUE : 'continue' ;
 WHILE  : 'while' ;
 FOR    : 'for' ;

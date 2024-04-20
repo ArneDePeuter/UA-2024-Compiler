@@ -272,6 +272,12 @@ class ShiftExpression(Expression):
 
 
 @dataclass
+class FunctionCall(Expression):
+    name: str
+    arguments: list[Expression]
+
+
+@dataclass
 class PrintFCall(Expression):
     class Replacer(Enum):
         s = "%s"
