@@ -75,7 +75,7 @@ continueStatement
     ;
 
 variableDeclaration
-    : type variableDeclarationQualifiers TERMINAL
+    : type variableDeclarationQualifiers (',' variableDeclarationQualifier)* TERMINAL
     ;
 
 variableDeclarationQualifiers
@@ -83,7 +83,16 @@ variableDeclarationQualifiers
     ;
 
 variableDeclarationQualifier
-    : ID ('=' (arrayInitializer | expression))?
+    : ID arraySpecifier? ('=' variableInitializer)?
+    ;
+
+arraySpecifier
+    : '[' expression? ']'
+    ;
+
+variableInitializer
+    : arrayInitializer
+    | expression
     ;
 
 arrayInitializer
@@ -170,7 +179,8 @@ primary
     : NUMBER
     | FLOAT
     | '(' expression ')'
-    | ID ('[' expression ']')?
+    | ID
+    | ID '[' expression ']'
     | CHAR
     | CHAR_ESC
     | castExpression
@@ -179,11 +189,7 @@ primary
     ;
 
 type
-    : const? (baseType | ID) addressQualifier* arraySpecifier?
-    ;
-
-arraySpecifier
-    : '[' NUMBER? ']'
+    : const? (baseType | ID) addressQualifier*
     ;
 
 baseType
