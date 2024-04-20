@@ -38,7 +38,7 @@ class LLVMIRGenerator(AstVisitor):
         return "\n".join(lines)
 
     def visit_expression(self, node: ast.Expression):
-        if node.c_syntax:
+        if node.c_syntax and self.builder:
             comment = node.c_syntax.split("\n")
             self.builder.comment(f"C Syntax: {comment[0]}")
         return super().visit_expression(node)
@@ -294,6 +294,9 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_program(self, node: ast.Program) -> None:
         for statement in node.statements:
+            if isinstance(statement, ast.VariableDeclaration):
+                self.visit_variable_declaration_global(statement)
+                continue
             self.visit_statement(statement)
 
     def visit_body(self, node: ast.Body) -> None:
@@ -481,3 +484,20 @@ class LLVMIRGenerator(AstVisitor):
 
         args = [self.visit_expression(arg).r_value for arg in node.arguments]
         return ExpressionEval(r_value=self.builder.call(func, args))
+
+    def visit_variable_declaration_global(self, node: ast.VariableDeclaration):
+        decl_type = self.visit_type(node.var_type)
+        for qualifier in node.qualifiers:
+            ir_global = ir.GlobalVariable(self.module, decl_type, name=qualifier.identifier)
+            self.var_addresses[qualifier.identifier] = ir_global
+            if qualifier.initializer is None:
+                continue
+            expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
+            if not expr_eval.r_value:
+                raise NotImplementedError("Cannot assign value to variable, r_value is None")
+            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
+                null_ptr = ir.Constant(decl_type, None)
+                ir_global.initializer = null_ptr
+                continue
+            value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
+            ir_global.initializer = value

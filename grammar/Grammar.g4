@@ -79,7 +79,7 @@ variableDeclaration
     ;
 
 variableDeclarationQualifiers
-    : (variableDeclarationQualifier (',' variableDeclarationQualifier)*)?
+    : variableDeclarationQualifier (',' variableDeclarationQualifier)*
     ;
 
 variableDeclarationQualifier
