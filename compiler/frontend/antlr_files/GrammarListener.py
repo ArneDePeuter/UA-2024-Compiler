@@ -197,6 +197,33 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#arraySpecifier.
+    def enterArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#arraySpecifier.
+    def exitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#variableInitializer.
+    def enterVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#variableInitializer.
+    def exitVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#arrayInitializer.
+    def enterArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#arrayInitializer.
+    def exitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#castExpression.
     def enterCastExpression(self, ctx:GrammarParser.CastExpressionContext):
         pass
