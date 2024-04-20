@@ -179,8 +179,7 @@ primary
     : NUMBER
     | FLOAT
     | '(' expression ')'
-    | ID
-    | ID '[' expression ']'
+    | ID ('[' expression ']')?
     | CHAR
     | CHAR_ESC
     | castExpression

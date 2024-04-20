@@ -45,6 +45,7 @@ class FunctionDeclaration(Statement):
 @dataclass
 class VariableDeclarationQualifier(Statement):
     identifier: str
+    array_specifier: Expression or None
     initializer: Expression or None
 
     def set_default_initializer(self, type: Type):
