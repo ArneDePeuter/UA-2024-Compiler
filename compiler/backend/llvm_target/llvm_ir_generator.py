@@ -44,7 +44,7 @@ class LLVMIRGenerator(AstVisitor):
         return super().visit_expression(node)
 
     def visit_statement(self, node: ast.Statement):
-        if self.builder is None and isinstance(node, ast.FunctionDeclaration) or isinstance(node, ast.Program):
+        if self.builder is None and (isinstance(node, ast.FunctionDeclaration) or isinstance(node, ast.Program) or isinstance(node, ast.ForwardDeclaration)):
             super().visit_statement(node)
             return
 
@@ -423,12 +423,13 @@ class LLVMIRGenerator(AstVisitor):
         self.builder.call(self.printf_func, [format_string_constant.bitcast(ir.PointerType(ir.IntType(8))), value.r_value])
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
+        func = self.functions.get(node.name) # Check if the function is already declared
         return_type = self.visit_type(node.return_type)
-        args = [self.visit_type(param.type) for param in node.parameters]
-        func_type = ir.FunctionType(return_type, args)
-        func = ir.Function(self.module, func_type, name=node.name)
-
-        self.functions[node.name] = func
+        if not func:
+            args = [self.visit_type(param.type) for param in node.parameters]
+            func_type = ir.FunctionType(return_type, args)
+            func = ir.Function(self.module, func_type, name=node.name)
+            self.functions[node.name] = func
 
         block = func.append_basic_block(name="entry")
         self.builder = ir.IRBuilder(block)
@@ -453,7 +454,13 @@ class LLVMIRGenerator(AstVisitor):
         self.builder = None
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
-        ...
+        if self.functions.get(node.name):
+            return
+        return_type = self.visit_type(node.return_type)
+        args = [self.visit_type(param) for param in node.parameters]
+        func_type = ir.FunctionType(return_type, args)
+        func = ir.Function(self.module, func_type, name=node.name)
+        self.functions[node.name] = func
 
     def visit_return_statement(self, node: ast.ReturnStatement):
         if node.expression is not None:
