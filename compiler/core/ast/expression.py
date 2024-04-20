@@ -288,3 +288,16 @@ class PrintFCall(Expression):
 
     replacer: Replacer
     expression: Expression
+
+@dataclass
+class ArraySpecifier(AST):
+    size: int
+
+@dataclass
+class ArrayInitializer(Expression):
+    elements: list[Expression]
+
+@dataclass
+class ArrayAccess(Expression):
+    array_name: str
+    index: Expression

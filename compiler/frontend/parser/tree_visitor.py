@@ -128,14 +128,21 @@ class TreeVisitor(GrammarVisitor):
 
     def visitVariableDeclarationQualifier(self, ctx):
         identifier = ctx.ID().getText()
-        initializer = self.visit(ctx.expression()) if ctx.expression() else None
+        array_specifier = self.visit(ctx.arraySpecifier()) if ctx.arraySpecifier() else None
+        initializer = self.visit(ctx.variableInitializer()) if ctx.variableInitializer() else None
 
         return ast.VariableDeclarationQualifier(
             identifier=identifier,
+            array_specifier=array_specifier,
             initializer=initializer,
             line=ctx.start.line,
             position=ctx.start.column
         )
+
+    def visitVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
+        if ctx.arrayInitializer():
+            return self.visit(ctx.arrayInitializer())
+        return self.visit(ctx.expression())
 
     def visitCastExpression(self, ctx):
         cast_type = self.visit(ctx.type_())
@@ -299,7 +306,16 @@ class TreeVisitor(GrammarVisitor):
         elif ctx.CHAR_ESC() is not None:
             return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
         elif ctx.ID() is not None:
-            return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
+            if ctx.expression() is not None:  # This means we have an array access
+                index_expression = self.visit(ctx.expression())
+                return ast.ArrayAccess(
+                    array_name=ctx.ID().getText(),
+                    index=index_expression,
+                    line=line,
+                    position=position
+                )
+            else:
+                return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
         elif ctx.printfCall():
@@ -603,4 +619,15 @@ class TreeVisitor(GrammarVisitor):
             parameters=self.visitTypeList(ctx.typeList()) if ctx.typeList() else [],
             line=ctx.start.line,
             position=ctx.start.column
+        )
+
+    def visitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
+        size = self.visit(ctx.expression()) if ctx.expression() else None
+        return ast.ArraySpecifier(
+            size=size,
+        )
+
+    def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
+        return ast.ArrayInitializer(
+            elements=[self.visit(element) for element in ctx.expression()]
         )
