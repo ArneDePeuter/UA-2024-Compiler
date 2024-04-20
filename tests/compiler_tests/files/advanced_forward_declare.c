@@ -1,27 +1,20 @@
 #include <stdio.h>
 
-// Function declaration
-void outerFunction();
+// Forward declaration of a recursive function
+int factorial(int n);
 
 int main() {
-    // Calling the outer function
-    outerFunction();
-
+    int num = 5;
+    int result = factorial(num);
+    printf("%d", num);
     return 0;
 }
 
-// Outer function definition
-void outerFunction() {
-    // Nested function declaration
-    void innerFunction();
-
-    printf("%c",'o');
-
-    // Calling the inner function
-    innerFunction();
-}
-
-// Inner function definition
-void innerFunction() {
-    printf("%c",'i');
+// Recursive function to calculate factorial
+int factorial(int n) {
+    if (n == 0 || n == 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
 }

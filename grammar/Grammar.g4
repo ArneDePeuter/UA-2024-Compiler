@@ -5,8 +5,8 @@ program : (statement)* ;
 
 statement
     : body
-    | functionDeclaration
     | forwardDeclaration
+    | functionDeclaration
     | variableDeclaration
     | assignmentStatement
     | comment
@@ -23,7 +23,7 @@ statement
 
 forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
 
-typeList : type (',' type)* ;
+typeList : type ID? (',' type ID?)* ;
 
 returnStatement : RETURN expression? TERMINAL ;
 
