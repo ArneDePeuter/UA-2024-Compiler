@@ -281,11 +281,20 @@ class AstDotVisitor(AstVisitor):
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         node_id = id(node)
+        self.total += f'{node_id} [label="ArraySpecifier"];\n'
         if node.sizes:
-            size_str = ", ".join(str(s.value) if isinstance(s, ast.INT) else str(s) for s in node.sizes)
+            for i, size in enumerate(node.sizes):
+                if isinstance(size, ast.INT):
+                    size_id = id(size)
+                    self.total += f'{size_id} [label="INT: {size.value}"];\n'
+                elif isinstance(size, ast.IDENTIFIER):
+                    size_id = id(size)
+                    self.total += f'{size_id} [label="IDENTIFIER: {size.name}"];\n'
+                self.total += f'{node_id} -> {size_id} [label="dim{i + 1}"];\n'
         else:
             size_str = "Undefined"
-        self.total += f'{node_id} [label="ArraySpecifier: (size={size_str})"];\n'
+            self.total += f'{node_id} [label="ArraySpecifier: (size={size_str})"];\n'
+        return node_id
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         node_id = id(node)

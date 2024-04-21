@@ -28,7 +28,7 @@ def test_array_1():
     assert array_decl.qualifiers[0].identifier == "a"
     array_specifier = array_decl.qualifiers[0].array_specifier
     assert isinstance(array_specifier, ast.ArraySpecifier)
-    assert array_specifier.size.value == 5
+    assert array_specifier.sizes[0].value == 5
     assert array_decl.qualifiers[0].initializer is None
     assert array_decl.var_type.base_type == ast.BaseType.int
     array_access_1 = main_func.body.statements[1]
@@ -36,35 +36,35 @@ def test_array_1():
     assert array_access_1.c_syntax == "a[0] = 1;"
     assert isinstance(array_access_1.left, ast.ArrayAccess)
     assert array_access_1.left.array_name == "a"
-    assert array_access_1.left.index.value == 0
+    assert array_access_1.left.index.sizes[0].value == 0
     assert array_access_1.right.value == 1
     array_access_2 = main_func.body.statements[2]
     assert isinstance(array_access_2, ast.AssignmentStatement)
     assert array_access_2.c_syntax == "a[1] = 2;"
     assert isinstance(array_access_2.left, ast.ArrayAccess)
     assert array_access_2.left.array_name == "a"
-    assert array_access_2.left.index.value == 1
+    assert array_access_2.left.index.sizes[0].value == 1
     assert array_access_2.right.value == 2
     array_access_3 = main_func.body.statements[3]
     assert isinstance(array_access_3, ast.AssignmentStatement)
     assert array_access_3.c_syntax == "a[2] = 3;"
     assert isinstance(array_access_3.left, ast.ArrayAccess)
     assert array_access_3.left.array_name == "a"
-    assert array_access_3.left.index.value == 2
+    assert array_access_3.left.index.sizes[0].value == 2
     assert array_access_3.right.value == 3
     array_access_4 = main_func.body.statements[4]
     assert isinstance(array_access_4, ast.AssignmentStatement)
     assert array_access_4.c_syntax == "a[3] = 4;"
     assert isinstance(array_access_4.left, ast.ArrayAccess)
     assert array_access_4.left.array_name == "a"
-    assert array_access_4.left.index.value == 3
+    assert array_access_4.left.index.sizes[0].value == 3
     assert array_access_4.right.value == 4
     array_access_5 = main_func.body.statements[5]
     assert isinstance(array_access_5, ast.AssignmentStatement)
     assert array_access_5.c_syntax == "a[4] = 5;"
     assert isinstance(array_access_5.left, ast.ArrayAccess)
     assert array_access_5.left.array_name == "a"
-    assert array_access_5.left.index.value == 4
+    assert array_access_5.left.index.sizes[0].value == 4
     assert array_access_5.right.value == 5
 
 def test_array_2():
@@ -88,7 +88,7 @@ def test_array_2():
     assert array_decl.qualifiers[0].identifier == "a"
     array_specifier = array_decl.qualifiers[0].array_specifier
     assert isinstance(array_specifier, ast.ArraySpecifier)
-    assert array_specifier.size.value == 5
+    assert array_specifier.sizes[0].value == 5
     assert array_decl.qualifiers[0].initializer is not None
     array_initializer = array_decl.qualifiers[0].initializer
     assert isinstance(array_initializer, ast.ArrayInitializer)
@@ -118,7 +118,7 @@ def test_uninitialized_array():
     assert array_decl.c_syntax == "int b[10];"
     assert array_decl.qualifiers[0].identifier == "b"
     array_specifier = array_decl.qualifiers[0].array_specifier
-    assert array_specifier.size.value == 10
+    assert array_specifier.sizes[0].value == 10
     assert array_decl.qualifiers[0].initializer is None
 
 def test_dynamic_sized_array():
@@ -143,7 +143,7 @@ def test_dynamic_sized_array():
     assert array_decl.qualifiers[0].identifier == "d"
     array_size = array_decl.qualifiers[0].array_specifier
     assert isinstance(array_size, ast.ArraySpecifier)
-    assert array_size.size.name == "size"
+    assert array_size.sizes[0].name == "size"
 
 def test_multidimensional_array_access():
     input = """
