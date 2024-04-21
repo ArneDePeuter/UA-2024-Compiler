@@ -10,6 +10,7 @@ class BaseType(Enum):
     char = "char"
     float = "float"
     bool = "bool"
+    void = "void"
 
     def __str__(self):
         return self.value
@@ -34,3 +35,8 @@ class Type(AST):
 
     def __str__(self):
         return ("const " if self.const else "")+str(self.base_type)+''.join(str(qualifier) for qualifier in self.address_qualifiers)
+
+    def __eq__(self, other):
+        if isinstance(other, Type):
+            return self.base_type == other.base_type and self.const == other.const and self.address_qualifiers == other.address_qualifiers
+        return False

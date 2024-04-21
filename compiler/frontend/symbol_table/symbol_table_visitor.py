@@ -9,10 +9,13 @@ from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.warning_error import WarningError
 from compiler.core.type_caster import TypeCaster
 
+
 class SymbolTableVisitor(AstVisitor):
     def __init__(self, symbol_table: Optional[SymbolTable] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
+        self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
+        self.inside_declaration = False
 
     def visit_type(self, node: ast.Type):
         ...
@@ -32,7 +35,6 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Undefined identifier '{node.name}'.", node.line, node.position)
         return symbol.type
 
-
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         expression_type = self.visit_expression(node.expression)
         targed_cast_type = node.cast_type
@@ -43,6 +45,9 @@ class SymbolTableVisitor(AstVisitor):
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
+
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
         if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and len(right_type.address_qualifiers) == 0 and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
             # For pointer + integer or pointer - integer, the result is a pointer of the same type
@@ -69,6 +74,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if len(left_type.address_qualifiers) > 0 or len(right_type.address_qualifiers) > 0:
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
 
@@ -81,6 +89,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
@@ -90,6 +101,9 @@ class SymbolTableVisitor(AstVisitor):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
+        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
+
         if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
@@ -97,6 +111,9 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         type = self.visit_expression(node.value)
+
+        if type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform unary operations on void type.", node.line, node.position)
 
         # TODO: Possibly implement rest of the unary operations
         if node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
@@ -120,6 +137,9 @@ class SymbolTableVisitor(AstVisitor):
         value_type = self.visit_expression(node.value)
         amount_type = self.visit_expression(node.amount)
 
+        if value_type.base_type == ast.BaseType.void or amount_type.base_type == ast.BaseType.void:
+            raise SemanticError(f"Cannot perform shift operations on void type.", node.line, node.position)
+
         if len(value_type.address_qualifiers) > 0 or len(amount_type.address_qualifiers) > 0:
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
 
@@ -131,6 +151,21 @@ class SymbolTableVisitor(AstVisitor):
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
             self.visit(statement)
+        for symbol in self.symbol_table.global_scope.symbols.values():
+            if isinstance(symbol.ast_ref, ast.ForwardDeclaration):
+                raise SemanticError(f"Function '{symbol.name}' is forward declared but not defined.", node.line, node.position)
+
+        main_symbol=self.symbol_table.global_scope.lookup("main")
+        if not main_symbol:
+            raise SemanticError("main function is undefined", 0, 0)
+        else:
+            main_func = main_symbol.ast_ref
+            if not main_func:
+                raise SemanticError("main is not defined as a function", 0, 0)
+            if not isinstance(main_func, ast.FunctionDeclaration):
+                raise SemanticError("main is not defined as a function", main_func.line, main_func.position)
+            if main_func.return_type != ast.Type(base_type=ast.BaseType.int):
+                raise SemanticError("Return type of main is invalid", main_func.line, main_func.position)
 
     def visit_body(self, node: ast.Body):
         self.symbol_table.enter_scope()
@@ -138,22 +173,13 @@ class SymbolTableVisitor(AstVisitor):
             self.visit(statement)
         self.symbol_table.exit_scope()
 
-    def visit_function_declaration(self, node: ast.FunctionDeclaration):
-        # Check if function is already declared
-        if self.symbol_table.lookup(node.name, current_scope_only=True):
-            raise SemanticError(f"Function '{node.name}' is already declared.", node.line, node.position)
-        # Define the function in the symbol table
-        self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level))
-
-        # TODO: Visit each parameter and add it to the symbol table as a variable with the function's scope level
-
-        # Visit the function body
-        self.visit(node.body)
-
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
         ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        if node.var_type.base_type == ast.BaseType.void and node.var_type.address_qualifiers == []:
+            raise SemanticError(f"Cannot declare a variable of type void.", node.line, node.position)
+
         # Iterate through each qualifier in the variable declaration
         for qualifier in node.qualifiers:
             identifier = qualifier.identifier
@@ -209,7 +235,8 @@ class SymbolTableVisitor(AstVisitor):
                 if right_expression_hierarchy > left_expression_hierarchy:
                     WarningError(f"Implicit conversion from {right_type} to {left_type}", node.line, node.position).warn()
                     return
-            raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
+            else:
+                raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
 
         # Check if the variable is const
         if left_type.const and len(left_type.address_qualifiers) == 0:
@@ -217,9 +244,6 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         self.visit(node.expression)
-
-    def visit_printf_call(self, node: ast.PrintFCall):
-        ...
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         ...
@@ -242,3 +266,110 @@ class SymbolTableVisitor(AstVisitor):
     def visit_continue_statement(self, node: ast.ContinueStatement):
         if node.while_statement is None:
             raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)
+
+    def visit_printf_call(self, node: ast.PrintFCall):
+        return ast.Type(ast.BaseType.int)
+
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        if node.expression is None:
+            return
+
+        expression_type = self.visit_expression(node.expression)
+        function_return_type = node.function.return_type
+        if expression_type.base_type != function_return_type.base_type or len(expression_type.address_qualifiers) != len(function_return_type.address_qualifiers):
+            if len(expression_type.address_qualifiers) == 0 and len(function_return_type.address_qualifiers) == 0:
+                # Determine the type of the expression based on the hierarchy  float, int, char
+                expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.base_type)
+                function_hierarchy = TypeCaster.get_heirarchy_of_base_type(function_return_type.base_type)
+                if expression_hierarchy > function_hierarchy:
+                    WarningError(f"Implicit conversion from {expression_type} to {function_return_type}", node.line, node.position).warn()
+                    return
+            else:
+                raise SemanticError(f"Type mismatch in return statement: {str(expression_type)} and {str(function_return_type)}.", node.line, node.position)
+
+    def visit_function_declaration(self, node: ast.FunctionDeclaration):
+        if self.inside_declaration:
+            raise SemanticError("Function definition is not allowed here", node.line, node.position)
+
+        self.inside_declaration = True
+
+        symbol = self.symbol_table.lookup(node.name, current_scope_only=True)
+        # Check if function is already declared
+        if symbol:
+            # if the ref already points to a function declaration we have a redefinition
+            if isinstance(symbol.ast_ref, ast.FunctionDeclaration):
+                raise SemanticError(f"Function '{node.name}' is already defined.", node.line, node.position)
+
+            if not isinstance(symbol.ast_ref, ast.ForwardDeclaration):
+                raise SemanticError(f"{node.name} redeclared as different kind of symbol", node.line, node.position)
+
+            # check if the parameters match
+            params_match = True
+            if len(symbol.ast_ref.parameters) == len(node.parameters):
+                for type_fwd, type_decl in zip(symbol.ast_ref.parameters, [param.type for param in node.parameters]):
+                    if type_fwd != type_decl:
+                        params_match = False
+            else:
+                params_match = False
+
+            # if they don't match the declaration was talking about some other thing, so we define the function
+            if not params_match:
+                self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
+            else:
+                # otherwise the forward declaration was talking about this
+                symbol.ast_ref = node
+        else:
+            self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
+
+        self.symbol_table.enter_scope()
+
+        # Visit each parameter and add it to the symbol table as a variable with the function's scope level
+        for param in node.parameters:
+            self.visit_variable_declaration(ast.VariableDeclaration(
+                var_type=param.type,
+                qualifiers=[ast.VariableDeclarationQualifier(identifier=param.name, initializer=None)]
+            ))
+
+        # Visit the function body
+        self.visit(node.body)
+
+        self.symbol_table.exit_scope()
+        self.inside_declaration = False
+
+    def visit_function_call(self, node: ast.FunctionCall):
+        function_symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
+        if function_symbol is None:
+            raise SemanticError(f"Undefined function '{node.name}'.", node.line, node.position)
+
+        ref = function_symbol.ast_ref
+        if isinstance(ref, ast.ForwardDeclaration):
+            param_types = ref.parameters
+        elif isinstance(ref, ast.FunctionDeclaration):
+            param_types = [param.type for param in ref.parameters]
+        else:
+            raise SemanticError(f"'{node.name}' called but it is not a function", node.line, node.position)
+
+        # Compare the number of arguments with the number of parameters
+        if len(node.arguments) != len(param_types):
+            raise SemanticError(f"Function '{node.name}' expects {len(param_types)} arguments but {len(node.arguments)} were given.", node.line, node.position)
+
+        # Iterate over each argument and each parameter
+        for argument, expected_type in zip(node.arguments, param_types):
+            expression_type = self.visit_expression(argument)
+            if expression_type.base_type != expected_type.base_type or len(expression_type.address_qualifiers) != len(expected_type.address_qualifiers):
+                if len(expression_type.address_qualifiers) == 0 and len(expected_type.address_qualifiers) == 0:
+                    # Determine the type of the expression based on the hierarchy  float, int, char
+                    expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.base_type)
+                    expected_hierarchy = TypeCaster.get_heirarchy_of_base_type(expected_type.base_type)
+                    if expression_hierarchy > expected_hierarchy:
+                        WarningError(f"Implicit conversion from {expression_type} to {expected_hierarchy}", node.line, node.position).warn()
+                        return function_symbol.type
+                else:
+                    raise SemanticError(f"Type mismatch in function parameter: {str(expression_type)} and {str(expected_type)}.",node.line, node.position)
+
+        return function_symbol.type
+
+    def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        if self.symbol_table.lookup(node.name, current_scope_only=True):
+            return
+        self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))

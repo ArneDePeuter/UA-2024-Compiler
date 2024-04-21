@@ -17,6 +17,7 @@ class TreeVisitor(GrammarVisitor):
             "char": ast.Type(base_type=ast.BaseType.char)
         }
         self.input_stream = input_stream
+        self.function_decl = None
 
     def get_original_text(self, ctx):
         return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
@@ -34,17 +35,6 @@ class TreeVisitor(GrammarVisitor):
 
         return ast.Program(
             statements=statements,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitMainFunction(self, ctx):
-        body = self.visit(ctx.body())
-
-        return ast.FunctionDeclaration(
-            return_type=ast.Type(base_type=ast.BaseType.int),
-            name='main',
-            body=body,
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -312,18 +302,14 @@ class TreeVisitor(GrammarVisitor):
             return ast.IDENTIFIER(ctx.ID().getText(), line=line, position=position)
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
+        elif ctx.printfCall():
+            return self.visitPrintfCall(ctx.printfCall())
+        elif ctx.functionCall():
+            return self.visitFunctionCall(ctx.functionCall())
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
             content=ctx.getText()[:-1],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitPrintCall(self, ctx:GrammarParser.PrintCallContext):
-        return ast.PrintFCall(
-            replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
-            expression=self.visitLogicalExpression(ctx.logicalExpression()),
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -539,6 +525,82 @@ class TreeVisitor(GrammarVisitor):
 
     def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
         return ast.ContinueStatement(
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitParamList(self, ctx:GrammarParser.ParamListContext):
+        return [
+            ast.FunctionParameter(type=self.visitType(param_type), name=param_name.getText())
+            for param_type, param_name in zip(
+                ctx.type_(),
+                ctx.ID()
+            )
+        ]
+
+    def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
+        return ast.PrintFCall(
+            replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
+            expression=self.visitExpression(ctx.expression()),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitFunctionDeclaration(self, ctx: GrammarParser.FunctionDeclarationContext):
+        return_type = self.visit(ctx.type_())
+        name = ctx.ID().getText()
+        parameters = self.visitParamList(ctx.paramList()) if ctx.paramList() else []
+
+        func_declaration = ast.FunctionDeclaration(
+            return_type=return_type,
+            name=name,
+            parameters=parameters,
+            body=ast.Body(statements=[]),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+        decl_b4 = copy.deepcopy(self.function_decl)
+        self.function_decl = func_declaration
+        func_declaration.body = self.visit(ctx.body())
+        self.function_decl = decl_b4
+        return func_declaration
+
+    def visitReturnStatement(self, ctx:GrammarParser.ReturnStatementContext):
+        if self.function_decl is None:
+            raise SemanticError(
+                "Return statement outside of function",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return ast.ReturnStatement(
+            function=self.function_decl,
+            expression=self.visit(ctx.expression()) if ctx.expression() else None,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitArgumentList(self, ctx:GrammarParser.ArgumentListContext):
+        return [self.visitExpression(arg) for arg in ctx.expression()]
+
+    def visitFunctionCall(self, ctx: GrammarParser.FunctionCallContext):
+        name = ctx.ID().getText()
+        arguments = self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else []
+        return ast.FunctionCall(
+            name=name,
+            arguments=arguments,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitTypeList(self, ctx:GrammarParser.TypeListContext):
+        return [self.visitType(type_) for type_ in ctx.type_()]
+
+    def visitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
+        return ast.ForwardDeclaration(
+            return_type=self.visitType(ctx.type_()),
+            name=ctx.ID().getText(),
+            parameters=self.visitTypeList(ctx.typeList()) if ctx.typeList() else [],
             line=ctx.start.line,
             position=ctx.start.column
         )

@@ -1,8 +1,9 @@
 class Symbol:
-    def __init__(self, name, type, scope_level=0):
+    def __init__(self, name, type, scope_level=0, ast_ref=None):
         self.name = name
         self.type = type
         self.scope_level = scope_level
+        self.ast_ref = ast_ref
 
 class Scope:
     def __init__(self, level=0, parent=None):

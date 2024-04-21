@@ -131,10 +131,6 @@ class ConstantPropagationVisitor(AstVisitor):
         node.expression = self.visit_expression(node.expression)
         return node
 
-    def visit_printf_call(self, node: ast.PrintFCall):
-        node.expression = self.visit_expression(node.expression)
-        return node
-
     def visit_comment_statement(self, node: ast.CommentStatement):
         return node
 
@@ -160,3 +156,19 @@ class ConstantPropagationVisitor(AstVisitor):
         node.body = self.visit_body(node.body)
         return node
 
+    def visit_function_call(self, node: ast.FunctionCall):
+        for i, arg in enumerate(node.arguments):
+            node.arguments[i] = self.visit_expression(arg)
+        return node
+
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        if node.expression:
+            node.expression = self.visit_expression(node.expression)
+        return node
+
+    def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        return node
+
+    def visit_printf_call(self, node: ast.PrintFCall):
+        node.expression = self.visit_expression(node.expression)
+        return node

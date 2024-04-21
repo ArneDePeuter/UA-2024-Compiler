@@ -1,6 +1,7 @@
 from typing import Union
 
 from . import ast
+from compiler.core.errors.semantic_error import SemanticError
 
 
 class TypeCaster:

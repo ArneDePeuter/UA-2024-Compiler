@@ -9,6 +9,8 @@ from compiler.middleend import optimise_ast
 from compiler.utils import AstDotVisitor
 from compiler.utils.symboltabledotvisitor import SymbolTableDotVisitor
 from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
+from compiler.core.errors.semantic_error import SemanticError
+from compiler.core.errors.compiler_syntaxerror import CompilerSyntaxError
 
 
 def compile_file(input_file: str, render_ast: str = None, render_symb: str = None, no_optimise: bool = False, target_llvm: str = None):
@@ -55,6 +57,19 @@ def compile_file(input_file: str, render_ast: str = None, render_symb: str = Non
         subprocess.run(command, shell=True, check=True)
 
 
+def generate_cool_error(e: SemanticError|CompilerSyntaxError, filename: str):
+    print(f"{Fore.red}{e}{Style.reset}")
+    with open(filename, "r") as file:
+        lines = file.readlines()
+        if e.line > 0:
+            print(f"{Fore.red}{e.line - 1}| {lines[e.line - 2]}{Style.reset}", end="")
+        print(f"{Fore.red}{e.line}| {lines[e.line - 1]}{Style.reset}", end="")
+        offset = len(str(e.line)) + len("| ")
+        print(f"{Fore.red}{'-' * (e.position + offset)}^{Style.reset}")
+        if e.line < len(lines):
+            print(f"{Fore.red}{e.line + 1}| {lines[e.line]}{Style.reset}")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Compiler options.')
     parser.add_argument('--input', required=True, help='The input file to compile')
@@ -62,12 +77,24 @@ def main():
     parser.add_argument('--render_symb', help='Render the symbol table of the input file. Specify output folder.')
     parser.add_argument('--no-optimise', action='store_true', help='Dont optimise the ast if this flag is provided.')
     parser.add_argument('--target_llvm', help='LLvm Target. Specify output folder.')
+    parser.add_argument('--throw', action='store_true', help='Raise python exception.')
 
     args = parser.parse_args()
     try:
         compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm)
+    except SemanticError as e:
+        if args.throw:
+            raise e
+        generate_cool_error(e, args.input)
+    except CompilerSyntaxError as e:
+        if args.throw:
+            raise e
+        generate_cool_error(e, args.input)
     except Exception as e:
+        if args.throw:
+            raise e
         print(f"{Fore.red}{e}{Style.reset}")
+
 
 if __name__ == "__main__":
     main()

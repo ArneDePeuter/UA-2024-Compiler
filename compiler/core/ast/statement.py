@@ -22,10 +22,24 @@ class Body(Statement):
 
 
 @dataclass
+class ForwardDeclaration(Statement):
+    return_type: Type
+    name: str
+    parameters: list[Type]
+
+
+@dataclass
+class FunctionParameter(AST):
+    name: str
+    type: Type
+
+
+@dataclass
 class FunctionDeclaration(Statement):
     return_type: Type
     name: str
     body: Body
+    parameters: list[FunctionParameter]
 
 
 @dataclass
@@ -65,9 +79,11 @@ class AssignmentStatement(Statement):
 class CommentStatement(Statement):
     content: str
 
+
 @dataclass
 class ElseStatement(Statement):
     body: Body
+
 
 @dataclass
 class IfStatement(Statement):
@@ -81,6 +97,7 @@ class IfStatement(Statement):
                 stmt.if_statement = self
             elif isinstance(stmt, ContinueStatement):
                 stmt.if_statement = self
+
 
 @dataclass
 class WhileStatement(Statement):
@@ -107,3 +124,9 @@ class BreakStatement(Statement):
 @dataclass
 class ContinueStatement(Statement):
     while_statement: Optional[WhileStatement] = None
+
+
+@dataclass
+class ReturnStatement(Statement):
+    function: FunctionDeclaration
+    expression: Optional[Expression] = None
