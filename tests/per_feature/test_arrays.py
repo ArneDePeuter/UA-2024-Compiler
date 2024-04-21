@@ -163,9 +163,29 @@ def test_multidimensional_array_access():
 
     assert isinstance(constructed_ast, ast.Program)
     main_func = constructed_ast.statements[0]
-    assert len(main_func.body.statements) == 1
-    for_loop = main_func.body.statements[0]
-    assert isinstance(for_loop, ast.ForStatement)
-    assert isinstance(for_loop.to_execute, ast.ForStatement)
+    assert len(main_func.body.statements) == 3
+    array_decl = main_func.body.statements[0]
+    assert isinstance(array_decl, ast.VariableDeclaration)
+    assert array_decl.var_type.base_type == ast.BaseType.int
+    array_specifier = array_decl.qualifiers[0].array_specifier
+    assert len(array_specifier.sizes) == 2
+    for s in array_specifier.sizes:
+        assert s.value == 10
+    for_loop_i = main_func.body.statements[1]
+    assert isinstance(for_loop_i, ast.Body)
+    while_stmt_i = for_loop_i.statements[1]
+    assert isinstance(while_stmt_i, ast.WhileStatement)
+    assert isinstance(while_stmt_i.to_execute, ast.Body)
+    for_loop_j = while_stmt_i.to_execute.statements[0].statements[1]
+    assert isinstance(for_loop_j, ast.WhileStatement)
+    array_assignment = for_loop_j.to_execute.statements[0]
+    assert isinstance(array_assignment, ast.AssignmentStatement)
+    assert array_assignment.c_syntax == "f[i][j] = i + j;"
+    assert array_assignment.left.array_name == "f"
+    for s in array_assignment.left.index.sizes:
+        assert s.name == "i" or "j"
+    assert array_assignment.right.left.name == "i"
+    assert array_assignment.right.right.name == "j"
+
 
 

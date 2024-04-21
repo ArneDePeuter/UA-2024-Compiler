@@ -193,14 +193,15 @@ class SymbolTableVisitor(AstVisitor):
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
 
             if array_specifier is not None:
-                if array_specifier.size is not None:
+                if array_specifier.sizes is not None:
                     # Check if the array size is a constant expression
-                    if not isinstance(array_specifier.size, ast.INT):
-                        raise SemanticError(f"Array size must be a constant expression.", node.line, node.position)
+                    for size in array_specifier.sizes:
+                        if not isinstance(size, ast.INT):
+                            raise SemanticError(f"Array size must be a constant expression.", node.line, node.position)
 
-                    # Check if the array size is a positive integer
-                    if array_specifier.size.value <= 0:
-                        raise SemanticError(f"Array size must be a positive integer.", node.line, node.position)
+                        # Check if the array size is a positive integer
+                        if size.value <= 0:
+                            raise SemanticError(f"Array size must be a positive integer.", node.line, node.position)
 
                 # Define the variable in the symbol table
                 self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
@@ -389,7 +390,18 @@ class SymbolTableVisitor(AstVisitor):
         self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        return ast.Type(base_type=node.base_type, const=node.const, address_qualifiers=[ast.AddressQualifier.array])
+        types_of_sizes = set()
+        for s in node.sizes:
+            if isinstance(s, ast.IDENTIFIER):
+                symbol = self.symbol_table.lookup(s.name, current_scope_only=False)
+                if symbol is None:
+                    raise SemanticError(f"Undefined identifier '{s.name}'.", s.line, s.position)
+                types_of_sizes.add(symbol.type.base_type)
+            elif isinstance(s, ast.INT):
+                types_of_sizes.add(ast.BaseType.int)
+            else:
+                raise SemanticError(f"Array size must be a constant expression.", s.line, s.position)
+        return ast.Type(base_type=types_of_sizes.pop(), const=False, address_qualifiers=None)
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if not node.elements:  # If the initializer is empty, return a default type (e.g., int) or raise an error

@@ -618,9 +618,12 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitArraySpecifier(self, ctx: GrammarParser.ArraySpecifierContext):
-        sizes = [self.visit(dimension.expression()) if dimension.expression() else None
-                 for dimension in ctx.getChildren() if isinstance(dimension, GrammarParser.ArraySpecifierContext)]
-        return ast.ArraySpecifier(sizes=sizes)
+        sizes = [self.visitExpression(size) for size in ctx.expression()]
+        return ast.ArraySpecifier(
+            sizes=sizes,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
 
     def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
         return ast.ArrayInitializer(
