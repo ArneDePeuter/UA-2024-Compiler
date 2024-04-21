@@ -305,9 +305,9 @@ class TreeVisitor(GrammarVisitor):
             return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
         elif ctx.ID() is not None:
             identifier = ctx.ID().getText()
-            if ctx.expression():  # This checks for the optional array access
-                index = self.visit(ctx.expression())
-                return ast.ArrayAccess(array_name=identifier, index=index, line=line, position=position)
+            if ctx.arraySpecifier():  # This checks for the optional array access
+                array_access = self.visitArraySpecifier(ctx.arraySpecifier())
+                return ast.ArrayAccess(array_name=identifier, index=array_access, line=line, position=position)
             else:
                 return ast.IDENTIFIER(name=identifier, line=line, position=position)
         elif ctx.expression() is not None:
@@ -617,11 +617,10 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
-        size = self.visit(ctx.expression()) if ctx.expression() else None
-        return ast.ArraySpecifier(
-            size=size,
-        )
+    def visitArraySpecifier(self, ctx: GrammarParser.ArraySpecifierContext):
+        sizes = [self.visit(dimension.expression()) if dimension.expression() else None
+                 for dimension in ctx.getChildren() if isinstance(dimension, GrammarParser.ArraySpecifierContext)]
+        return ast.ArraySpecifier(sizes=sizes)
 
     def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
         return ast.ArrayInitializer(

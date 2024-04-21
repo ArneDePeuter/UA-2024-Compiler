@@ -87,8 +87,9 @@ variableDeclarationQualifier
     ;
 
 arraySpecifier
-    : '[' expression? ']'
+    : '[' expression? ']' ( '[' expression? ']' )*
     ;
+
 
 variableInitializer
     : arrayInitializer
@@ -179,7 +180,7 @@ primary
     : NUMBER
     | FLOAT
     | '(' expression ')'
-    | ID ('[' expression ']')?
+    | ID arraySpecifier?
     | CHAR
     | CHAR_ESC
     | castExpression

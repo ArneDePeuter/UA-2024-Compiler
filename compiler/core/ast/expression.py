@@ -291,7 +291,7 @@ class PrintFCall(Expression):
 
 @dataclass
 class ArraySpecifier(AST):
-    size: int
+    sizes: list[int]
 
 @dataclass
 class ArrayInitializer(Expression):
