@@ -129,7 +129,7 @@ class TreeVisitor(GrammarVisitor):
     def visitVariableDeclarationQualifier(self, ctx):
         identifier = ctx.ID().getText()
         array_specifier = self.visit(ctx.arraySpecifier()) if ctx.arraySpecifier() else None
-        initializer = self.visit(ctx.variableInitializer()) if ctx.variableInitializer() else None
+        initializer = self.visit(ctx.expression()) if ctx.expression() else None
 
         return ast.VariableDeclarationQualifier(
             identifier=identifier,
@@ -138,11 +138,6 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
-
-    def visitVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
-        if ctx.arrayInitializer():
-            return self.visit(ctx.arrayInitializer())
-        return self.visit(ctx.expression())
 
     def visitCastExpression(self, ctx):
         cast_type = self.visit(ctx.type_())
@@ -312,6 +307,8 @@ class TreeVisitor(GrammarVisitor):
                 return ast.IDENTIFIER(name=identifier, line=line, position=position)
         elif ctx.expression() is not None:
             return self.visit(ctx.expression())
+        elif ctx.arrayInitializer() is not None:
+            return self.visitArrayInitializer(ctx.arrayInitializer())
         elif ctx.castExpression() is not None:
             return self.visit(ctx.castExpression())
         elif ctx.printfCall():
