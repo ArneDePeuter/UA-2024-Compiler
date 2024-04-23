@@ -309,20 +309,29 @@ class LLVMIRGenerator(AstVisitor):
     def visit_variable_declaration(self, node: ast.VariableDeclaration) -> None:
         decl_type = self.visit_type(node.var_type)
         for qualifier in node.qualifiers:
-            alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
+            if qualifier.array_specifier:
+                total_size = self.visit_expression(qualifier.array_specifier)
+                array_type = ir.ArrayType(decl_type, total_size)
+                alloc = self.builder.alloca(array_type, name=qualifier.identifier)
+            else:
+                alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
+
             self.var_addresses[qualifier.identifier] = alloc
+
             if qualifier.initializer is None:
                 default = ir.Constant(decl_type, None)
                 self.builder.store(default, alloc)
                 continue
 
             expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
+
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
             if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
                 null_ptr = ir.Constant(decl_type, None)
                 self.builder.store(null_ptr, alloc)
                 continue
+
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             self.builder.store(value, alloc)
 
@@ -513,7 +522,12 @@ class LLVMIRGenerator(AstVisitor):
             ir_global.initializer = value
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        ...
+        total_size = 1
+        for size in node.sizes:
+            if not isinstance(size, ast.INT):
+                raise NotImplementedError(f"Array size {size} is not supported")
+            total_size *= size.value
+        return total_size
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         ...
