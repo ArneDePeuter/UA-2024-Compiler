@@ -119,11 +119,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#variableInitializer.
-    def visitVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#arrayInitializer.
     def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
         return self.visitChildren(ctx)

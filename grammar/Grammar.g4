@@ -83,17 +83,11 @@ variableDeclarationQualifiers
     ;
 
 variableDeclarationQualifier
-    : ID arraySpecifier? ('=' variableInitializer)?
+    : ID arraySpecifier? ('=' expression)?
     ;
 
 arraySpecifier
     : '[' expression? ']' ( '[' expression? ']' )*
-    ;
-
-
-variableInitializer
-    : arrayInitializer
-    | expression
     ;
 
 arrayInitializer
@@ -183,6 +177,7 @@ primary
     | ID arraySpecifier?
     | CHAR
     | CHAR_ESC
+    | arrayInitializer
     | castExpression
     | printfCall
     | functionCall

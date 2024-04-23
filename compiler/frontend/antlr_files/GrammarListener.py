@@ -206,15 +206,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#variableInitializer.
-    def enterVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#variableInitializer.
-    def exitVariableInitializer(self, ctx:GrammarParser.VariableInitializerContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#arrayInitializer.
     def enterArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
         pass
