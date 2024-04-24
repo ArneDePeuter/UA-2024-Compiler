@@ -19,21 +19,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#enumDeclaration.
-    def visitEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#enumBody.
-    def visitEnumBody(self, ctx:GrammarParser.EnumBodyContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#enumList.
-    def visitEnumList(self, ctx:GrammarParser.EnumListContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#forwardDeclaration.
     def visitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
         return self.visitChildren(ctx)
@@ -119,11 +104,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#enumType.
-    def visitEnumType(self, ctx:GrammarParser.EnumTypeContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#variableDeclarationQualifiers.
     def visitVariableDeclarationQualifiers(self, ctx:GrammarParser.VariableDeclarationQualifiersContext):
         return self.visitChildren(ctx)
@@ -139,6 +119,7 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+<<<<<<< Updated upstream:compiler/frontend/antlr_files/GrammarVisitor.py
     # Visit a parse tree produced by GrammarParser#switchStatement.
     def visitSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
         return self.visitChildren(ctx)
@@ -151,6 +132,30 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#defaultCaseStatement.
     def visitDefaultCaseStatement(self, ctx:GrammarParser.DefaultCaseStatementContext):
+=======
+    # Visit a parse tree produced by GrammarParser#enumDeclaration.
+    def visitEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumList.
+    def visitEnumList(self, ctx:GrammarParser.EnumListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumType.
+    def visitEnumType(self, ctx:GrammarParser.EnumTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumVariableDeclaration.
+    def visitEnumVariableDeclaration(self, ctx:GrammarParser.EnumVariableDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#statement.
+    def visitStatement(self, ctx:GrammarParser.StatementContext):
+>>>>>>> Stashed changes:compiler/frontend/parser/antlr_files/GrammarVisitor.py
         return self.visitChildren(ctx)
 
 

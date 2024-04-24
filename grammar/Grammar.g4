@@ -8,6 +8,7 @@ statement
     | forwardDeclaration
     | functionDeclaration
     | variableDeclaration
+    | enumDeclaration
     | assignmentStatement
     | comment
     | typedefStatement
@@ -19,6 +20,18 @@ statement
     | returnStatement
     | expressionStatement
     | ';'
+    ;
+
+enumDeclaration
+    : 'enum' ID? '{' enumBody '}'
+    ;
+
+enumBody
+    : enumList? (comment? ',' enumList)* comment? ','?
+    ;
+
+enumList
+    : ID ('=' expression)? (',' comment? ID ('=' expression)?)* ','? comment?
     ;
 
 forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
@@ -76,6 +89,10 @@ continueStatement
 
 variableDeclaration
     : type variableDeclarationQualifiers ';'
+    ;
+
+enumType
+    : 'enum' ID
     ;
 
 variableDeclarationQualifiers
@@ -174,7 +191,7 @@ primary
     ;
 
 type
-    : const? (baseType | ID) addressQualifier*
+    : const? (baseType | ID |enumType) addressQualifier*
     ;
 
 baseType

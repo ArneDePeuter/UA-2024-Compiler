@@ -150,7 +150,11 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
-            self.visit(statement)
+            if isinstance(statement, ast.Body) and statement.statements and isinstance(statement.statements[0],
+                                                                                       ast.VariableDeclaration):
+                self.visit_enum_declaration(statement)
+            else:
+                self.visit(statement)
         for symbol in self.symbol_table.global_scope.symbols.values():
             if isinstance(symbol.ast_ref, ast.ForwardDeclaration):
                 raise SemanticError(f"Function '{symbol.name}' is forward declared but not defined.", node.line, node.position)
@@ -180,42 +184,41 @@ class SymbolTableVisitor(AstVisitor):
         if node.var_type.base_type == ast.BaseType.void and node.var_type.address_qualifiers == []:
             raise SemanticError(f"Cannot declare a variable of type void.", node.line, node.position)
 
-        # Iterate through each qualifier in the variable declaration
         for qualifier in node.qualifiers:
             identifier = qualifier.identifier
             initializer = qualifier.initializer
 
-            # Check if the variable is already declared in the current scope
             if self.symbol_table.lookup(identifier, current_scope_only=False):
                 if initializer is None:
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
 
-            # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
             if initializer is not None:
-                # Get the type of the initializer, to make sure it is compatible with the variable declaration
                 initializer_type = self.visit_expression(initializer)
 
-                # Check if the (left)type is compatible with the initializer
-                if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
-                    # Add the exception to allow null pointers
+                if initializer_type.base_type != node.var_type.base_type or len(
+                        initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
                     if isinstance(initializer, ast.INT) and initializer.value == 0 and len(
                             node.var_type.address_qualifiers) > 0:
                         pass
-                    elif len(node.var_type.address_qualifiers)== 0 and len(initializer_type.address_qualifiers) == 0:
-                        # Determine the type of the expression based on the hierarchy  float, int, char
+                    elif len(node.var_type.address_qualifiers) == 0 and len(initializer_type.address_qualifiers) == 0:
                         left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(node.var_type.base_type)
                         right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(initializer_type.base_type)
                         if right_expression_hierarchy > left_expression_hierarchy:
-                            WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line, node.position).warn()
+                            WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line,
+                                         node.position).warn()
                     else:
-                        raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
+                        raise SemanticError(
+                            f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.",
+                            node.line, node.position)
 
                 if initializer_type.const and not node.var_type.const:
-                    WarningError(f"Discarding const qualifier. Initializing {node.var_type} with an expression of type {initializer_type}", node.line, node.position).warn()
+                    WarningError(
+                        f"Discarding const qualifier. Initializing {node.var_type} with an expression of type {initializer_type}",
+                        node.line, node.position).warn()
 
-            # Define the variable in the symbol table
-            self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
+            self.symbol_table.define_symbol(
+                Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         left_type = self.visit(node.left)
@@ -373,3 +376,7 @@ class SymbolTableVisitor(AstVisitor):
         if self.symbol_table.lookup(node.name, current_scope_only=True):
             return
         self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
+
+    def visit_enum_declaration(self, node: ast.Body):
+        for declaration in node.statements:
+            self.visit(declaration)

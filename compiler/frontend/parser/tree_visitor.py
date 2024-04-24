@@ -70,7 +70,6 @@ class TreeVisitor(GrammarVisitor):
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
         qualifiers = self.visit(ctx.variableDeclarationQualifiers())
-
         return ast.VariableDeclaration(
             var_type=var_type,
             qualifiers=qualifiers,
@@ -78,7 +77,6 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column,
             c_syntax=self.get_original_text(ctx)
         )
-
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
         return ast.ExpressionStatement(
             expression=self.visitExpression(ctx.expression()),
@@ -96,12 +94,26 @@ class TreeVisitor(GrammarVisitor):
                 line=ctx.start.line,
                 position=ctx.start.column
             )
-        replace = copy.deepcopy(self.typedef_scope.get(ctx.ID().getText()))
-        replace.const = replace.const or ctx.const() is not None
-        replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
-        replace.line=ctx.start.line
-        replace.position=ctx.start.column
-        return replace
+        elif ctx.enumType():
+            enum_type = self.visitEnumType(ctx.enumType())
+            const_qualifier = ctx.const() is not None
+            address_qualifiers = [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+            return ast.Type(
+                base_type=ast.BaseType.int,  # Enum types are treated as integers
+                const=const_qualifier,
+                address_qualifiers=address_qualifiers,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        else:
+            # Handle typedef replacements
+            typedef_name = ctx.ID().getText()
+            replace = copy.deepcopy(self.typedef_scope.get(typedef_name))
+            replace.const = replace.const or ctx.const() is not None
+            replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+            replace.line = ctx.start.line
+            replace.position = ctx.start.column
+            return replace
 
     def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         text = ctx.getText()
@@ -559,7 +571,6 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
-
         decl_b4 = copy.deepcopy(self.function_decl)
         self.function_decl = func_declaration
         func_declaration.body = self.visit(ctx.body())
@@ -604,3 +615,32 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
+
+    def visitEnumDeclaration(self, ctx):
+        name = ctx.ID().getText() if ctx.ID() else None
+        enumerators = self.visitEnumBody(ctx.enumBody())
+        const_int_declarations = []
+        value = 0  # Default start value for enums
+        for enumerator in enumerators:
+            const_int_declaration = ast.VariableDeclaration(
+                var_type=ast.Type(base_type=ast.BaseType.int, const=True),
+                qualifiers=[ast.VariableDeclarationQualifier(
+                    identifier=enumerator,
+                    initializer=ast.INT(value=value)
+                )]
+            )
+            const_int_declarations.append(const_int_declaration)
+            value += 1  # Increment for the next enum value
+        return ast.Body(statements=const_int_declarations)
+
+    def visitEnumBody(self, ctx):
+        enumerators = []
+        for enumList in ctx.enumList():
+            enumerators.extend(self.visitEnumList(enumList))
+        return enumerators
+
+    def visitEnumList(self, ctx):
+        enumerators = []
+        for enumerator in ctx.ID():
+            enumerators.append(enumerator.getText())
+        return enumerators
