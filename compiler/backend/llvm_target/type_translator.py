@@ -42,6 +42,8 @@ class TypeTranslator:
             return builder.ptrtoint(value, target)
         elif isinstance(target, ir.PointerType) and isinstance(value.type, ir.FloatType):
             return builder.fptosi(value, target)
+        elif isinstance(target, ir.ArrayType):
+            return TypeTranslator.match_llvm_type(builder, target.element, value)
         elif target.width > value.type.width:
             return builder.zext(value, target)
         elif target.width < value.type.width:

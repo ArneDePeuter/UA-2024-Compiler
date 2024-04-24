@@ -308,7 +308,9 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration) -> None:
         decl_type = self.visit_type(node.var_type)
+        array_type = None
         for qualifier in node.qualifiers:
+            total_size = None
             if qualifier.array_specifier:
                 total_size = self.visit_expression(qualifier.array_specifier)
                 array_type = ir.ArrayType(decl_type, total_size)
@@ -320,6 +322,8 @@ class LLVMIRGenerator(AstVisitor):
 
             if qualifier.initializer is None:
                 default = ir.Constant(decl_type, None)
+                if qualifier.array_specifier:
+                    default = ir.Constant(array_type, [default] * total_size.constant)
                 self.builder.store(default, alloc)
                 continue
 
@@ -522,15 +526,24 @@ class LLVMIRGenerator(AstVisitor):
             ir_global.initializer = value
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        total_size = 1
+        total_size = ir.Constant(IrIntType, 1)
         for size in node.sizes:
-            if not isinstance(size, ast.INT):
-                raise NotImplementedError(f"Array size {size} is not supported")
-            total_size *= size.value
+            #if not isinstance(size, ast.INT):
+            #    raise NotImplementedError(f"Array size {size} is not supported")
+            result = self.visit_expression(size)
+            if not result.r_value:
+                raise NotImplementedError("Cannot calculate array size, r_value is None")
+            int_access = TypeTranslator.match_llvm_type(self.builder, IrIntType, result.r_value)
+            total_size = self.builder.mul(total_size, int_access)
         return total_size
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         ...
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        ...
+        base_address = self.var_addresses.get(node.array_name)
+        total_size = self.visit_array_specifier(node.index)
+        array_width = ir.Constant(IrIntType, base_address.type.pointee.element.width)
+        offset = self.builder.mul(total_size, array_width)
+        base_address_plus_offset = self.builder.gep(base_address, [offset])
+        return ExpressionEval(l_value=base_address_plus_offset, r_value=self.builder.load(base_address_plus_offset))
