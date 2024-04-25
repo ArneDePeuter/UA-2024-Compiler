@@ -12,9 +12,9 @@ from compiler.core import ast
 class TreeVisitor(GrammarVisitor):
     def __init__(self, input_stream: InputStream):
         self.typedef_scope: dict[str, ast.Type] = {
-            "float": ast.Type(base_type=ast.BaseType.float),
-            "int": ast.Type(base_type=ast.BaseType.int),
-            "char": ast.Type(base_type=ast.BaseType.char)
+            "float": ast.Type(type=ast.BaseType.float),
+            "int": ast.Type(type=ast.BaseType.int),
+            "char": ast.Type(type=ast.BaseType.char)
         }
         self.input_stream = input_stream
         self.function_decl = None
@@ -67,18 +67,6 @@ class TreeVisitor(GrammarVisitor):
             ast.c_syntax = self.get_original_text(ctx)
         return ast
 
-    def visitVariableDeclaration(self, ctx):
-        var_type = self.visit(ctx.type_())
-        qualifiers = self.visit(ctx.variableDeclarationQualifiers())
-
-        return ast.VariableDeclaration(
-            var_type=var_type,
-            qualifiers=qualifiers,
-            line=ctx.start.line,
-            position=ctx.start.column,
-            c_syntax=self.get_original_text(ctx)
-        )
-
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
         return ast.ExpressionStatement(
             expression=self.visitExpression(ctx.expression()),
@@ -90,7 +78,7 @@ class TreeVisitor(GrammarVisitor):
     def visitType(self, ctx):
         if ctx.baseType():
             return ast.Type(
-                base_type=ast.BaseType((ctx.baseType().getText())),
+                type=ast.BaseType((ctx.baseType().getText())),
                 const=ctx.const() is not None,
                 address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
                 line=ctx.start.line,
@@ -122,6 +110,35 @@ class TreeVisitor(GrammarVisitor):
         ast = self.visitChildren(ctx)
         ast.c_syntax = self.get_original_text(ctx)
         return ast
+
+    def visitVariableDeclaration(self, ctx):
+        var_type = self.visit(ctx.type_())
+        qualifiers = self.visit(ctx.variableDeclarationQualifiers())
+
+        # Check if the type needs to be changed to an array type
+        for qualifier in qualifiers:
+            if qualifier.array_specifier:
+                array_type = ast.ArrayType(
+                    element_type=var_type.type,
+                    array_sizes=qualifier.array_specifier,
+                    line=ctx.start.line, position=ctx.start.column
+                )
+                qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
+                var_type = ast.Type(
+                    type=array_type,
+                    const=var_type.const,
+                    address_qualifiers=var_type.address_qualifiers,
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+
+        return ast.VariableDeclaration(
+            var_type=var_type,
+            qualifiers=qualifiers,
+            line=ctx.start.line,
+            position=ctx.start.column,
+            c_syntax=self.get_original_text(ctx)
+        )
 
     def visitVariableDeclarationQualifiers(self, ctx):
         return [self.visit(qualifier) for qualifier in ctx.variableDeclarationQualifier()]
@@ -622,7 +639,14 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
-        return ast.ArrayInitializer(
-            elements=[self.visit(element) for element in ctx.expression()]
-        )
+    def visitArrayInitializer(self, ctx: GrammarParser.ArrayInitializerContext):
+        elements = []
+        for child in ctx.children:
+            if isinstance(child, GrammarParser.ArrayInitializerContext):
+                # Recursive visit if the child is an ArrayInitializer
+                elements.append(self.visitArrayInitializer(child))
+            elif isinstance(child, GrammarParser.ExpressionContext):
+                # Visit expression if the child is an Expression
+                elements.append(self.visit(child))
+
+        return ast.ArrayInitializer(elements=elements, line=ctx.start.line, position=ctx.start.column)

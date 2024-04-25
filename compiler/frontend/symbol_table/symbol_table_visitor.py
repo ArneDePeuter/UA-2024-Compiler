@@ -21,13 +21,13 @@ class SymbolTableVisitor(AstVisitor):
         ...
 
     def visit_int(self, node: ast.INT):
-        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_float(self, node: ast.FLOAT):
-        return Type(base_type=ast.BaseType.float, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.float, line=node.line, position=node.position)
 
     def visit_char(self, node: ast.CHAR):
-        return Type(base_type=ast.BaseType.char, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.char, line=node.line, position=node.position)
 
     def visit_identifier(self, node: ast.IDENTIFIER):
         symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
@@ -40,79 +40,79 @@ class SymbolTableVisitor(AstVisitor):
         targed_cast_type = node.cast_type
         # TODO: Determine if the cast is valid (currently only n/a)
 
-        return Type(base_type=targed_cast_type.base_type, line=node.line, position=node.position)
+        return Type(type=targed_cast_type.type, line=node.line, position=node.position)
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+        if left_type.type == ast.BaseType.void or right_type.type == ast.BaseType.void:
             raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
-        if len(left_type.address_qualifiers) > 0 and right_type.base_type == ast.BaseType.int and len(right_type.address_qualifiers) == 0 and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
+        if len(left_type.address_qualifiers) > 0 and right_type.type == ast.BaseType.int and len(right_type.address_qualifiers) == 0 and node.operator in {ast.BinaryArithmetic.Operator.PLUS, ast.BinaryArithmetic.Operator.MINUS}:
             # For pointer + integer or pointer - integer, the result is a pointer of the same type
-            return Type(base_type=left_type.base_type, line=node.line, position=node.position, address_qualifiers=left_type.address_qualifiers)
-        elif len(right_type.address_qualifiers) > 0 and left_type.base_type == ast.BaseType.int and node.operator == ast.BinaryArithmetic.Operator.PLUS:
+            return Type(type=left_type.type, line=node.line, position=node.position, address_qualifiers=left_type.address_qualifiers)
+        elif len(right_type.address_qualifiers) > 0 and left_type.type == ast.BaseType.int and node.operator == ast.BinaryArithmetic.Operator.PLUS:
             # For integer + pointer (valid only for addition), the result is a pointer of the same type
-            return Type(base_type=right_type.base_type, line=node.line, position=node.position, address_qualifiers=right_type.address_qualifiers)
-        elif left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+            return Type(type=right_type.type, line=node.line, position=node.position, address_qualifiers=right_type.address_qualifiers)
+        elif left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             if len(left_type.address_qualifiers) == 0 and len(right_type.address_qualifiers) == 0:
                 # Determine the type of the expression based on the hierarchy  float, int, char
-                left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(left_type.base_type)
-                right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(right_type.base_type)
+                left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(left_type.type)
+                right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(right_type.type)
                 if left_expression_hierarchy > right_expression_hierarchy:
-                    return Type(base_type=left_type.base_type, line=node.line, position=node.position,
+                    return Type(type=left_type.type, line=node.line, position=node.position,
                                 address_qualifiers=left_type.address_qualifiers)
 
-                return Type(base_type=right_type.base_type, line=node.line, position=node.position,
+                return Type(type=right_type.type, line=node.line, position=node.position,
                             address_qualifiers=right_type.address_qualifiers)
             raise SemanticError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position)
 
-        return Type(base_type=left_type.base_type, line=node.line, position=node.position)
+        return Type(type=left_type.type, line=node.line, position=node.position)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+        if left_type.type == ast.BaseType.void or right_type.type == ast.BaseType.void:
             raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
         if len(left_type.address_qualifiers) > 0 or len(right_type.address_qualifiers) > 0:
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
 
-        if left_type.base_type == ast.BaseType.float or right_type.base_type == ast.BaseType.float:
+        if left_type.type == ast.BaseType.float or right_type.type == ast.BaseType.float:
             raise SemanticError(f"Cannot execute binary bitwise expression with arguments of type: {left_type} and {right_type}.", node.line, node.position)
 
-        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+        if left_type.type == ast.BaseType.void or right_type.type == ast.BaseType.void:
             raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
-        if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+        if left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
-        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         left_type = self.visit_expression(node.left)
         right_type = self.visit_expression(node.right)
 
-        if left_type.base_type == ast.BaseType.void or right_type.base_type == ast.BaseType.void:
+        if left_type.type == ast.BaseType.void or right_type.type == ast.BaseType.void:
             raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
-        if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+        if left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
-        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         type = self.visit_expression(node.value)
 
-        if type.base_type == ast.BaseType.void:
+        if type.type == ast.BaseType.void:
             raise SemanticError(f"Cannot perform unary operations on void type.", node.line, node.position)
 
         # TODO: Possibly implement rest of the unary operations
@@ -137,16 +137,16 @@ class SymbolTableVisitor(AstVisitor):
         value_type = self.visit_expression(node.value)
         amount_type = self.visit_expression(node.amount)
 
-        if value_type.base_type == ast.BaseType.void or amount_type.base_type == ast.BaseType.void:
+        if value_type.type == ast.BaseType.void or amount_type.type == ast.BaseType.void:
             raise SemanticError(f"Cannot perform shift operations on void type.", node.line, node.position)
 
         if len(value_type.address_qualifiers) > 0 or len(amount_type.address_qualifiers) > 0:
             raise SemanticError(f"Cannot perform bitwise operation on pointers.", node.line, node.position)
 
-        if value_type.base_type == ast.BaseType.float or amount_type.base_type == ast.BaseType.float:
+        if value_type.type == ast.BaseType.float or amount_type.type == ast.BaseType.float:
             raise SemanticError(f"Cannot execute shift-expression with arguments of type: {value_type} and {amount_type}.", node.line, node.position)
 
-        return Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
+        return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
@@ -164,7 +164,7 @@ class SymbolTableVisitor(AstVisitor):
                 raise SemanticError("main is not defined as a function", 0, 0)
             if not isinstance(main_func, ast.FunctionDeclaration):
                 raise SemanticError("main is not defined as a function", main_func.line, main_func.position)
-            if main_func.return_type != ast.Type(base_type=ast.BaseType.int):
+            if main_func.return_type != ast.Type(type=ast.BaseType.int):
                 raise SemanticError("Return type of main is invalid", main_func.line, main_func.position)
 
     def visit_body(self, node: ast.Body):
@@ -177,13 +177,12 @@ class SymbolTableVisitor(AstVisitor):
         ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
-        if node.var_type.base_type == ast.BaseType.void and node.var_type.address_qualifiers == []:
+        if node.var_type.type == ast.BaseType.void and node.var_type.address_qualifiers == []:
             raise SemanticError(f"Cannot declare a variable of type void.", node.line, node.position)
 
         # Iterate through each qualifier in the variable declaration
         for qualifier in node.qualifiers:
             identifier = qualifier.identifier
-            array_specifier = qualifier.array_specifier
             initializer = qualifier.initializer
 
             # Check if the variable is already declared in the current scope
@@ -191,17 +190,6 @@ class SymbolTableVisitor(AstVisitor):
                 if initializer is None:
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
-
-            if array_specifier is not None:
-                if array_specifier.sizes is not None:
-                    # Check if the array size is a constant expression
-                    for size in array_specifier.sizes:
-                        if not isinstance(size, ast.INT):
-                            raise SemanticError(f"Array size must be a constant expression.", node.line, node.position)
-
-                        # Check if the array size is a positive integer
-                        if size.value <= 0:
-                            raise SemanticError(f"Array size must be a positive integer.", node.line, node.position)
 
                 # Define the variable in the symbol table
                 self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
@@ -211,16 +199,22 @@ class SymbolTableVisitor(AstVisitor):
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration
                 initializer_type = self.visit_expression(initializer)
 
+                if isinstance(node.var_type.type, ast.ArrayType):
+                    if not isinstance(initializer, ast.ArrayInitializer):
+                        raise SemanticError(f"Array '{identifier}' must be initialized with an array initializer.", node.line, node.position)
+                    #if len(node.var_type.type.array_sizes) != len(initializer.elements):
+                    #    raise SemanticError(f"Array '{identifier}' must be initialized with {len(node.var_type.type.sizes)} elements.", node.line, node.position)
+
                 # Check if the (left)type is compatible with the initializer
-                if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
+                if initializer_type.type != node.var_type.type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
                     # Add the exception to allow null pointers
                     if isinstance(initializer, ast.INT) and initializer.value == 0 and len(
                             node.var_type.address_qualifiers) > 0:
                         pass
                     elif len(node.var_type.address_qualifiers)== 0 and len(initializer_type.address_qualifiers) == 0:
                         # Determine the type of the expression based on the hierarchy  float, int, char
-                        left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(node.var_type.base_type)
-                        right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(initializer_type.base_type)
+                        left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(node.var_type.type)
+                        right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(initializer_type.type)
                         if right_expression_hierarchy > left_expression_hierarchy:
                             WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line, node.position).warn()
                     else:
@@ -242,11 +236,11 @@ class SymbolTableVisitor(AstVisitor):
         if isinstance(node.left, ast.BinaryArithmetic) or isinstance(node.left, ast.BinaryBitwiseArithmetic) or isinstance(node.left, ast.BinaryLogicalOperation) or isinstance(node.left, ast.ComparisonOperation):
             raise SemanticError(f"Cannot assign to an expression.", node.line, node.position)
 
-        if left_type.base_type != right_type.base_type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+        if left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             if len(left_type.address_qualifiers) == 0 and len(right_type.address_qualifiers) == 0:
                 # Determine the type of the expression based on the hierarchy  float, int, char
-                left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(left_type.base_type)
-                right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(right_type.base_type)
+                left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(left_type.type)
+                right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(right_type.type)
                 if right_expression_hierarchy > left_expression_hierarchy:
                     WarningError(f"Implicit conversion from {right_type} to {left_type}", node.line, node.position).warn()
                     return
@@ -291,11 +285,11 @@ class SymbolTableVisitor(AstVisitor):
 
         expression_type = self.visit_expression(node.expression)
         function_return_type = node.function.return_type
-        if expression_type.base_type != function_return_type.base_type or len(expression_type.address_qualifiers) != len(function_return_type.address_qualifiers):
+        if expression_type.type != function_return_type.type or len(expression_type.address_qualifiers) != len(function_return_type.address_qualifiers):
             if len(expression_type.address_qualifiers) == 0 and len(function_return_type.address_qualifiers) == 0:
                 # Determine the type of the expression based on the hierarchy  float, int, char
-                expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.base_type)
-                function_hierarchy = TypeCaster.get_heirarchy_of_base_type(function_return_type.base_type)
+                expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.type)
+                function_hierarchy = TypeCaster.get_heirarchy_of_base_type(function_return_type.type)
                 if expression_hierarchy > function_hierarchy:
                     WarningError(f"Implicit conversion from {expression_type} to {function_return_type}", node.line, node.position).warn()
                     return
@@ -371,11 +365,11 @@ class SymbolTableVisitor(AstVisitor):
         # Iterate over each argument and each parameter
         for argument, expected_type in zip(node.arguments, param_types):
             expression_type = self.visit_expression(argument)
-            if expression_type.base_type != expected_type.base_type or len(expression_type.address_qualifiers) != len(expected_type.address_qualifiers):
+            if expression_type.type != expected_type.type or len(expression_type.address_qualifiers) != len(expected_type.address_qualifiers):
                 if len(expression_type.address_qualifiers) == 0 and len(expected_type.address_qualifiers) == 0:
                     # Determine the type of the expression based on the hierarchy  float, int, char
-                    expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.base_type)
-                    expected_hierarchy = TypeCaster.get_heirarchy_of_base_type(expected_type.base_type)
+                    expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.type)
+                    expected_hierarchy = TypeCaster.get_heirarchy_of_base_type(expected_type.type)
                     if expression_hierarchy > expected_hierarchy:
                         WarningError(f"Implicit conversion from {expression_type} to {expected_hierarchy}", node.line, node.position).warn()
                         return function_symbol.type
@@ -396,29 +390,30 @@ class SymbolTableVisitor(AstVisitor):
                 symbol = self.symbol_table.lookup(s.name, current_scope_only=False)
                 if symbol is None:
                     raise SemanticError(f"Undefined identifier '{s.name}'.", s.line, s.position)
-                types_of_sizes.add(symbol.type.base_type)
+                types_of_sizes.add(symbol.type.type)
             elif isinstance(s, ast.INT):
                 types_of_sizes.add(ast.BaseType.int)
             else:
                 raise SemanticError(f"Array size must be a constant expression.", s.line, s.position)
-        return ast.Type(base_type=types_of_sizes.pop(), const=False, address_qualifiers=None)
+        return ast.Type(type=types_of_sizes.pop(), const=False, address_qualifiers=None)
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
-        if not node.elements:  # If the initializer is empty, return a default type (e.g., int) or raise an error
-            return ast.Type(base_type=ast.BaseType.int)  # or your language's default array type
+        if not node.elements:
+            return ast.Type(type=ast.BaseType.int)
 
         element_types = set()
         for element in node.elements:
             element_type = self.visit(element)
-            element_types.add(element_type.base_type)
+            element_types.add(element_type.type)
 
         # Check if all elements are of the same type
         if len(element_types) != 1:
             raise SemanticError("Array initializer elements must all be of the same type.", node.line, node.position)
 
-        # Return the type of the array (the type of the first element and size of the array)
-        array_type = element_types.pop()  # Get the single type from the set
-        return ast.Type(base_type=array_type, const=False, address_qualifiers=None)
+        array_elements_type = next(iter(element_types))
+
+        array_type = ast.ArrayType(element_type=array_elements_type, array_sizes=[ast.ArraySpecifier(sizes=[len(node.elements)])])
+        return ast.Type(type=array_type)
 
 
     def visit_array_access(self, node: ast.ArrayAccess):
@@ -427,7 +422,7 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
 
         index_type = self.visit_expression(node.index)
-        if index_type.base_type != ast.BaseType.int:
+        if index_type.type != ast.BaseType.int:
             raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
 
-        return ast.Type(base_type=array_symbol.type.base_type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
+        return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)

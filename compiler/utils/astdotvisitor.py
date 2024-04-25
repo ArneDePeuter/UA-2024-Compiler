@@ -173,8 +173,14 @@ class AstDotVisitor(AstVisitor):
         node_name = id(node)
         const = "const " if node.const else ""
         addrs = "".join([str(addr.value) for addr in node.address_qualifiers])
-        descr = f"{const}{node.base_type.name} {addrs}"
-        self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
+        if isinstance(node.type, ast.ArrayType):
+            descr = f"{const}{'array'} {addrs}"
+            array_spec_id = self.visit_array_specifier(node.type.array_sizes)
+            self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
+            self.total += f"{node_name} -> {array_spec_id};\n"
+        else:
+            descr = f"{const}{node.type.name} {addrs}"
+            self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         node_name = id(node)

@@ -290,10 +290,6 @@ class PrintFCall(Expression):
     expression: Expression
 
 @dataclass
-class ArraySpecifier(Expression):
-    sizes: list[int]
-
-@dataclass
 class ArrayInitializer(Expression):
     elements: list[Expression]
 

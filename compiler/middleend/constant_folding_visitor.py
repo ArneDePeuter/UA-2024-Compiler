@@ -53,7 +53,7 @@ class ConstantFoldingVisitor(AstVisitor):
         if type(node.expression) not in ConstantFoldingVisitor.foldables:
             return node
 
-        diff = TypeCaster.get_heirarchy_of_ast(node.expression) - TypeCaster.get_heirarchy_of_base_type(node.cast_type.base_type)
+        diff = TypeCaster.get_heirarchy_of_ast(node.expression) - TypeCaster.get_heirarchy_of_base_type(node.cast_type.type)
 
         result = node.expression
         for _ in range(abs(diff)):

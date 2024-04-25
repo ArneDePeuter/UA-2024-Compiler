@@ -91,7 +91,7 @@ arraySpecifier
     ;
 
 arrayInitializer
-    : '{' expression (',' expression)* '}'
+    : '{' (arrayInitializer | expression) (',' (arrayInitializer | expression))* '}'
     | '{' '}'
     ;
 
