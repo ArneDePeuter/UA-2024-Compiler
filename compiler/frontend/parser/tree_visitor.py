@@ -119,7 +119,7 @@ class TreeVisitor(GrammarVisitor):
         for qualifier in qualifiers:
             if qualifier.array_specifier:
                 array_type = ast.ArrayType(
-                    element_type=var_type.type,
+                    element_type=var_type,
                     array_sizes=qualifier.array_specifier,
                     line=ctx.start.line, position=ctx.start.column
                 )
@@ -127,7 +127,7 @@ class TreeVisitor(GrammarVisitor):
                 var_type = ast.Type(
                     type=array_type,
                     const=var_type.const,
-                    address_qualifiers=var_type.address_qualifiers,
+                    address_qualifiers=[],
                     line=ctx.start.line,
                     position=ctx.start.column
                 )
@@ -643,10 +643,8 @@ class TreeVisitor(GrammarVisitor):
         elements = []
         for child in ctx.children:
             if isinstance(child, GrammarParser.ArrayInitializerContext):
-                # Recursive visit if the child is an ArrayInitializer
                 elements.append(self.visitArrayInitializer(child))
             elif isinstance(child, GrammarParser.ExpressionContext):
-                # Visit expression if the child is an Expression
                 elements.append(self.visit(child))
 
         return ast.ArrayInitializer(elements=elements, line=ctx.start.line, position=ctx.start.column)

@@ -7,7 +7,7 @@ from .ir_types import IrIntType, IrFloatType, IrCharType
 class TypeTranslator:
     @staticmethod
     def translate_ast_type(node: ast.Type) -> ir.Type:
-        llvm_base_type = TypeTranslator.translate_ast_base_type(node.base_type)
+        llvm_base_type = TypeTranslator.translate_ast_base_type(node.type)
 
         if node.address_qualifiers:
             for qualifier in node.address_qualifiers:

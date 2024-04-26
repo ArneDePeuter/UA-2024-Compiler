@@ -1,5 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
+from typing import Tuple
 
 from .type import Type
 from .ast import AST
@@ -291,7 +292,7 @@ class PrintFCall(Expression):
 
 @dataclass
 class ArrayInitializer(Expression):
-    elements: list[Expression]
+    elements: Tuple[Expression]
 
 @dataclass
 class ArrayAccess(Expression):

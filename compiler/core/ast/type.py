@@ -26,10 +26,20 @@ class AddressQualifier(Enum):
 class ArraySpecifier(AST):
     sizes: list[int]
 
+    def __eq__(self, other):
+        if isinstance(other, ArraySpecifier):
+            return self.sizes == other.sizes
+        return False
+
 @dataclass
 class ArrayType(AST):
-    element_type: BaseType
+    element_type: 'Type'
     array_sizes: List[ArraySpecifier]
+
+    def __eq__(self, other):
+        if isinstance(other, ArrayType):
+            return self.element_type == other.element_type and self.array_sizes == other.array_sizes
+        return False
 
 
 @dataclass
@@ -49,3 +59,6 @@ class Type(AST):
         if isinstance(other, Type):
             return self.type == other.type and self.const == other.const and self.address_qualifiers == other.address_qualifiers
         return False
+
+    def __hash__(self):
+        return hash(str(self))

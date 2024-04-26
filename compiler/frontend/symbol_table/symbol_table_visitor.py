@@ -202,8 +202,10 @@ class SymbolTableVisitor(AstVisitor):
                 if isinstance(node.var_type.type, ast.ArrayType):
                     if not isinstance(initializer, ast.ArrayInitializer):
                         raise SemanticError(f"Array '{identifier}' must be initialized with an array initializer.", node.line, node.position)
-                    #if len(node.var_type.type.array_sizes) != len(initializer.elements):
-                    #    raise SemanticError(f"Array '{identifier}' must be initialized with {len(node.var_type.type.sizes)} elements.", node.line, node.position)
+                    if initializer_type.type.array_sizes != node.var_type.type.array_sizes:
+                        raise SemanticError(f"Array '{identifier}' must be initialized with {len(node.var_type.type.array_sizes)} elements.", node.line, node.position)
+                    if initializer_type.type.element_type != node.var_type.type.element_type:
+                        raise SemanticError(f"Array '{identifier}' must be initialized with elements of type {node.var_type.type.element_type}.", node.line, node.position)
 
                 # Check if the (left)type is compatible with the initializer
                 if initializer_type.type != node.var_type.type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
@@ -397,24 +399,67 @@ class SymbolTableVisitor(AstVisitor):
                 raise SemanticError(f"Array size must be a constant expression.", s.line, s.position)
         return ast.Type(type=types_of_sizes.pop(), const=False, address_qualifiers=None)
 
+    @staticmethod
+    def fits_dimensions(dimension, node):
+        """
+        This is a helper function to check if the dimensions of an array are correct
+        :param node: the node to check
+        :return: True if the dimensions are correct, False otherwise
+        """
+        if len(dimension) == 0:
+            return True
+        if len(node.elements) != dimension[0]:
+            return False
+        fits = True
+        for newnode in node.elements:
+            fits = fits and SymbolTableVisitor.fits_dimensions(dimension[1:], newnode)
+        return fits
+
+    def element_type_in_set(self, set, node):
+        """
+        Check if the element type of the node is in the set
+        :param set:
+        :param elements:
+        :return: Changes the set by reference
+        """
+        if isinstance(node, ast.ArrayInitializer):
+            for element in node.elements:
+                self.element_type_in_set(set, element)
+        else:
+            set.add(self.visit_expression(node))
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
-        if not node.elements:
-            return ast.Type(type=ast.BaseType.int)
-
         element_types = set()
-        for element in node.elements:
-            element_type = self.visit(element)
-            element_types.add(element_type.type)
+        self.element_type_in_set(element_types, node)
 
-        # Check if all elements are of the same type
-        if len(element_types) != 1:
+        if len(element_types) > 1:
             raise SemanticError("Array initializer elements must all be of the same type.", node.line, node.position)
 
-        array_elements_type = next(iter(element_types))
+        array_element_type = next(iter(element_types))
+        temp_array_element_type = array_element_type
+        while not isinstance(array_element_type.type, ast.BaseType):
+            array_element_type = array_element_type.type.element_type
+        array_element_type.address_qualifiers = temp_array_element_type.address_qualifiers
+        array_element_type.const = temp_array_element_type.const
 
-        array_type = ast.ArrayType(element_type=array_elements_type, array_sizes=[ast.ArraySpecifier(sizes=[len(node.elements)])])
-        return ast.Type(type=array_type)
+        dimensions = []
+        current_node = node
+        while current_node is not None:
+            if isinstance(current_node, ast.ArrayInitializer):
+                dimensions.append(len(current_node.elements))
+                current_node = current_node.elements[0]
+            else:
+                current_node = None
 
+        if not SymbolTableVisitor.fits_dimensions(dimensions, node):
+            raise SemanticError("Array initializer elements must all be of the same length.", node.line, node.position)
+
+        array_specifier = ast.ArraySpecifier(sizes=[])
+        for dimension in dimensions:
+            array_specifier.sizes.append(ast.INT(value=dimension))
+        array_type = ast.ArrayType(element_type=array_element_type, array_sizes=array_specifier)
+
+        return ast.Type(type=array_type, const=False, address_qualifiers=[], line=node.line, position=node.position)
 
     def visit_array_access(self, node: ast.ArrayAccess):
         array_symbol = self.symbol_table.lookup(node.array_name, current_scope_only=False)
@@ -424,5 +469,4 @@ class SymbolTableVisitor(AstVisitor):
         index_type = self.visit_expression(node.index)
         if index_type.type != ast.BaseType.int:
             raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
-
         return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)

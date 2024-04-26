@@ -174,7 +174,7 @@ class AstDotVisitor(AstVisitor):
         const = "const " if node.const else ""
         addrs = "".join([str(addr.value) for addr in node.address_qualifiers])
         if isinstance(node.type, ast.ArrayType):
-            descr = f"{const}{'array'} {addrs}"
+            descr = f"{const}{'array with elements of type'} {node.type.element_type} {addrs}"
             array_spec_id = self.visit_array_specifier(node.type.array_sizes)
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
             self.total += f"{node_name} -> {array_spec_id};\n"
