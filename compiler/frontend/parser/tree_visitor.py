@@ -16,6 +16,7 @@ class TreeVisitor(GrammarVisitor):
             "int": ast.Type(base_type=ast.BaseType.int),
             "char": ast.Type(base_type=ast.BaseType.char)
         }
+        self.enum_scope: dict[str, dict[str, int]] = {}
         self.input_stream = input_stream
         self.function_decl = None
 
@@ -95,7 +96,16 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
         elif ctx.enumType():
-            enum_type = self.visitEnumType(ctx.enumType())
+            enum_type_name = ctx.enumType().ID().getText()
+
+            # Check if the enum type is already declared
+            if enum_type_name not in self.enum_scope:
+                raise SemanticError(
+                    f"Enum type '{enum_type_name}' is not declared ppeeepeepoopoo.",
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+
             const_qualifier = ctx.const() is not None
             address_qualifiers = [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
             return ast.Type(
@@ -110,7 +120,8 @@ class TreeVisitor(GrammarVisitor):
             typedef_name = ctx.ID().getText()
             replace = copy.deepcopy(self.typedef_scope.get(typedef_name))
             replace.const = replace.const or ctx.const() is not None
-            replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+            replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in
+                                           ctx.addressQualifier()]
             replace.line = ctx.start.line
             replace.position = ctx.start.column
             return replace
@@ -620,6 +631,9 @@ class TreeVisitor(GrammarVisitor):
         name = ctx.ID().getText() if ctx.ID() else None
         enumerators = self.visitEnumBody(ctx.enumBody())
         const_int_declarations = []
+
+        # Create a dictionary to store the enum values
+        enum_values = {}
         value = 0  # Default start value for enums
         for enumerator in enumerators:
             const_int_declaration = ast.VariableDeclaration(
@@ -630,7 +644,13 @@ class TreeVisitor(GrammarVisitor):
                 )]
             )
             const_int_declarations.append(const_int_declaration)
+
+            enum_values[enumerator] = value
             value += 1  # Increment for the next enum value
+
+        # Add the enum type and its values to the enum_scope dictionary
+        self.enum_scope[name] = enum_values
+
         return ast.Body(statements=const_int_declarations)
 
     def visitEnumBody(self, ctx):

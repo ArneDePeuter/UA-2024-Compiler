@@ -4,6 +4,7 @@ from typing import Optional
 from compiler.core import ast
 from compiler.core.ast import Type
 from compiler.core.ast_visitor import AstVisitor
+from compiler.frontend import TreeVisitor
 from compiler.frontend.symbol_table.symboltable import SymbolTable, Symbol
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.warning_error import WarningError
@@ -11,11 +12,12 @@ from compiler.core.type_caster import TypeCaster
 
 
 class SymbolTableVisitor(AstVisitor):
-    def __init__(self, symbol_table: Optional[SymbolTable] = None):
+    def __init__(self, symbol_table: Optional[SymbolTable] = None, tree_visitor: Optional[TreeVisitor] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
         self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
         self.inside_declaration = False
+        self.tree_visitor = tree_visitor
 
     def visit_type(self, node: ast.Type):
         ...
@@ -32,6 +34,11 @@ class SymbolTableVisitor(AstVisitor):
     def visit_identifier(self, node: ast.IDENTIFIER):
         symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
         if symbol is None:
+            # Check if the identifier is an enum constant
+            for enum_values in self.tree_visitor.enum_scope.values():
+                if node.name in enum_values:
+                    return ast.Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
+
             raise SemanticError(f"Undefined identifier '{node.name}'.", node.line, node.position)
         return symbol.type
 
@@ -150,10 +157,6 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
-            if isinstance(statement, ast.Body) and statement.statements and isinstance(statement.statements[0],
-                                                                                       ast.VariableDeclaration):
-                self.visit_enum_declaration(statement)
-            else:
                 self.visit(statement)
         for symbol in self.symbol_table.global_scope.symbols.values():
             if isinstance(symbol.ast_ref, ast.ForwardDeclaration):
@@ -377,6 +380,3 @@ class SymbolTableVisitor(AstVisitor):
             return
         self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
 
-    def visit_enum_declaration(self, node: ast.Body):
-        for declaration in node.statements:
-            self.visit(declaration)

@@ -16,9 +16,9 @@ from compiler.core.errors.compiler_syntaxerror import CompilerSyntaxError
 def compile_file(input_file: str, render_ast: str = None, render_symb: str = None, no_optimise: bool = False, target_llvm: str = None):
     # frontend
     tree, input_stream = tree_from_file(filename=input_file)
-    ast = tree_to_ast(tree, input_stream)
+    ast, tree_visitor = tree_to_ast(tree, input_stream)
 
-    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable(), tree_visitor=tree_visitor)
     symbol_table_visitor.visit_program(ast)
 
     # middle end
@@ -27,7 +27,7 @@ def compile_file(input_file: str, render_ast: str = None, render_symb: str = Non
 
     if target_llvm:
         # Generate LLVM IR
-        llvm_ir_generator = LLVMIRGenerator()
+        llvm_ir_generator = LLVMIRGenerator(symbol_table_visitor.symbol_table)
         llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
 
         # Write LLVM IR to a file
