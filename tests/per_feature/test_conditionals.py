@@ -11,7 +11,7 @@ def test_if1() -> None:
     """
 
     tree, input_stream = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree, input_stream)
+    constructed_ast, _ = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     assert len(constructed_ast.statements) == 1
@@ -37,7 +37,7 @@ def test_if_with_else() -> None:
     """
 
     tree, input_stream = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree, input_stream)
+    constructed_ast, _ = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     assert len(constructed_ast.statements) == 1
@@ -72,7 +72,7 @@ def test_if_with_else_if() -> None:
     """
 
     tree, input_stream = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree, input_stream)
+    constructed_ast, _ = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     main_func = constructed_ast.statements[0]
@@ -108,7 +108,7 @@ def test_switch_1():
     """
 
     tree, input_stream = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree, input_stream)
+    constructed_ast, _ = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     main_func = constructed_ast.statements[0]
@@ -164,7 +164,7 @@ def test_switch_2():
     """
 
     tree, input_stream = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree, input_stream)
+    constructed_ast, _ = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     main_func = constructed_ast.statements[0]
@@ -225,7 +225,7 @@ def test_switch_3():
     """
 
     tree, input_stream = tree_from_str(input)
-    constructed_ast = tree_to_ast(tree, input_stream)
+    constructed_ast, _ = tree_to_ast(tree, input_stream)
 
     assert isinstance(constructed_ast, ast.Program)
     main_func = constructed_ast.statements[0]

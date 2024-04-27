@@ -12,7 +12,7 @@ def test_1():
     """
 
     tree, input_stream = tree_from_str(test_str)
-    output_ast = tree_to_ast(tree, input_stream)
+    output_ast, _ = tree_to_ast(tree, input_stream)
     result = ConstantPropagationVisitor().visit(output_ast)
 
     assert isinstance(result, ast.Program)
@@ -30,7 +30,7 @@ def test_2():
     """
 
     tree, input_stream = tree_from_str(test_str)
-    output_ast = tree_to_ast(tree, input_stream)
+    output_ast, _ = tree_to_ast(tree, input_stream)
     result = ConstantPropagationVisitor().visit(output_ast)
 
     assert isinstance(result, ast.Program)
@@ -49,7 +49,7 @@ def test_3():
     """
 
     tree, input_stream = tree_from_str(test_str)
-    output_ast = tree_to_ast(tree, input_stream)
+    output_ast, _ = tree_to_ast(tree, input_stream)
     result = ConstantPropagationVisitor().visit(output_ast)
 
     assert isinstance(result, ast.Program)
@@ -57,5 +57,3 @@ def test_3():
     assert result.statements[0].body.statements[2].qualifiers[0].initializer.left.value == 5
     assert type(result.statements[0].body.statements[2].qualifiers[0].initializer.right) == ast.INT
     assert result.statements[0].body.statements[2].qualifiers[0].initializer.right.value == 3
-
-
