@@ -203,7 +203,7 @@ class SymbolTableVisitor(AstVisitor):
                     if not isinstance(initializer, ast.ArrayInitializer):
                         raise SemanticError(f"Array '{identifier}' must be initialized with an array initializer.", node.line, node.position)
                     if initializer_type.type.array_sizes != node.var_type.type.array_sizes:
-                        raise SemanticError(f"Array '{identifier}' must be initialized with {len(node.var_type.type.array_sizes)} elements.", node.line, node.position)
+                        raise SemanticError(f"Array '{identifier}' must be initialized with {node.var_type.type.array_sizes} elements.", node.line, node.position)
                     if initializer_type.type.element_type != node.var_type.type.element_type:
                         raise SemanticError(f"Array '{identifier}' must be initialized with elements of type {node.var_type.type.element_type}.", node.line, node.position)
 
@@ -436,7 +436,7 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError("Array initializer elements must all be of the same type.", node.line, node.position)
 
         array_element_type = next(iter(element_types))
-        temp_array_element_type = array_element_type
+        temp_array_element_type = copy.deepcopy(array_element_type)
         while not isinstance(array_element_type.type, ast.BaseType):
             array_element_type = array_element_type.type.element_type
         array_element_type.address_qualifiers = temp_array_element_type.address_qualifiers

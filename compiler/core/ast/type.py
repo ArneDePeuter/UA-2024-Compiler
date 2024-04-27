@@ -31,6 +31,9 @@ class ArraySpecifier(AST):
             return self.sizes == other.sizes
         return False
 
+    def __str__(self):
+        return ''.join(f"[{size.value}]" for size in self.sizes)
+
 @dataclass
 class ArrayType(AST):
     element_type: 'Type'
