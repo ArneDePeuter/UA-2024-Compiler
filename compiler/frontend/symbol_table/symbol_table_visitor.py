@@ -238,7 +238,13 @@ class SymbolTableVisitor(AstVisitor):
         if isinstance(node.left, ast.BinaryArithmetic) or isinstance(node.left, ast.BinaryBitwiseArithmetic) or isinstance(node.left, ast.BinaryLogicalOperation) or isinstance(node.left, ast.ComparisonOperation):
             raise SemanticError(f"Cannot assign to an expression.", node.line, node.position)
 
-        if left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+        if isinstance(left_type.type, ast.ArrayType):
+            if left_type.type.element_type != right_type:
+                raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
+            if node.left.index > left_type.type.array_sizes:
+                raise SemanticError(f"Array index out of bounds", node.line, node.position)
+
+        elif left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             if len(left_type.address_qualifiers) == 0 and len(right_type.address_qualifiers) == 0:
                 # Determine the type of the expression based on the hierarchy  float, int, char
                 left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(left_type.type)

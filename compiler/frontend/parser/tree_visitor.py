@@ -124,6 +124,7 @@ class TreeVisitor(GrammarVisitor):
                     line=ctx.start.line, position=ctx.start.column
                 )
                 qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
+                #qualifiers.remove(qualifier)
                 var_type = ast.Type(
                     type=array_type,
                     const=var_type.const,

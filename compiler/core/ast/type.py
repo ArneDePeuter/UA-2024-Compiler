@@ -34,6 +34,12 @@ class ArraySpecifier(AST):
     def __str__(self):
         return ''.join(f"[{size.value}]" for size in self.sizes)
 
+    def __gt__(self, other):
+        for i in range(len(self.sizes)):
+            if self.sizes[i] > other.sizes[i]:
+                return True
+        return False
+
 @dataclass
 class ArrayType(AST):
     element_type: 'Type'
