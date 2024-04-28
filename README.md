@@ -109,7 +109,7 @@ should not be present in the final version of the compiler.
   - [ ] Optimisation: Do not generate code for conditions that are always false.
 
 ### Project 6
-- [ ] Arrays: simple one dimensional arrays
+- [] Arrays: simple one dimensional arrays
 - [ ] Arrays: multi-dimensional arrays.
 - [ ] Arrays: assignment of complete arrays or array rows in case of multi-dimensional arrays. 
 - [ ] Arrays: array initialisation: int arr[3] = {1,2,3}.

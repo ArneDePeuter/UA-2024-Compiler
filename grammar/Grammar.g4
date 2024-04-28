@@ -29,7 +29,7 @@ returnStatement : RETURN expression? TERMINAL ;
 
 functionDeclaration : type ID '(' paramList? ')' body ;
 
-paramList : type ID (',' type ID)* ;
+paramList : type ID arraySpecifier? (',' type ID arraySpecifier?)* ;
 
 functionCall : ID '(' argumentList? ')' ;
 

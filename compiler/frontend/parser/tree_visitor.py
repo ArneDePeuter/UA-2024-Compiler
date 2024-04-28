@@ -556,13 +556,24 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitParamList(self, ctx:GrammarParser.ParamListContext):
-        return [
-            ast.FunctionParameter(type=self.visitType(param_type), name=param_name.getText())
-            for param_type, param_name in zip(
-                ctx.type_(),
-                ctx.ID()
-            )
-        ]
+        params = []
+        for i in range(len(ctx.type_())):  # This is done to match the type with the name
+            param_type = self.visitType(ctx.type_(i))
+            param_name = ctx.ID(i).getText()
+            array_specifier = self.visitArraySpecifier(ctx.arraySpecifier(i)) if ctx.arraySpecifier(i) else None
+            if array_specifier:
+                param_type = ast.ArrayType(
+                    element_type=param_type,
+                    array_sizes=array_specifier,
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+
+            params.append(ast.FunctionParameter(
+                type=param_type,
+                name=param_name
+            ))
+        return params
 
     def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
         return ast.PrintFCall(
