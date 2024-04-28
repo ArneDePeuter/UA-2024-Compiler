@@ -1,7 +1,7 @@
 from compiler.core import ast
 from llvmlite import ir
 
-from .ir_types import IrIntType, IrFloatType, IrCharType
+from .ir_types import IrIntType, IrFloatType, IrCharType, IrArrayType
 
 
 class TypeTranslator:
@@ -17,7 +17,18 @@ class TypeTranslator:
         return llvm_base_type
 
     @staticmethod
+    def get_array_size(array_type: ast.ArrayType) -> int:
+        size = 1
+        for array_size in array_type.array_sizes.sizes:
+            size *= array_size.value
+        return size
+
+    @staticmethod
     def translate_ast_base_type(base_type: ast.BaseType) -> ir.Type:
+        if isinstance(base_type, ast.ArrayType):
+            element_type = TypeTranslator.translate_ast_base_type(base_type.element_type.type)  # Assuming recursive type resolution
+            return IrArrayType(element_type, TypeTranslator.get_array_size(base_type))
+
         llvm_type = {
             ast.BaseType.int: IrIntType,
             ast.BaseType.float: IrFloatType,
@@ -64,3 +75,16 @@ class TypeTranslator:
                 return left, builder.zext(right, left.type)
             else:
                 return builder.zext(left, right.type), right
+
+    @staticmethod
+    def get_type_size(target: ir.Type) -> int:
+        if isinstance(target, ir.IntType):
+            return target.width // 8
+        elif isinstance(target, ir.FloatType):
+            return 4
+        elif isinstance(target, ir.PointerType):
+            return 8
+        elif isinstance(target, ir.ArrayType):
+            return TypeTranslator.get_type_size(target.element) * target.count
+        else:
+            raise NotImplementedError(f"Size of type {target} not implemented.")

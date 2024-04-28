@@ -308,36 +308,39 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration) -> None:
         decl_type = self.visit_type(node.var_type)
-        array_type = None
         for qualifier in node.qualifiers:
-            total_size = None
-            if qualifier.array_specifier:
-                total_size = self.visit_expression(qualifier.array_specifier)
-                array_type = ir.ArrayType(decl_type, total_size)
-                alloc = self.builder.alloca(array_type, name=qualifier.identifier)
-            else:
-                alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
-
+            alloc = self.builder.alloca(decl_type, name=qualifier.identifier) # Create an allocation for the variable
             self.var_addresses[qualifier.identifier] = alloc
-
+            # Handle default initialization
             if qualifier.initializer is None:
-                default = ir.Constant(decl_type, None)
-                if qualifier.array_specifier:
-                    default = ir.Constant(array_type, [default] * total_size.constant)
-                self.builder.store(default, alloc)
+                if isinstance(decl_type, ir.ArrayType):
+                    # Initialize array with zeros
+                    zero_init = ir.Constant(decl_type.element, 0)
+                    for i in range(decl_type.count):
+                        element_ptr = self.builder.gep(alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), i)])
+                        self.builder.store(zero_init, element_ptr)
+                else:
+                    default = ir.Constant(decl_type, None)
+                    self.builder.store(default, alloc)
                 continue
 
+            # Evaluate the expression for initializer
             expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
-
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
+
+            # Store the value to the allocated variable
             if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
                 null_ptr = ir.Constant(decl_type, None)
                 self.builder.store(null_ptr, alloc)
-                continue
-
-            value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
-            self.builder.store(value, alloc)
+            elif isinstance(decl_type, ir.ArrayType):
+                # Handle array initialization here
+                for i in range(min(decl_type.count, len(expr_eval.r_value))):
+                    element_ptr = self.builder.gep(alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), i)])
+                    self.builder.store(expr_eval.r_value[i], element_ptr)
+            else:
+                value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
+                self.builder.store(value, alloc)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement) -> None:
         left_eval = self.visit_expression(node.left)
@@ -526,24 +529,55 @@ class LLVMIRGenerator(AstVisitor):
             ir_global.initializer = value
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        total_size = ir.Constant(IrIntType, 1)
-        for size in node.sizes:
-            #if not isinstance(size, ast.INT):
-            #    raise NotImplementedError(f"Array size {size} is not supported")
-            result = self.visit_expression(size)
-            if not result.r_value:
-                raise NotImplementedError("Cannot calculate array size, r_value is None")
-            int_access = TypeTranslator.match_llvm_type(self.builder, IrIntType, result.r_value)
-            total_size = self.builder.mul(total_size, int_access)
-        return total_size
+        dimensions = [self.visit_expression(size).r_value for size in node.sizes]
+        if any(dim is None for dim in dimensions):
+            raise ValueError("All dimensions must have a resolvable size")
+
+        # Calculate the total number of elements in each dimension except for the last one
+        # This is necessary to calculate offsets for multi-dimensional array accesses
+        from functools import reduce
+        import operator
+
+        # Reverse dimensions to calculate product of dimensions from last to first
+        products = [reduce(operator.mul, dimensions[i + 1:], ir.Constant(IrIntType, 1)) for i in range(len(dimensions))]
+
+        # Calculate linear index (offset) by multiplying each dimension's index with the respective product
+        linear_index = ir.Constant(IrIntType, 0)
+        for idx, product in zip(dimensions, products):
+            if not isinstance(idx, ir.Constant):
+                idx = TypeTranslator.match_llvm_type(self.builder, IrIntType, idx)
+            addend = self.builder.mul(idx, product)
+            linear_index = self.builder.add(linear_index, addend)
+
+        # Returning ExpressionEval with l_value being None because this operation does not directly provide a l-value.
+        return ExpressionEval(l_value=None, r_value=linear_index)
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         ...
 
     def visit_array_access(self, node: ast.ArrayAccess):
         base_address = self.var_addresses.get(node.array_name)
-        total_size = self.visit_array_specifier(node.index)
-        array_width = ir.Constant(IrIntType, base_address.type.pointee.element.width)
-        offset = self.builder.mul(total_size, array_width)
-        base_address_plus_offset = self.builder.gep(base_address, [offset])
-        return ExpressionEval(l_value=base_address_plus_offset, r_value=self.builder.load(base_address_plus_offset))
+        if base_address is None:
+            raise ValueError(f"Variable '{node.array_name}' not found")
+
+        index = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
+        if not isinstance(index.r_value.type, ir.IntType):
+            raise ValueError("Index must be an integer")
+
+        # Compute the offset: index * size of each element
+        element_type = base_address.type.pointee.element
+        element_size = TypeTranslator.get_type_size(element_type)
+        index_value = index.r_value
+
+        # Check if index_value needs conversion or if it is already an integer
+        if not isinstance(index_value, ir.Constant):
+            index_value = TypeTranslator.match_llvm_type(self.builder, ir.IntType(32), index_value)
+
+        element_size_constant = ir.Constant(ir.IntType(32), element_size)
+        offset = self.builder.mul(index_value, element_size_constant)
+
+        # Get the element pointer by adding the offset to the base address
+        element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), offset])
+
+        return ExpressionEval(l_value=element_ptr, r_value=self.builder.load(element_ptr))
+
