@@ -21,15 +21,17 @@ statement
     | ';'
     ;
 
-forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
+typedIdentifier : type ID arraySpecifier?;
 
-typeList : type ID? (',' type ID?)* ;
+forwardDeclaration : typedIdentifier '(' typeList? ')' TERMINAL ;
+
+typeList : type ID? arraySpecifier? (',' type ID? arraySpecifier?)* ;
 
 returnStatement : RETURN expression? TERMINAL ;
 
 functionDeclaration : type ID '(' paramList? ')' body ;
 
-paramList : type ID (',' type ID)* ;
+paramList : typedIdentifier (',' typedIdentifier)* ;
 
 functionCall : ID '(' argumentList? ')' ;
 
@@ -75,7 +77,7 @@ continueStatement
     ;
 
 variableDeclaration
-    : type variableDeclarationQualifiers ';'
+    : type variableDeclarationQualifiers (',' variableDeclarationQualifier)* TERMINAL
     ;
 
 variableDeclarationQualifiers
@@ -83,7 +85,16 @@ variableDeclarationQualifiers
     ;
 
 variableDeclarationQualifier
-    : ID ('=' expression)?
+    : ID arraySpecifier? ('=' expression)?
+    ;
+
+arraySpecifier
+    : '[' expression? ']' ( '[' expression? ']' )*
+    ;
+
+arrayInitializer
+    : '{' (arrayInitializer | expression) (',' (arrayInitializer | expression))* '}'
+    | '{' '}'
     ;
 
 castExpression
@@ -165,9 +176,10 @@ primary
     : NUMBER
     | FLOAT
     | '(' expression ')'
-    | ID
+    | ID arraySpecifier?
     | CHAR
     | CHAR_ESC
+    | arrayInitializer
     | castExpression
     | printfCall
     | functionCall

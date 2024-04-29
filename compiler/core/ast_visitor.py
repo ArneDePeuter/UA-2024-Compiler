@@ -18,7 +18,10 @@ class AstVisitor(ABC):
             ast.UnaryExpression: self.visit_unary_expression,
             ast.ShiftExpression: self.visit_shift_expression,
             ast.FunctionCall: self.visit_function_call,
-            ast.PrintFCall: self.visit_printf_call
+            ast.PrintFCall: self.visit_printf_call,
+            ast.ArraySpecifier: self.visit_array_specifier,
+            ast.ArrayInitializer: self.visit_array_initializer,
+            ast.ArrayAccess: self.visit_array_access,
         }
         self.statement_fd = {
             ast.ExpressionStatement: self.visit_expression_statement,
@@ -167,4 +170,16 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_printf_call(self, node: ast.PrintFCall):
+        ...
+
+    @abstractmethod
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        ...
+
+    @abstractmethod
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        ...
+
+    @abstractmethod
+    def visit_array_access(self, node: ast.ArrayAccess):
         ...
