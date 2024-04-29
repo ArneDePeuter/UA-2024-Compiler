@@ -313,15 +313,8 @@ class LLVMIRGenerator(AstVisitor):
             self.var_addresses[qualifier.identifier] = alloc
             # Handle default initialization
             if qualifier.initializer is None:
-                if isinstance(decl_type, ir.ArrayType):
-                    # Initialize array with zeros
-                    zero_init = ir.Constant(decl_type.element, 0)
-                    for i in range(decl_type.count):
-                        element_ptr = self.builder.gep(alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), i)])
-                        self.builder.store(zero_init, element_ptr)
-                else:
-                    default = ir.Constant(decl_type, None)
-                    self.builder.store(default, alloc)
+                default = ir.Constant(decl_type, None)
+                self.builder.store(default, alloc)
                 continue
 
             # Evaluate the expression for initializer
@@ -527,26 +520,7 @@ class LLVMIRGenerator(AstVisitor):
         dimensions = [self.visit_expression(size).r_value for size in node.sizes]
         if any(dim is None for dim in dimensions):
             raise ValueError("All dimensions must have a resolvable size")
-
-        # Calculate the total number of elements in each dimension except for the last one
-        # This is necessary to calculate offsets for multi-dimensional array accesses
-        from functools import reduce
-        import operator
-
-        # Reverse dimensions to calculate product of dimensions from last to first
-        products = [reduce(operator.mul, dimensions[i + 1:], ir.Constant(IrIntType, 1)) for i in range(len(dimensions))]
-
-        # Calculate linear index (offset) by multiplying each dimension's index with the respective product
-        linear_index = ir.Constant(IrIntType, 0)
-        for idx, product in zip(dimensions, products):
-            if not isinstance(idx, ir.Constant):
-                idx = TypeTranslator.match_llvm_type(self.builder, IrIntType, idx)
-            addend = self.builder.mul(idx, product)
-            linear_index = self.builder.add(linear_index, addend)
-
-        # Returning ExpressionEval with l_value being None because this operation does not directly provide a l-value.
-        return ExpressionEval(l_value=None, r_value=linear_index)
-
+        return ExpressionEval(l_value=None, r_value=dimensions)
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
         return ExpressionEval(r_value=array)
@@ -556,18 +530,15 @@ class LLVMIRGenerator(AstVisitor):
         if base_address is None:
             raise ValueError(f"Variable '{node.array_name}' not found")
 
-        index = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
-        if not isinstance(index.r_value.type, ir.IntType):
-            raise ValueError("Index must be an integer")
+        indices = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
+        for index in indices.r_value:
+            if not isinstance(index.type, ir.IntType):
+                raise ValueError("Index must be an integer")
 
-        # Ensure the index value is an LLVM constant if not already
-        if not isinstance(index.r_value, ir.Constant):
-            index_value = TypeTranslator.match_llvm_type(self.builder, ir.IntType(32), index.r_value)
-        else:
-            index_value = index.r_value
-
+        # Insert 0 as the first index for the array start
+        indices.r_value.insert(0, ir.Constant(ir.IntType(32), 0))
         # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
-        element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), index_value])
+        element_ptr = self.builder.gep(base_address, indices.r_value)
 
         # Load the value at the element pointer
         value_at_index = self.builder.load(element_ptr)
