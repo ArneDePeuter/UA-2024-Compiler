@@ -26,33 +26,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#enumDeclaration.
-    def enterEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#enumDeclaration.
-    def exitEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#enumBody.
-    def enterEnumBody(self, ctx:GrammarParser.EnumBodyContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#enumBody.
-    def exitEnumBody(self, ctx:GrammarParser.EnumBodyContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#enumList.
-    def enterEnumList(self, ctx:GrammarParser.EnumListContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#enumList.
-    def exitEnumList(self, ctx:GrammarParser.EnumListContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#forwardDeclaration.
     def enterForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
         pass
@@ -206,15 +179,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#enumType.
-    def enterEnumType(self, ctx:GrammarParser.EnumTypeContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#enumType.
-    def exitEnumType(self, ctx:GrammarParser.EnumTypeContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#variableDeclarationQualifiers.
     def enterVariableDeclarationQualifiers(self, ctx:GrammarParser.VariableDeclarationQualifiersContext):
         pass
@@ -242,8 +206,49 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+<<<<<<< Updated upstream:compiler/frontend/antlr_files/GrammarListener.py
     # Enter a parse tree produced by GrammarParser#switchStatement.
     def enterSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
+=======
+    # Enter a parse tree produced by GrammarParser#enumDeclaration.
+    def enterEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#enumDeclaration.
+    def exitEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#enumList.
+    def enterEnumList(self, ctx:GrammarParser.EnumListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#enumList.
+    def exitEnumList(self, ctx:GrammarParser.EnumListContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#enumType.
+    def enterEnumType(self, ctx:GrammarParser.EnumTypeContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#enumType.
+    def exitEnumType(self, ctx:GrammarParser.EnumTypeContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#enumVariableDeclaration.
+    def enterEnumVariableDeclaration(self, ctx:GrammarParser.EnumVariableDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#enumVariableDeclaration.
+    def exitEnumVariableDeclaration(self, ctx:GrammarParser.EnumVariableDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#statement.
+    def enterStatement(self, ctx:GrammarParser.StatementContext):
+>>>>>>> Stashed changes:compiler/frontend/parser/antlr_files/GrammarListener.py
         pass
 
     # Exit a parse tree produced by GrammarParser#switchStatement.

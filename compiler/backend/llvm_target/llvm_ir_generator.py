@@ -515,33 +515,3 @@ class LLVMIRGenerator(AstVisitor):
                 continue
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             ir_global.initializer = value
-
-    def visit_array_specifier(self, node: ast.ArraySpecifier):
-        dimensions = [self.visit_expression(size).r_value for size in node.sizes]
-        if any(dim is None for dim in dimensions):
-            raise ValueError("All dimensions must have a resolvable size")
-        return ExpressionEval(l_value=None, r_value=dimensions)
-    def visit_array_initializer(self, node: ast.ArrayInitializer):
-        array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
-        return ExpressionEval(r_value=array)
-
-    def visit_array_access(self, node: ast.ArrayAccess):
-        base_address = self.var_addresses.get(node.array_name)
-        if base_address is None:
-            raise ValueError(f"Variable '{node.array_name}' not found")
-
-        indices = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
-        for index in indices.r_value:
-            if not isinstance(index.type, ir.IntType):
-                raise ValueError("Index must be an integer")
-
-        # Insert 0 as the first index for the array start
-        indices.r_value.insert(0, ir.Constant(ir.IntType(32), 0))
-        # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
-        element_ptr = self.builder.gep(base_address, indices.r_value)
-
-        # Load the value at the element pointer
-        value_at_index = self.builder.load(element_ptr)
-
-        return ExpressionEval(l_value=element_ptr, r_value=value_at_index)
-

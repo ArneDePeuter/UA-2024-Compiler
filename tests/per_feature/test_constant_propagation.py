@@ -57,5 +57,3 @@ def test_3():
     assert result.statements[0].body.statements[2].qualifiers[0].initializer.left.value == 5
     assert type(result.statements[0].body.statements[2].qualifiers[0].initializer.right) == ast.INT
     assert result.statements[0].body.statements[2].qualifiers[0].initializer.right.value == 3
-
-

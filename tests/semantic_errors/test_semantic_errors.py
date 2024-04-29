@@ -23,7 +23,7 @@ error_dict = {
     "proj2_man_semanticErr_undeclaredVariable3.c": SemanticError("Undefined identifier 'z'.", 2, 12),
     "proj3_man_semanticErr_typedef.c": CompilerSyntaxError("mismatched input 'int' expecting ID", 4, 14),
     "proj4_man_semanticErr_switch_var_decl.c": SemanticError("Undefined identifier 'b'.", 8, 4),
-    "proj_5_no_main.c": SemanticError("main function is undefined", 0,0),
+    "proj_5_no_main.c": SemanticError("main function is undefined", 0, 0),
     "proj_5_faulty_main.c": SemanticError("Return type of main is invalid", 1, 0),
     "proj_5_invalid_return.c": SemanticError("Type mismatch in return statement: int* and int.", 4, 4),
     "proj_5_double_declare.c": SemanticError("Function 'fib' is already defined.", 7, 0),
@@ -50,7 +50,7 @@ def test_semantic_err(input_file) -> None:
         ast = tree_to_ast(tree, input_stream)
 
         symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
-        symbol_table_visitor.visit(ast)
+        symbol_table_visitor.visit_program(ast)
     except Exception as e:
         print(e)
         assert str(expected) == str(e)

@@ -17,7 +17,7 @@ def test_pass(input_file) -> None:
     ast = optimise_ast(ast)
 
     symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
-    symbol_table_visitor.visit(ast)
+    symbol_table_visitor.visit_program(ast)
 
     llvm_ir_generator = LLVMIRGenerator()
     llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)

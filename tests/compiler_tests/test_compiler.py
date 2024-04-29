@@ -34,7 +34,6 @@ def run_clang(input_file):
 def test_compiler(input_file):
     input_file = os.path.join("./files", input_file)
     run_my_compiler(input_file)
-    #print(open("test.ll").read())
     my_output = run_lli()
     os.remove("test.ll")
     clang_output = run_clang(input_file)
