@@ -16,7 +16,7 @@ class Preprocessor:
         return preprocessed_code
 
     def collect_includes(self, input_code, include_paths):
-        include_pattern = re.compile(r'#include\s*"(.+?)"')
+        include_pattern = re.compile(r'#include\s*[<"](.+?)[>"]')
         includes = include_pattern.findall(input_code)
         for include_file in includes:
             file_path = self.find_include_file(include_file, include_paths)
@@ -32,7 +32,7 @@ class Preprocessor:
         return None
 
     def replace_includes(self, input_code, include_paths):
-        include_pattern = re.compile(r'#include\s*"(.+?)"')
+        include_pattern = re.compile(r'#include\s*[<"](.+?)[>"]')
         return include_pattern.sub(lambda match: self.include_replace(match, include_paths), input_code)
 
     def include_replace(self, match, include_paths):
@@ -52,7 +52,7 @@ class Preprocessor:
         self.collect_defines(input_code)
         for define, value in self.defines.items():
             input_code = re.sub(r'\b' + re.escape(define) + r'\b', value, input_code)
-        input_code = define_pattern.sub('', input_code)  # Remove the #define lines
+        input_code = define_pattern.sub('', input_code)
         return input_code
 
     def collect_defines(self, input_code):
