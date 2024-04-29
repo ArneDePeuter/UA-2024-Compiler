@@ -35,6 +35,9 @@ error_dict = {
     "proj_5_void_func_addition.c": SemanticError("Cannot perform arithmetic operations on void type.", 5, 12),
     "proj_5_variable_call.c": SemanticError("'a' called but it is not a function", 5, 11),
     "proj_5_nested_function_declaration.c": SemanticError("Function definition is not allowed here", 4, 4),
+    "proj6_man_semanticError_arrayTypeChecking.c": SemanticError("Array 'a' must be initialized with elements of type int.", 2, 4),
+    "proj6_man_semanticError_array-length.c": SemanticError("Array 'a' must be initialized with [2] elements.", 2, 4),
+    "proj6_man_semanticError_array-length-multi.c": SemanticError("Array initializer elements must all be of the same length.", 2, 18),
 }
 
 
@@ -44,9 +47,9 @@ def test_semantic_err(input_file) -> None:
 
     try:
         tree, input_stream = tree_from_file(f"./files/{input_file}")
-        ast, tree_visitor = tree_to_ast(tree, input_stream)
+        ast = tree_to_ast(tree, input_stream)
 
-        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable(), tree_visitor=tree_visitor)
+        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
         symbol_table_visitor.visit_program(ast)
     except Exception as e:
         print(e)

@@ -8,7 +8,6 @@ from typing import Optional
 
 from .type_translator import TypeTranslator
 from .ir_types import IrIntType, IrFloatType, IrCharType
-from ...frontend import symbol_table
 
 
 @dataclass
@@ -18,13 +17,12 @@ class ExpressionEval:
 
 
 class LLVMIRGenerator(AstVisitor):
-    def __init__(self, symbol_table):
+    def __init__(self):
         self.module = ir.Module()
         self.builder = None
         self.var_addresses: dict[str, ir.AllocaInstr] = {}
         self.while_fd = {}
         self.functions = {}
-        self.symbol_table = symbol_table
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
         self.printf_func = ir.Function(self.module, printf_type, name="printf")
@@ -53,11 +51,8 @@ class LLVMIRGenerator(AstVisitor):
         if self.builder is None and isinstance(node, ast.CommentStatement):
             return
 
-        try:
-            if self.builder.block is not None and self.builder.block.is_terminated:
-                return
-        except:
-            pass
+        if self.builder.block is not None and self.builder.block.is_terminated:
+            return
 
         if node.c_syntax:
             comment = node.c_syntax.split("\n")
@@ -312,57 +307,26 @@ class LLVMIRGenerator(AstVisitor):
         ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration) -> None:
-        if self.builder is None:
-            # Global variable declaration
-            decl_type = self.visit_type(node.var_type)
-            for qualifier in node.qualifiers:
-                ir_global = ir.GlobalVariable(self.module, decl_type, name=qualifier.identifier)
-                self.var_addresses[qualifier.identifier] = ir_global
-                if qualifier.initializer is None:
-                    continue
-                expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
-                if not expr_eval.r_value:
-                    raise NotImplementedError("Cannot assign value to variable, r_value is None")
-                if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
-                    null_ptr = ir.Constant(decl_type, None)
-                    ir_global.initializer = null_ptr
-                    continue
-                if isinstance(node.var_type,
-                              ast.Type) and node.var_type.base_type == ast.BaseType.int and node.var_type.address_qualifiers == []:
-                    # Handle enum constants
-                    if isinstance(qualifier.initializer, ast.IDENTIFIER):
-                        enum_value = self.symbol_table.lookup(qualifier.initializer.name, current_scope_only=False)
-                        if enum_value and isinstance(enum_value.ast_ref, ast.VariableDeclarationQualifier):
-                            expr_eval.r_value = ir.Constant(decl_type, enum_value.ast_ref.initializer.value)
-                value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
-                ir_global.initializer = value
-        else:
-            # Local variable declaration
-            decl_type = self.visit_type(node.var_type)
-            for qualifier in node.qualifiers:
-                alloc = self.builder.alloca(decl_type, name=qualifier.identifier)
-                self.var_addresses[qualifier.identifier] = alloc
-                if qualifier.initializer is None:
-                    default = ir.Constant(decl_type, None)
-                    self.builder.store(default, alloc)
-                    continue
+        decl_type = self.visit_type(node.var_type)
+        for qualifier in node.qualifiers:
+            alloc = self.builder.alloca(decl_type, name=qualifier.identifier) # Create an allocation for the variable
+            self.var_addresses[qualifier.identifier] = alloc
+            # Handle default initialization
+            if qualifier.initializer is None:
+                default = ir.Constant(decl_type, None)
+                self.builder.store(default, alloc)
+                continue
 
-                expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
-                if not expr_eval.r_value:
-                    raise NotImplementedError("Cannot assign value to variable, r_value is None")
-                if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
-                    null_ptr = ir.Constant(decl_type, None)
-                    self.builder.store(null_ptr, alloc)
-                    continue
+            # Evaluate the expression for initializer
+            expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
+            if not expr_eval.r_value:
+                raise NotImplementedError("Cannot assign value to variable, r_value is None")
 
-                if isinstance(node.var_type,
-                              ast.Type) and node.var_type.base_type == ast.BaseType.int and node.var_type.address_qualifiers == []:
-                    # Handle enum constants
-                    if isinstance(qualifier.initializer, ast.IDENTIFIER):
-                        enum_value = self.symbol_table.lookup(qualifier.initializer.name, current_scope_only=False)
-                        if enum_value and isinstance(enum_value.ast_ref, ast.VariableDeclarationQualifier):
-                            expr_eval.r_value = ir.Constant(decl_type, enum_value.ast_ref.initializer.value)
-
+            # Store the value to the allocated variable
+            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
+                null_ptr = ir.Constant(decl_type, None)
+                self.builder.store(null_ptr, alloc)
+            else:
                 value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
                 self.builder.store(value, alloc)
 
@@ -549,12 +513,34 @@ class LLVMIRGenerator(AstVisitor):
                 null_ptr = ir.Constant(decl_type, None)
                 ir_global.initializer = null_ptr
                 continue
-            if isinstance(node.var_type,
-                          ast.Type) and node.var_type.base_type == ast.BaseType.int and node.var_type.address_qualifiers == []:
-                # Handle enum constants
-                if isinstance(qualifier.initializer, ast.IDENTIFIER):
-                    enum_value = self.symbol_table.lookup(qualifier.initializer.name, current_scope_only=False)
-                    if enum_value and isinstance(enum_value.ast_ref, ast.VariableDeclarationQualifier):
-                        expr_eval.r_value = ir.Constant(decl_type, enum_value.ast_ref.initializer.value)
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             ir_global.initializer = value
+
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        dimensions = [self.visit_expression(size).r_value for size in node.sizes]
+        if any(dim is None for dim in dimensions):
+            raise ValueError("All dimensions must have a resolvable size")
+        return ExpressionEval(l_value=None, r_value=dimensions)
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
+        return ExpressionEval(r_value=array)
+
+    def visit_array_access(self, node: ast.ArrayAccess):
+        base_address = self.var_addresses.get(node.array_name)
+        if base_address is None:
+            raise ValueError(f"Variable '{node.array_name}' not found")
+
+        indices = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
+        for index in indices.r_value:
+            if not isinstance(index.type, ir.IntType):
+                raise ValueError("Index must be an integer")
+
+        # Insert 0 as the first index for the array start
+        indices.r_value.insert(0, ir.Constant(ir.IntType(32), 0))
+        # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
+        element_ptr = self.builder.gep(base_address, indices.r_value)
+
+        # Load the value at the element pointer
+        value_at_index = self.builder.load(element_ptr)
+
+        return ExpressionEval(l_value=element_ptr, r_value=value_at_index)

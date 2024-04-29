@@ -53,7 +53,7 @@ class ConstantFoldingVisitor(AstVisitor):
         if type(node.expression) not in ConstantFoldingVisitor.foldables:
             return node
 
-        diff = TypeCaster.get_heirarchy_of_ast(node.expression) - TypeCaster.get_heirarchy_of_base_type(node.cast_type.base_type)
+        diff = TypeCaster.get_heirarchy_of_ast(node.expression) - TypeCaster.get_heirarchy_of_base_type(node.cast_type.type)
 
         result = node.expression
         for _ in range(abs(diff)):
@@ -285,4 +285,17 @@ class ConstantFoldingVisitor(AstVisitor):
 
     def visit_printf_call(self, node: ast.PrintFCall):
         node.expression = self.visit_expression(node.expression)
+        return node
+
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        node.size = self.visit_expression(node.size)
+        return node
+
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        for i, element in enumerate(node.elements):
+            node.elements[i] = self.visit_expression(element)
+        return node
+
+    def visit_array_access(self, node: ast.ArrayAccess):
+        node.array_name = self.visit_expression(node.array_name)
         return node

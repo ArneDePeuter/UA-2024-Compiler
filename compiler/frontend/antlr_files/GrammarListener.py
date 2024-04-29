@@ -26,6 +26,15 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#typedIdentifier.
+    def enterTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#typedIdentifier.
+    def exitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#enumDeclaration.
     def enterEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
         pass
@@ -230,6 +239,24 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#variableDeclarationQualifier.
     def exitVariableDeclarationQualifier(self, ctx:GrammarParser.VariableDeclarationQualifierContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#arraySpecifier.
+    def enterArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#arraySpecifier.
+    def exitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#arrayInitializer.
+    def enterArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#arrayInitializer.
+    def exitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
         pass
 
 

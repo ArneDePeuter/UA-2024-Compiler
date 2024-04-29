@@ -22,6 +22,8 @@ statement
     | ';'
     ;
 
+typedIdentifier : type ID arraySpecifier?;
+
 enumDeclaration
     : 'enum' ID? '{' enumBody '}'
     ;
@@ -34,15 +36,15 @@ enumList
     : ID ('=' expression)? (',' comment? ID ('=' expression)?)* ','? comment?
     ;
 
-forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
+forwardDeclaration : typedIdentifier '(' typeList? ')' TERMINAL ;
 
-typeList : type ID? (',' type ID?)* ;
+typeList : type ID? arraySpecifier? (',' type ID? arraySpecifier?)* ;
 
 returnStatement : RETURN expression? TERMINAL ;
 
 functionDeclaration : type ID '(' paramList? ')' body ;
 
-paramList : type ID (',' type ID)* ;
+paramList : typedIdentifier (',' typedIdentifier)* ;
 
 functionCall : ID '(' argumentList? ')' ;
 
@@ -88,7 +90,7 @@ continueStatement
     ;
 
 variableDeclaration
-    : type variableDeclarationQualifiers ';'
+    : type variableDeclarationQualifiers (',' variableDeclarationQualifier)* TERMINAL
     ;
 
 enumType
@@ -100,7 +102,16 @@ variableDeclarationQualifiers
     ;
 
 variableDeclarationQualifier
-    : ID ('=' expression)?
+    : ID arraySpecifier? ('=' expression)?
+    ;
+
+arraySpecifier
+    : '[' expression? ']' ( '[' expression? ']' )*
+    ;
+
+arrayInitializer
+    : '{' (arrayInitializer | expression) (',' (arrayInitializer | expression))* '}'
+    | '{' '}'
     ;
 
 castExpression
@@ -182,9 +193,10 @@ primary
     : NUMBER
     | FLOAT
     | '(' expression ')'
-    | ID
+    | ID arraySpecifier?
     | CHAR
     | CHAR_ESC
+    | arrayInitializer
     | castExpression
     | printfCall
     | functionCall

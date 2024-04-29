@@ -12,14 +12,14 @@ from compiler.utils.astdotvisitor import AstDotVisitor
 @pytest.mark.parametrize("input_file", os.listdir("./tests/pass/files"))
 def test_pass(input_file) -> None:
     tree, input_stream = tree_from_file(f"./files/{input_file}")
-    ast, tree_visitor = tree_to_ast(tree, input_stream)
+    ast = tree_to_ast(tree, input_stream)
 
     ast = optimise_ast(ast)
 
-    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable(), tree_visitor=tree_visitor)
+    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
     symbol_table_visitor.visit_program(ast)
 
-    llvm_ir_generator = LLVMIRGenerator(symbol_table_visitor.symbol_table)
+    llvm_ir_generator = LLVMIRGenerator()
     llvm_ir = llvm_ir_generator.generate_llvm_ir(ast)
 
     symbol_table_dot_visitor = SymbolTableDotVisitor()

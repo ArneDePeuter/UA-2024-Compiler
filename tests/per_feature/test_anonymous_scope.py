@@ -17,8 +17,8 @@ def test_semantic_1():
         }
     """
     tree, input_stream = tree_from_str(input)
-    ast, tree_visitor = tree_to_ast(tree, input_stream)
-    symbol_table = SymbolTableVisitor(tree_visitor=tree_visitor)
+    ast = tree_to_ast(tree, input_stream)
+    symbol_table = SymbolTableVisitor()
     symbol_table.visit_program(ast)
 
 
