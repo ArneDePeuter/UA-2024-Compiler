@@ -39,5 +39,5 @@ def tree_from_str(data: str):
 def tree_to_ast(tree, input_stream) -> tuple[ast.AST, TreeVisitor]:
     tree_visitor = TreeVisitor(input_stream)
     ast_tree = tree_visitor.visit(tree)
-    return ast_tree, tree_visitor
+    return ast_tree
 

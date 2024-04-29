@@ -44,9 +44,9 @@ def test_semantic_err(input_file) -> None:
 
     try:
         tree, input_stream = tree_from_file(f"./files/{input_file}")
-        ast, tree_visitor = tree_to_ast(tree, input_stream)
+        ast = tree_to_ast(tree, input_stream)
 
-        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable(), tree_visitor=tree_visitor)
+        symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
         symbol_table_visitor.visit_program(ast)
     except Exception as e:
         print(e)

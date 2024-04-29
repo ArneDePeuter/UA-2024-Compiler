@@ -19,12 +19,14 @@ class TreeVisitor(GrammarVisitor):
         self.enum_scope: dict[str, dict[str, int]] = {}
         self.input_stream = input_stream
         self.function_decl = None
+        self.current_scope = None
 
     def get_original_text(self, ctx):
         return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
 
     def visitProgram(self, ctx) -> ast.Program:
         statements = []
+        self.current_scope = statements
 
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
@@ -42,8 +44,10 @@ class TreeVisitor(GrammarVisitor):
 
     def visitBody(self, ctx):
         typedef_scope_before = copy.deepcopy(self.typedef_scope)
+        prev_enum_scope = copy.deepcopy(self.enum_scope)
+        prev_scope = self.current_scope
         statements = []
-
+        self.current_scope = statements
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
@@ -53,7 +57,8 @@ class TreeVisitor(GrammarVisitor):
             statements.append(statement)
 
         self.typedef_scope = typedef_scope_before
-
+        self.current_scope = prev_scope
+        self.enum_scope = prev_enum_scope
         return ast.Body(
             statements=statements,
             line=ctx.start.line,
@@ -101,7 +106,7 @@ class TreeVisitor(GrammarVisitor):
             # Check if the enum type is already declared
             if enum_type_name not in self.enum_scope:
                 raise SemanticError(
-                    f"Enum type '{enum_type_name}' is not declared ppeeepeepoopoo.",
+                    f"Enum type '{enum_type_name}' is not declared.",
                     line=ctx.start.line,
                     position=ctx.start.column
                 )
@@ -651,7 +656,8 @@ class TreeVisitor(GrammarVisitor):
         # Add the enum type and its values to the enum_scope dictionary
         self.enum_scope[name] = enum_values
 
-        return ast.Body(statements=const_int_declarations)
+        self.current_scope.extend(const_int_declarations)
+        return None
 
     def visitEnumBody(self, ctx):
         enumerators = []

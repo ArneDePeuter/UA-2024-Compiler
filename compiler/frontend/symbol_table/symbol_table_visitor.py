@@ -4,7 +4,6 @@ from typing import Optional
 from compiler.core import ast
 from compiler.core.ast import Type
 from compiler.core.ast_visitor import AstVisitor
-from compiler.frontend import TreeVisitor
 from compiler.frontend.symbol_table.symboltable import SymbolTable, Symbol
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.warning_error import WarningError
@@ -12,12 +11,11 @@ from compiler.core.type_caster import TypeCaster
 
 
 class SymbolTableVisitor(AstVisitor):
-    def __init__(self, symbol_table: Optional[SymbolTable] = None, tree_visitor: Optional[TreeVisitor] = None):
+    def __init__(self, symbol_table: Optional[SymbolTable] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
         self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
         self.inside_declaration = False
-        self.tree_visitor = tree_visitor
 
     def visit_type(self, node: ast.Type):
         ...
@@ -34,11 +32,6 @@ class SymbolTableVisitor(AstVisitor):
     def visit_identifier(self, node: ast.IDENTIFIER):
         symbol = self.symbol_table.lookup(node.name, current_scope_only=False)
         if symbol is None:
-            # Check if the identifier is an enum constant
-            for enum_values in self.tree_visitor.enum_scope.values():
-                if node.name in enum_values:
-                    return ast.Type(base_type=ast.BaseType.int, line=node.line, position=node.position)
-
             raise SemanticError(f"Undefined identifier '{node.name}'.", node.line, node.position)
         return symbol.type
 
@@ -157,7 +150,7 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
-                self.visit(statement)
+            self.visit(statement)
         for symbol in self.symbol_table.global_scope.symbols.values():
             if isinstance(symbol.ast_ref, ast.ForwardDeclaration):
                 raise SemanticError(f"Function '{symbol.name}' is forward declared but not defined.", node.line, node.position)
@@ -187,41 +180,42 @@ class SymbolTableVisitor(AstVisitor):
         if node.var_type.base_type == ast.BaseType.void and node.var_type.address_qualifiers == []:
             raise SemanticError(f"Cannot declare a variable of type void.", node.line, node.position)
 
+        # Iterate through each qualifier in the variable declaration
         for qualifier in node.qualifiers:
             identifier = qualifier.identifier
             initializer = qualifier.initializer
 
+            # Check if the variable is already declared in the current scope
             if self.symbol_table.lookup(identifier, current_scope_only=False):
                 if initializer is None:
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
 
+            # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
             if initializer is not None:
+                # Get the type of the initializer, to make sure it is compatible with the variable declaration
                 initializer_type = self.visit_expression(initializer)
 
-                if initializer_type.base_type != node.var_type.base_type or len(
-                        initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
+                # Check if the (left)type is compatible with the initializer
+                if initializer_type.base_type != node.var_type.base_type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
+                    # Add the exception to allow null pointers
                     if isinstance(initializer, ast.INT) and initializer.value == 0 and len(
                             node.var_type.address_qualifiers) > 0:
                         pass
-                    elif len(node.var_type.address_qualifiers) == 0 and len(initializer_type.address_qualifiers) == 0:
+                    elif len(node.var_type.address_qualifiers)== 0 and len(initializer_type.address_qualifiers) == 0:
+                        # Determine the type of the expression based on the hierarchy  float, int, char
                         left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(node.var_type.base_type)
                         right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(initializer_type.base_type)
                         if right_expression_hierarchy > left_expression_hierarchy:
-                            WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line,
-                                         node.position).warn()
+                            WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line, node.position).warn()
                     else:
-                        raise SemanticError(
-                            f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.",
-                            node.line, node.position)
+                        raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
 
                 if initializer_type.const and not node.var_type.const:
-                    WarningError(
-                        f"Discarding const qualifier. Initializing {node.var_type} with an expression of type {initializer_type}",
-                        node.line, node.position).warn()
+                    WarningError(f"Discarding const qualifier. Initializing {node.var_type} with an expression of type {initializer_type}", node.line, node.position).warn()
 
-            self.symbol_table.define_symbol(
-                Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
+            # Define the variable in the symbol table
+            self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         left_type = self.visit(node.left)
@@ -379,4 +373,3 @@ class SymbolTableVisitor(AstVisitor):
         if self.symbol_table.lookup(node.name, current_scope_only=True):
             return
         self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
-
