@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,69,553,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,70,554,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,
         7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,
@@ -53,17 +53,17 @@ def serializedATN():
         42,1,42,1,42,1,42,5,42,487,8,42,10,42,12,42,490,9,42,1,43,1,43,1,
         43,1,43,1,43,1,43,5,43,498,8,43,10,43,12,43,501,9,43,1,44,1,44,1,
         44,1,44,3,44,507,8,44,3,44,509,8,44,1,45,1,45,1,45,1,45,1,45,1,45,
-        1,45,1,45,3,45,519,8,45,1,45,1,45,1,45,1,45,1,45,1,45,3,45,527,8,
-        45,1,46,3,46,530,8,46,1,46,1,46,1,46,3,46,535,8,46,1,46,5,46,538,
-        8,46,10,46,12,46,541,9,46,1,47,1,47,1,48,1,48,1,49,1,49,1,50,1,50,
-        1,51,1,51,1,51,0,6,76,78,80,82,84,86,52,0,2,4,6,8,10,12,14,16,18,
-        20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,
-        64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,0,
-        11,1,0,57,58,1,0,51,56,1,0,46,47,1,0,48,50,1,0,62,64,1,0,60,61,4,
-        0,13,14,46,48,59,59,62,62,1,0,13,14,1,0,15,18,2,0,5,5,20,29,1,0,
-        68,69,586,0,107,1,0,0,0,2,126,1,0,0,0,4,128,1,0,0,0,6,133,1,0,0,
-        0,8,142,1,0,0,0,10,160,1,0,0,0,12,185,1,0,0,0,14,193,1,0,0,0,16,
-        213,1,0,0,0,18,219,1,0,0,0,20,228,1,0,0,0,22,236,1,0,0,0,24,243,
+        1,45,1,45,3,45,519,8,45,1,45,1,45,1,45,1,45,1,45,1,45,1,45,3,45,
+        528,8,45,1,46,3,46,531,8,46,1,46,1,46,1,46,3,46,536,8,46,1,46,5,
+        46,539,8,46,10,46,12,46,542,9,46,1,47,1,47,1,48,1,48,1,49,1,49,1,
+        50,1,50,1,51,1,51,1,51,0,6,76,78,80,82,84,86,52,0,2,4,6,8,10,12,
+        14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,
+        58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,
+        102,0,11,1,0,57,58,1,0,51,56,1,0,46,47,1,0,48,50,1,0,62,64,1,0,60,
+        61,4,0,13,14,46,48,59,59,62,62,1,0,13,14,1,0,15,18,2,0,5,5,20,29,
+        1,0,69,70,588,0,107,1,0,0,0,2,126,1,0,0,0,4,128,1,0,0,0,6,133,1,
+        0,0,0,8,142,1,0,0,0,10,160,1,0,0,0,12,185,1,0,0,0,14,193,1,0,0,0,
+        16,213,1,0,0,0,18,219,1,0,0,0,20,228,1,0,0,0,22,236,1,0,0,0,24,243,
         1,0,0,0,26,251,1,0,0,0,28,272,1,0,0,0,30,274,1,0,0,0,32,282,1,0,
         0,0,34,286,1,0,0,0,36,289,1,0,0,0,38,291,1,0,0,0,40,294,1,0,0,0,
         42,301,1,0,0,0,44,304,1,0,0,0,46,315,1,0,0,0,48,318,1,0,0,0,50,326,
@@ -71,9 +71,9 @@ def serializedATN():
         0,0,60,391,1,0,0,0,62,400,1,0,0,0,64,408,1,0,0,0,66,413,1,0,0,0,
         68,416,1,0,0,0,70,418,1,0,0,0,72,423,1,0,0,0,74,431,1,0,0,0,76,436,
         1,0,0,0,78,447,1,0,0,0,80,458,1,0,0,0,82,469,1,0,0,0,84,480,1,0,
-        0,0,86,491,1,0,0,0,88,508,1,0,0,0,90,526,1,0,0,0,92,529,1,0,0,0,
-        94,542,1,0,0,0,96,544,1,0,0,0,98,546,1,0,0,0,100,548,1,0,0,0,102,
-        550,1,0,0,0,104,106,3,2,1,0,105,104,1,0,0,0,106,109,1,0,0,0,107,
+        0,0,86,491,1,0,0,0,88,508,1,0,0,0,90,527,1,0,0,0,92,530,1,0,0,0,
+        94,543,1,0,0,0,96,545,1,0,0,0,98,547,1,0,0,0,100,549,1,0,0,0,102,
+        551,1,0,0,0,104,106,3,2,1,0,105,104,1,0,0,0,106,109,1,0,0,0,107,
         105,1,0,0,0,107,108,1,0,0,0,108,1,1,0,0,0,109,107,1,0,0,0,110,127,
         3,26,13,0,111,127,3,12,6,0,112,127,3,18,9,0,113,127,3,44,22,0,114,
         127,3,6,3,0,115,127,3,70,35,0,116,127,3,102,51,0,117,127,3,64,32,
@@ -193,25 +193,25 @@ def serializedATN():
         500,1,0,0,0,500,87,1,0,0,0,501,499,1,0,0,0,502,503,7,6,0,0,503,509,
         3,88,44,0,504,506,3,90,45,0,505,507,7,7,0,0,506,505,1,0,0,0,506,
         507,1,0,0,0,507,509,1,0,0,0,508,502,1,0,0,0,508,504,1,0,0,0,509,
-        89,1,0,0,0,510,527,5,41,0,0,511,527,5,42,0,0,512,513,5,6,0,0,513,
-        514,3,68,34,0,514,515,5,7,0,0,515,527,1,0,0,0,516,518,5,43,0,0,517,
-        519,3,52,26,0,518,517,1,0,0,0,518,519,1,0,0,0,519,527,1,0,0,0,520,
-        527,5,44,0,0,521,527,5,45,0,0,522,527,3,54,27,0,523,527,3,56,28,
-        0,524,527,3,40,20,0,525,527,3,22,11,0,526,510,1,0,0,0,526,511,1,
-        0,0,0,526,512,1,0,0,0,526,516,1,0,0,0,526,520,1,0,0,0,526,521,1,
-        0,0,0,526,522,1,0,0,0,526,523,1,0,0,0,526,524,1,0,0,0,526,525,1,
-        0,0,0,527,91,1,0,0,0,528,530,3,96,48,0,529,528,1,0,0,0,529,530,1,
-        0,0,0,530,534,1,0,0,0,531,535,3,94,47,0,532,535,5,43,0,0,533,535,
-        3,46,23,0,534,531,1,0,0,0,534,532,1,0,0,0,534,533,1,0,0,0,535,539,
-        1,0,0,0,536,538,3,98,49,0,537,536,1,0,0,0,538,541,1,0,0,0,539,537,
-        1,0,0,0,539,540,1,0,0,0,540,93,1,0,0,0,541,539,1,0,0,0,542,543,7,
-        8,0,0,543,95,1,0,0,0,544,545,5,19,0,0,545,97,1,0,0,0,546,547,5,48,
-        0,0,547,99,1,0,0,0,548,549,7,9,0,0,549,101,1,0,0,0,550,551,7,10,
-        0,0,551,103,1,0,0,0,61,107,126,131,135,142,145,151,155,158,163,167,
-        172,176,180,183,188,195,198,203,206,210,215,223,233,239,248,255,
-        272,282,286,289,310,323,328,332,336,341,346,352,357,361,368,383,
-        387,397,405,429,434,444,455,466,477,488,499,506,508,518,526,529,
-        534,539
+        89,1,0,0,0,510,528,5,41,0,0,511,528,5,42,0,0,512,513,5,6,0,0,513,
+        514,3,68,34,0,514,515,5,7,0,0,515,528,1,0,0,0,516,518,5,43,0,0,517,
+        519,3,52,26,0,518,517,1,0,0,0,518,519,1,0,0,0,519,528,1,0,0,0,520,
+        528,5,44,0,0,521,528,5,45,0,0,522,528,5,67,0,0,523,528,3,54,27,0,
+        524,528,3,56,28,0,525,528,3,40,20,0,526,528,3,22,11,0,527,510,1,
+        0,0,0,527,511,1,0,0,0,527,512,1,0,0,0,527,516,1,0,0,0,527,520,1,
+        0,0,0,527,521,1,0,0,0,527,522,1,0,0,0,527,523,1,0,0,0,527,524,1,
+        0,0,0,527,525,1,0,0,0,527,526,1,0,0,0,528,91,1,0,0,0,529,531,3,96,
+        48,0,530,529,1,0,0,0,530,531,1,0,0,0,531,535,1,0,0,0,532,536,3,94,
+        47,0,533,536,5,43,0,0,534,536,3,46,23,0,535,532,1,0,0,0,535,533,
+        1,0,0,0,535,534,1,0,0,0,536,540,1,0,0,0,537,539,3,98,49,0,538,537,
+        1,0,0,0,539,542,1,0,0,0,540,538,1,0,0,0,540,541,1,0,0,0,541,93,1,
+        0,0,0,542,540,1,0,0,0,543,544,7,8,0,0,544,95,1,0,0,0,545,546,5,19,
+        0,0,546,97,1,0,0,0,547,548,5,48,0,0,548,99,1,0,0,0,549,550,7,9,0,
+        0,550,101,1,0,0,0,551,552,7,10,0,0,552,103,1,0,0,0,61,107,126,131,
+        135,142,145,151,155,158,163,167,172,176,180,183,188,195,198,203,
+        206,210,215,223,233,239,248,255,272,282,286,289,310,323,328,332,
+        336,341,346,352,357,361,368,383,387,397,405,429,434,444,455,466,
+        477,488,499,506,508,518,527,530,535,540
     ]
 
 class GrammarParser ( Parser ):
@@ -249,7 +249,8 @@ class GrammarParser ( Parser ):
                       "CHAR_ESC", "PLUS", "MINUS", "MUL", "DIV", "MOD", 
                       "GT", "LT", "EQ", "GE", "LE", "NE", "AND", "OR", "NOT", 
                       "LSHIFT", "RSHIFT", "BITAND", "BITOR", "BITXOR", "BITNOT", 
-                      "PRINTFREPLACER", "WS", "SINGLE_LINE_COMMENT", "MULTI_LINE_COMMENT" ]
+                      "PRINTFREPLACER", "STRING_LITERAL", "WS", "SINGLE_LINE_COMMENT", 
+                      "MULTI_LINE_COMMENT" ]
 
     RULE_program = 0
     RULE_statement = 1
@@ -387,9 +388,10 @@ class GrammarParser ( Parser ):
     BITXOR=64
     BITNOT=65
     PRINTFREPLACER=66
-    WS=67
-    SINGLE_LINE_COMMENT=68
-    MULTI_LINE_COMMENT=69
+    STRING_LITERAL=67
+    WS=68
+    SINGLE_LINE_COMMENT=69
+    MULTI_LINE_COMMENT=70
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -444,7 +446,7 @@ class GrammarParser ( Parser ):
             self.state = 107
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or _la==68 or _la==69:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or ((((_la - 67)) & ~0x3f) == 0 and ((1 << (_la - 67)) & 13) != 0):
                 self.state = 104
                 self.statement()
                 self.state = 109
@@ -860,7 +862,7 @@ class GrammarParser ( Parser ):
                     self.state = 145
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==68 or _la==69:
+                    if _la==69 or _la==70:
                         self.state = 144
                         self.comment()
 
@@ -876,7 +878,7 @@ class GrammarParser ( Parser ):
             self.state = 155
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==68 or _la==69:
+            if _la==69 or _la==70:
                 self.state = 154
                 self.comment()
 
@@ -974,7 +976,7 @@ class GrammarParser ( Parser ):
                     self.state = 167
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==68 or _la==69:
+                    if _la==69 or _la==70:
                         self.state = 166
                         self.comment()
 
@@ -1248,7 +1250,7 @@ class GrammarParser ( Parser ):
             self.state = 215
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0) or _la==67:
                 self.state = 214
                 self.expression()
 
@@ -1452,7 +1454,7 @@ class GrammarParser ( Parser ):
             self.state = 239
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0) or _la==67:
                 self.state = 238
                 self.argumentList()
 
@@ -1578,7 +1580,7 @@ class GrammarParser ( Parser ):
             self.state = 255
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or _la==68 or _la==69:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or ((((_la - 67)) & ~0x3f) == 0 and ((1 << (_la - 67)) & 13) != 0):
                 self.state = 252
                 self.statement()
                 self.state = 257
@@ -1873,7 +1875,7 @@ class GrammarParser ( Parser ):
             self.state = 286
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [2, 6, 8, 13, 14, 41, 42, 43, 44, 45, 46, 47, 48, 59, 62]:
+            if token in [2, 6, 8, 13, 14, 41, 42, 43, 44, 45, 46, 47, 48, 59, 62, 67]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 284
                 self.expressionStatement()
@@ -1936,7 +1938,7 @@ class GrammarParser ( Parser ):
             self.state = 289
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0) or _la==67:
                 self.state = 288
                 self.expression()
 
@@ -2427,7 +2429,7 @@ class GrammarParser ( Parser ):
             self.state = 336
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0) or _la==67:
                 self.state = 335
                 self.expression()
 
@@ -2444,7 +2446,7 @@ class GrammarParser ( Parser ):
                     self.state = 341
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0):
+                    if (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188707521661002052) != 0) or _la==67:
                         self.state = 340
                         self.expression()
 
@@ -2784,7 +2786,7 @@ class GrammarParser ( Parser ):
             self.state = 397
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or _la==68 or _la==69:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or ((((_la - 67)) & ~0x3f) == 0 and ((1 << (_la - 67)) & 13) != 0):
                 self.state = 394
                 self.statement()
                 self.state = 399
@@ -2851,7 +2853,7 @@ class GrammarParser ( Parser ):
             self.state = 405
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or _la==68 or _la==69:
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 5188709695989215558) != 0) or ((((_la - 67)) & ~0x3f) == 0 and ((1 << (_la - 67)) & 13) != 0):
                 self.state = 402
                 self.statement()
                 self.state = 407
@@ -3860,7 +3862,7 @@ class GrammarParser ( Parser ):
                 self.state = 503
                 self.unaryExpression()
                 pass
-            elif token in [2, 6, 8, 41, 42, 43, 44, 45]:
+            elif token in [2, 6, 8, 41, 42, 43, 44, 45, 67]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 504
                 self.primary()
@@ -3920,6 +3922,9 @@ class GrammarParser ( Parser ):
         def CHAR_ESC(self):
             return self.getToken(GrammarParser.CHAR_ESC, 0)
 
+        def STRING_LITERAL(self):
+            return self.getToken(GrammarParser.STRING_LITERAL, 0)
+
         def arrayInitializer(self):
             return self.getTypedRuleContext(GrammarParser.ArrayInitializerContext,0)
 
@@ -3961,7 +3966,7 @@ class GrammarParser ( Parser ):
         localctx = GrammarParser.PrimaryContext(self, self._ctx, self.state)
         self.enterRule(localctx, 90, self.RULE_primary)
         try:
-            self.state = 526
+            self.state = 527
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,57,self._ctx)
             if la_ == 1:
@@ -4015,24 +4020,30 @@ class GrammarParser ( Parser ):
             elif la_ == 7:
                 self.enterOuterAlt(localctx, 7)
                 self.state = 522
-                self.arrayInitializer()
+                self.match(GrammarParser.STRING_LITERAL)
                 pass
 
             elif la_ == 8:
                 self.enterOuterAlt(localctx, 8)
                 self.state = 523
-                self.castExpression()
+                self.arrayInitializer()
                 pass
 
             elif la_ == 9:
                 self.enterOuterAlt(localctx, 9)
                 self.state = 524
-                self.printfCall()
+                self.castExpression()
                 pass
 
             elif la_ == 10:
                 self.enterOuterAlt(localctx, 10)
                 self.state = 525
+                self.printfCall()
+                pass
+
+            elif la_ == 11:
+                self.enterOuterAlt(localctx, 11)
+                self.state = 526
                 self.functionCall()
                 pass
 
@@ -4102,39 +4113,39 @@ class GrammarParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 529
+            self.state = 530
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             if _la==19:
-                self.state = 528
+                self.state = 529
                 self.const()
 
 
-            self.state = 534
+            self.state = 535
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [15, 16, 17, 18]:
-                self.state = 531
+                self.state = 532
                 self.baseType()
                 pass
             elif token in [43]:
-                self.state = 532
+                self.state = 533
                 self.match(GrammarParser.ID)
                 pass
             elif token in [1]:
-                self.state = 533
+                self.state = 534
                 self.enumType()
                 pass
             else:
                 raise NoViableAltException(self)
 
-            self.state = 539
+            self.state = 540
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==48:
-                self.state = 536
+                self.state = 537
                 self.addressQualifier()
-                self.state = 541
+                self.state = 542
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -4182,7 +4193,7 @@ class GrammarParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 542
+            self.state = 543
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 491520) != 0)):
                 self._errHandler.recoverInline(self)
@@ -4232,7 +4243,7 @@ class GrammarParser ( Parser ):
         self.enterRule(localctx, 96, self.RULE_const)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 544
+            self.state = 545
             self.match(GrammarParser.T__18)
         except RecognitionException as re:
             localctx.exception = re
@@ -4279,7 +4290,7 @@ class GrammarParser ( Parser ):
         self.enterRule(localctx, 98, self.RULE_addressQualifier)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 546
+            self.state = 547
             self.match(GrammarParser.MUL)
         except RecognitionException as re:
             localctx.exception = re
@@ -4325,7 +4336,7 @@ class GrammarParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 548
+            self.state = 549
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 1072693280) != 0)):
                 self._errHandler.recoverInline(self)
@@ -4381,9 +4392,9 @@ class GrammarParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 550
+            self.state = 551
             _la = self._input.LA(1)
-            if not(_la==68 or _la==69):
+            if not(_la==69 or _la==70):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)

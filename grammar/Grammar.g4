@@ -196,6 +196,7 @@ primary
     | ID arraySpecifier?
     | CHAR
     | CHAR_ESC
+    | STRING_LITERAL
     | arrayInitializer
     | castExpression
     | printfCall
@@ -203,7 +204,7 @@ primary
     ;
 
 type
-    : const? (baseType | ID |enumType) addressQualifier*
+    : const? (baseType | ID | enumType) addressQualifier*
     ;
 
 baseType
@@ -280,6 +281,7 @@ BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
 PRINTFREPLACER: '"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ;
+STRING_LITERAL : '"' ( '\\' ('"' | '\\' | 'n' | 't' | '0' | 'r' | 'b' | 'f' | 'u' {'0'..'9', 'a'..'f', 'A'..'F'}{4}) | ~('\\' | '"') )* '"';
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
 MULTI_LINE_COMMENT : '/*' .*? '*/' ;
