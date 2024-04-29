@@ -553,7 +553,8 @@ class LLVMIRGenerator(AstVisitor):
         return ExpressionEval(l_value=None, r_value=linear_index)
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
-        ...
+        elements = [self.visit_expression(element).r_value for element in node.elements]
+        return ExpressionEval(r_value=elements)
 
     def visit_array_access(self, node: ast.ArrayAccess):
         base_address = self.var_addresses.get(node.array_name)

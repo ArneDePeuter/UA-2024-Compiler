@@ -174,14 +174,24 @@ class ConstantPropagationVisitor(AstVisitor):
         return node
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        node.size = self.visit_expression(node.size)
+        for i, size in enumerate(node.sizes):
+            simplified_size = self.visit_expression(size)
+            if not isinstance(simplified_size, ast.ArraySpecifier):
+                node.sizes[i] = simplified_size
+            else:
+                node.sizes[i] = size
+
         return node
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         for i, element in enumerate(node.elements):
-            node.elements[i] = self.visit_expression(element)
+            simplified_element = self.visit_expression(element)
+            if not isinstance(simplified_element, ast.ArraySpecifier):
+                node.elements[i] = simplified_element
+            else:
+                node.elements[i] = element
         return node
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        node.array_name = self.visit_expression(node.array_name)
+        node.index = self.visit_expression(node.index)
         return node
