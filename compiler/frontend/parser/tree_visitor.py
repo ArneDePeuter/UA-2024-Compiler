@@ -364,6 +364,8 @@ class TreeVisitor(GrammarVisitor):
             return self.visitPrintfCall(ctx.printfCall())
         elif ctx.functionCall():
             return self.visitFunctionCall(ctx.functionCall())
+        elif ctx.STRING_LITERAL():
+            print(ctx.STRING_LITERAL().getText())
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
