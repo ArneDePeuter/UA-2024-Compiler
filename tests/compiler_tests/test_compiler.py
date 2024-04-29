@@ -10,7 +10,9 @@ def run_my_compiler(input_file):
         with open("test.c", "w") as file:
             code = code.replace("#include <stdio.h>", "")
             file.write(code)
-    compile_file("test.c", target_llvm=".", no_optimise=True)
+    include_paths = ["./includes", "./tests/compiler_tests/includes"]  # Add the include paths here
+    print("uhhh" + os.getcwd())
+    compile_file("test.c", no_optimise=True, target_llvm=".", include_paths=include_paths)
     os.remove("test.c")
 
 
