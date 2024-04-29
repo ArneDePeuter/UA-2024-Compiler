@@ -109,11 +109,11 @@ should not be present in the final version of the compiler.
   - [ ] Optimisation: Do not generate code for conditions that are always false.
 
 ### Project 6
-- [] Arrays: simple one dimensional arrays
-- [ ] Arrays: multi-dimensional arrays.
-- [ ] Arrays: assignment of complete arrays or array rows in case of multi-dimensional arrays. 
-- [ ] Arrays: array initialisation: int arr[3] = {1,2,3}.
-- [ ] Arrays: Operations on array elements.
+- [X] Arrays: simple one dimensional arrays
+- [X] Arrays: multi-dimensional arrays.
+- [X] Arrays: assignment of complete arrays or array rows in case of multi-dimensional arrays. 
+- [X] Arrays: array initialisation: int arr[3] = {1,2,3}.
+- [X] Arrays: Operations on array elements.
 - [ ] Strings encoded as zero-terminated char-arrays. String literals. Passing strings around as char*. Support for IO: printf and scanf that support char* strings. The header stdio.h is treated as a special instruction that makes printf and scanf available. Including the actual stdio.h header is not necessary.
 - [ ] Semantic analysis: Type checking for array types (parameter passing, assignment, indexing). Semantic analysis: Checking the length of array initialisers ({ ... }) during assignment.
 - Optional

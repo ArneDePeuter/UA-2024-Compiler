@@ -21,9 +21,9 @@ statement
     | ';'
     ;
 
-forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
+forwardDeclaration : type ID arraySpecifier? '(' typeList? ')' TERMINAL ;
 
-typeList : type ID? (',' type ID?)* ;
+typeList : type ID? arraySpecifier? (',' type ID? arraySpecifier?)* ;
 
 returnStatement : RETURN expression? TERMINAL ;
 
