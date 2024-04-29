@@ -36,7 +36,7 @@ error_dict = {
     "proj_5_variable_call.c": SemanticError("'a' called but it is not a function", 5, 11),
     "proj_5_nested_function_declaration.c": SemanticError("Function definition is not allowed here", 4, 4),
     "proj6_man_semanticError_arrayTypeChecking.c": SemanticError("Array 'a' must be initialized with elements of type int.", 2, 4),
-    "proj6_man_semanticError_array-length.c": SemanticError("Array 'a' must be initialized with [2] elements.", 2, 4),
+    "proj6_man_semanticError_array-length.c": SemanticError("Array 'a' can be initialized with max.[2] elements.", 2, 4),
     "proj6_man_semanticError_array-length-multi.c": SemanticError("Array initializer elements must all be of the same length.", 2, 18),
 }
 
