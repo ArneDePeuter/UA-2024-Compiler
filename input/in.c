@@ -1,18 +1,14 @@
-// Forward declaration of a recursive function
-int factorial(int n);
 
 int main() {
-    int num = 5;
-    int result = factorial(num);
-    printf("%d", num);
-    return 0;
-}
-
-// Recursive function to calculate factorial
-int factorial(int n) {
-    if (n == 0 || n == 1) {
-        return 1;
-    } else {
-        return n * factorial(n - 1);
+    int a = 0;
+    int counter = 0;
+    int b = 0;
+    while (counter < 1000000) {
+        if (counter > 100) {
+            b++;
+        }
+        a++;
+        counter++;
     }
+    printf("%d", a);
 }
