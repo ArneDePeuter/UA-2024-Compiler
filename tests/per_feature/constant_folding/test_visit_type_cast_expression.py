@@ -5,7 +5,7 @@ from compiler.core import ast
 def test_int_conv_1():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.int
+            type=ast.BaseType.int
         ),
         expression=ast.CHAR(value="a")
     )
@@ -22,7 +22,7 @@ def test_int_conv_1():
 def test_int_conv_2():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.int
+            type=ast.BaseType.int
         ),
         expression=ast.INT(value=5)
     )
@@ -39,7 +39,7 @@ def test_int_conv_2():
 def test_int_conv_3():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.int
+            type=ast.BaseType.int
         ),
         expression=ast.FLOAT(value=5.3)
     )
@@ -56,7 +56,7 @@ def test_int_conv_3():
 def test_char_conv_1():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.char
+            type=ast.BaseType.char
         ),
         expression=ast.INT(value=97)
     )
@@ -73,7 +73,7 @@ def test_char_conv_1():
 def test_char_conv_2():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.char
+            type=ast.BaseType.char
         ),
         expression=ast.CHAR(value="Z")
     )
@@ -90,7 +90,7 @@ def test_char_conv_2():
 def test_char_conv_3():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.char
+            type=ast.BaseType.char
         ),
         expression=ast.FLOAT(value=97.3)
     )
@@ -107,7 +107,7 @@ def test_char_conv_3():
 def test_float_conv_1():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.float
+            type=ast.BaseType.float
         ),
         expression=ast.INT(value=5)
     )
@@ -124,7 +124,7 @@ def test_float_conv_1():
 def test_float_conv_2():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.float
+            type=ast.BaseType.float
         ),
         expression=ast.CHAR(value="a")
     )
@@ -141,7 +141,7 @@ def test_float_conv_2():
 def test_float_conv_3():
     test_ast = ast.TypeCastExpression(
         cast_type=ast.Type(
-            base_type=ast.BaseType.float
+            type=ast.BaseType.float
         ),
         expression=ast.FLOAT(value=5.5)
     )
@@ -168,7 +168,7 @@ def test_no_conv():
     for no_conv_ast in no_conv_asts:
         no_conv_ast = ast.TypeCastExpression(
             cast_type=ast.Type(
-                base_type=ast.BaseType.float
+                type=ast.BaseType.float
             ),
             expression=no_conv_ast
         )

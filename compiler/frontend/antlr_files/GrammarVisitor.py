@@ -19,6 +19,11 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#typedIdentifier.
+    def visitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#enumDeclaration.
     def visitEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
         return self.visitChildren(ctx)
@@ -131,6 +136,16 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#variableDeclarationQualifier.
     def visitVariableDeclarationQualifier(self, ctx:GrammarParser.VariableDeclarationQualifierContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#arraySpecifier.
+    def visitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#arrayInitializer.
+    def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
         return self.visitChildren(ctx)
 
 

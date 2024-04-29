@@ -45,7 +45,8 @@ class FunctionDeclaration(Statement):
 @dataclass
 class VariableDeclarationQualifier(Statement):
     identifier: str
-    initializer: Expression or None
+    array_specifier: Optional[Expression] = None
+    initializer: Optional[Expression] = None
 
     def set_default_initializer(self, type: Type):
         if len(type.address_qualifiers) > 0:
