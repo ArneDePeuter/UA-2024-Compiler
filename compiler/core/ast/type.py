@@ -28,6 +28,9 @@ class ArraySpecifier(AST):
 
     def __eq__(self, other):
         if isinstance(other, ArraySpecifier):
+            # If we have an unspecified size, we say they can be equal
+            if len(self.sizes) == 0 or len(other.sizes) == 0:
+                return True
             return self.sizes == other.sizes
         return False
 
