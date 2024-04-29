@@ -19,10 +19,13 @@ class Preprocessor:
         include_pattern = re.compile(r'#include\s*[<"](.+?)[>"]')
         includes = include_pattern.findall(input_code)
         for include_file in includes:
-            file_path = self.find_include_file(include_file, include_paths)
-            if file_path:
-                with open(file_path, 'r') as file:
-                    self.include_files[include_file] = file.read()
+            if include_file not in self.include_files:
+                file_path = self.find_include_file(include_file, include_paths)
+                if file_path:
+                    with open(file_path, 'r') as file:
+                        included_code = file.read()
+                        self.include_files[include_file] = included_code
+                        self.collect_includes(included_code, include_paths)  # Recursively collect includes
 
     def find_include_file(self, include_file, include_paths):
         for path in include_paths:
@@ -38,12 +41,14 @@ class Preprocessor:
     def include_replace(self, match, include_paths):
         include_file = match.group(1)
         if include_file in self.include_files:
-            return self.include_files[include_file]
+            return self.replace_includes(self.include_files[include_file], include_paths)  # Recursively replace includes
         else:
             file_path = self.find_include_file(include_file, include_paths)
             if file_path:
                 with open(file_path, 'r') as file:
-                    return file.read()
+                    included_code = file.read()
+                    self.include_files[include_file] = included_code
+                    return self.replace_includes(included_code, include_paths)  # Recursively replace includes
             else:
                 raise IncludeFileNotFoundError(f"Include file not found: {include_file}")
 
