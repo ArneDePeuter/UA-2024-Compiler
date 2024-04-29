@@ -6,6 +6,7 @@ import antlr4
 from .antlr_files.GrammarParser import GrammarParser
 from .antlr_files.GrammarLexer import GrammarLexer
 from .parser.tree_visitor import TreeVisitor
+from .symbol_table.symbol_table_visitor import SymbolTableVisitor
 from ..core.errors.compiler_syntaxerror import CompilerSyntaxError
 
 
@@ -35,7 +36,8 @@ def tree_from_str(data: str):
     return parser.program(), input_stream
 
 
-def tree_to_ast(tree, input_stream) -> ast.AST:
+def tree_to_ast(tree, input_stream) -> tuple[ast.AST, TreeVisitor]:
     tree_visitor = TreeVisitor(input_stream)
-    return tree_visitor.visit(tree)
+    ast_tree = tree_visitor.visit(tree)
+    return ast_tree
 
