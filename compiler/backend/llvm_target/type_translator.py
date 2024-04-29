@@ -26,8 +26,13 @@ class TypeTranslator:
     @staticmethod
     def translate_ast_base_type(base_type: ast.BaseType) -> ir.Type:
         if isinstance(base_type, ast.ArrayType):
-            element_type = TypeTranslator.translate_ast_base_type(base_type.element_type.type)  # Assuming recursive type resolution
-            return IrArrayType(element_type, TypeTranslator.get_array_size(base_type))
+            element_type = None
+            for size in reversed(base_type.array_sizes.sizes):
+                if element_type is None:
+                    element_type = ir.ArrayType(TypeTranslator.translate_ast_base_type(base_type.element_type.type), size.value)
+                else:
+                    element_type = ir.ArrayType(element_type, size.value)
+            return element_type
 
         llvm_type = {
             ast.BaseType.int: IrIntType,
@@ -43,6 +48,13 @@ class TypeTranslator:
 
     @staticmethod
     def match_llvm_type(builder: ir.IRBuilder, target: ir.Type, value: ir.Constant) -> ir.Constant:
+        # TODO: Once a array is partially initialized, it should be filled with zeros
+        #if isinstance(value.type, ir.ArrayType):
+        #    if value.type.count < target.count:
+        #        num_it = target.count - value.type.count
+        #        for _ in range(num_it):
+        #            builder.insert_value(value, ir.Constant(IrIntType, 0), value.type.count)
+
         if target == value.type:
             return value
         elif isinstance(target, ir.IntType) and isinstance(value.type, ir.FloatType):
@@ -54,7 +66,7 @@ class TypeTranslator:
         elif isinstance(target, ir.PointerType) and isinstance(value.type, ir.FloatType):
             return builder.fptosi(value, target)
         elif isinstance(target, ir.ArrayType):
-            return TypeTranslator.match_llvm_type(builder, target.element, value)
+            return TypeTranslator.match_llvm_type(builder, target.elements, value)
         elif target.width > value.type.width:
             return builder.zext(value, target)
         elif target.width < value.type.width:

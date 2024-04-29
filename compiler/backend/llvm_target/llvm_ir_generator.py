@@ -333,11 +333,6 @@ class LLVMIRGenerator(AstVisitor):
             if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
                 null_ptr = ir.Constant(decl_type, None)
                 self.builder.store(null_ptr, alloc)
-            elif isinstance(decl_type, ir.ArrayType):
-                # Handle array initialization here
-                for i in range(min(decl_type.count, len(expr_eval.r_value))):
-                    element_ptr = self.builder.gep(alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), i)])
-                    self.builder.store(expr_eval.r_value[i], element_ptr)
             else:
                 value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
                 self.builder.store(value, alloc)
@@ -553,16 +548,8 @@ class LLVMIRGenerator(AstVisitor):
         return ExpressionEval(l_value=None, r_value=linear_index)
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
-        elements = []
-        for element in node.elements:
-            if isinstance(element, ast.ArrayInitializer):
-                # Recursively visit nested array initializers
-                result = self.visit_array_initializer(element)
-            else:
-                # Visit other expressions normally
-                result = self.visit_expression(element).r_value
-            elements.append(result)
-        return ExpressionEval(r_value=elements)
+        array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
+        return ExpressionEval(r_value=array)
 
     def visit_array_access(self, node: ast.ArrayAccess):
         base_address = self.var_addresses.get(node.array_name)
@@ -573,20 +560,17 @@ class LLVMIRGenerator(AstVisitor):
         if not isinstance(index.r_value.type, ir.IntType):
             raise ValueError("Index must be an integer")
 
-        # Compute the offset: index * size of each element
-        element_type = base_address.type.pointee.element
-        element_size = TypeTranslator.get_type_size(element_type)
-        index_value = index.r_value
+        # Ensure the index value is an LLVM constant if not already
+        if not isinstance(index.r_value, ir.Constant):
+            index_value = TypeTranslator.match_llvm_type(self.builder, ir.IntType(32), index.r_value)
+        else:
+            index_value = index.r_value
 
-        # Check if index_value needs conversion or if it is already an integer
-        if not isinstance(index_value, ir.Constant):
-            index_value = TypeTranslator.match_llvm_type(self.builder, ir.IntType(32), index_value)
+        # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
+        element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), index_value])
 
-        element_size_constant = ir.Constant(ir.IntType(32), element_size)
-        offset = self.builder.mul(index_value, element_size_constant)
+        # Load the value at the element pointer
+        value_at_index = self.builder.load(element_ptr)
 
-        # Get the element pointer by adding the offset to the base address
-        element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), offset])
-
-        return ExpressionEval(l_value=element_ptr, r_value=self.builder.load(element_ptr))
+        return ExpressionEval(l_value=element_ptr, r_value=value_at_index)
 

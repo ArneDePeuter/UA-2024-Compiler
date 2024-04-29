@@ -202,17 +202,17 @@ class SymbolTableVisitor(AstVisitor):
                 if isinstance(node.var_type.type, ast.ArrayType):
                     if not isinstance(initializer, ast.ArrayInitializer):
                         raise SemanticError(f"Array '{identifier}' must be initialized with an array initializer.", node.line, node.position)
-                    if initializer_type.type.array_sizes > node.var_type.type.array_sizes:
-                        raise SemanticError(f"Array '{identifier}' can be initialized with max.{node.var_type.type.array_sizes} elements.", node.line, node.position)
+                    if initializer_type.type.array_sizes != node.var_type.type.array_sizes: # TODO: if initializer_type.type.array_sizes > node.var_type.type.array_sizes
+                        raise SemanticError(f"Array '{identifier}' must be initialized with {node.var_type.type.array_sizes} elements.", node.line, node.position)
                     if initializer_type.type.element_type != node.var_type.type.element_type:
                         raise SemanticError(f"Array '{identifier}' must be initialized with elements of type {node.var_type.type.element_type}.", node.line, node.position)
 
                 # Check if the (left)type is compatible with the initializer
                 if initializer_type.type != node.var_type.type or len(initializer_type.address_qualifiers) != len(node.var_type.address_qualifiers):
                     # Add an exception for when the array is partially initialized (the type check will not be the same but only in that case it is allowed)
-                    if isinstance(initializer, ast.ArrayInitializer):
-                        if initializer_type.type.array_sizes < node.var_type.type.array_sizes:
-                            break
+                    #if isinstance(initializer, ast.ArrayInitializer):
+                    #    if initializer_type.type.array_sizes < node.var_type.type.array_sizes:
+                    #        break
 
                     # Add the exception to allow null pointers
                     if isinstance(initializer, ast.INT) and initializer.value == 0 and len(
