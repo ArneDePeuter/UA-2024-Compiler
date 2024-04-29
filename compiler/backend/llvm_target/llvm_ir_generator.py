@@ -375,7 +375,7 @@ class LLVMIRGenerator(AstVisitor):
 
         # After block
         if self.builder.block is not None and not self.builder.block.is_terminated:
-            self.builder.branch(w_after_block)
+            self.builder.branch(w_condition_block)
         self.builder.position_at_start(w_after_block)
 
     def to_bool_expr(self, node: ast.Expression):
