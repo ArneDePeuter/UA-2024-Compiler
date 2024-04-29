@@ -21,7 +21,9 @@ statement
     | ';'
     ;
 
-forwardDeclaration : type ID arraySpecifier? '(' typeList? ')' TERMINAL ;
+typedIdentifier : type ID arraySpecifier?;
+
+forwardDeclaration : typedIdentifier '(' typeList? ')' TERMINAL ;
 
 typeList : type ID? arraySpecifier? (',' type ID? arraySpecifier?)* ;
 
@@ -29,7 +31,7 @@ returnStatement : RETURN expression? TERMINAL ;
 
 functionDeclaration : type ID '(' paramList? ')' body ;
 
-paramList : type ID arraySpecifier? (',' type ID arraySpecifier?)* ;
+paramList : typedIdentifier (',' typedIdentifier)* ;
 
 functionCall : ID '(' argumentList? ')' ;
 

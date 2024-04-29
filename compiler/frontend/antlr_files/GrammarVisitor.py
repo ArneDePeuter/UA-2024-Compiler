@@ -19,6 +19,11 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#typedIdentifier.
+    def visitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#forwardDeclaration.
     def visitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
         return self.visitChildren(ctx)

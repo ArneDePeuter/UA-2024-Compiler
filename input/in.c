@@ -1,12 +1,18 @@
-// Function to print an array of integers
-void print_array(int arr[5]) {
-    for (int i = 0; i < 5; i++) {
-        printf("%d", arr[i]);
-    }
-}
+// Forward declaration of a recursive function
+int factorial(int n);
 
 int main() {
-    int numbers[5] = {1, 2, 3, 4, 5}; // Example array
-    print_array(numbers, size); // Call the print function
+    int num = 5;
+    int result = factorial(num);
+    printf("%d", num);
     return 0;
+}
+
+// Recursive function to calculate factorial
+int factorial(int n) {
+    if (n == 0 || n == 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
 }

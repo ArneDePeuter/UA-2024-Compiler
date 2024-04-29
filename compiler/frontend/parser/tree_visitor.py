@@ -556,19 +556,31 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
+    def visitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        identifier = ctx.ID().getText()
+        type_ = self.visitType(ctx.type_())
+        if ctx.arraySpecifier():
+            array_specifier = self.visitArraySpecifier(ctx.arraySpecifier())
+            array_type = ast.ArrayType(
+                element_type=type_,
+                array_sizes=array_specifier,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+            return ast.Type(
+                type=array_type,
+                const=type_.const,
+                address_qualifiers=[],
+                line=ctx.start.line,
+                position=ctx.start.column
+            ), identifier
+        return type_, identifier
+
+
     def visitParamList(self, ctx:GrammarParser.ParamListContext):
         params = []
-        for i in range(len(ctx.type_())):  # This is done to match the type with the name
-            param_type = self.visitType(ctx.type_(i))
-            param_name = ctx.ID(i).getText()
-            array_specifier = self.visitArraySpecifier(ctx.arraySpecifier(i)) if ctx.arraySpecifier(i) else None
-            if array_specifier:
-                param_type = ast.ArrayType(
-                    element_type=param_type,
-                    array_sizes=array_specifier,
-                    line=ctx.start.line,
-                    position=ctx.start.column
-                )
+        for i in range(len(ctx.typedIdentifier())):  # This is done to match the type with the name
+            param_type, param_name = self.visitTypedIdentifier(ctx.typedIdentifier(i))
 
             params.append(ast.FunctionParameter(
                 type=param_type,
@@ -635,9 +647,10 @@ class TreeVisitor(GrammarVisitor):
         return [self.visitType(type_) for type_ in ctx.type_()]
 
     def visitForwardDeclaration(self, ctx:GrammarParser.ForwardDeclarationContext):
+        type_fwd, name_fwd = self.visitTypedIdentifier(ctx.typedIdentifier())
         return ast.ForwardDeclaration(
-            return_type=self.visitType(ctx.type_()),
-            name=ctx.ID().getText(),
+            return_type=type_fwd,
+            name=name_fwd,
             parameters=self.visitTypeList(ctx.typeList()) if ctx.typeList() else [],
             line=ctx.start.line,
             position=ctx.start.column
