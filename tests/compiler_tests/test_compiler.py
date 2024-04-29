@@ -10,7 +10,7 @@ def run_my_compiler(input_file):
         with open("test.c", "w") as file:
             code = code.replace("#include <stdio.h>", "")
             file.write(code)
-    include_paths = ["./includes", "./tests/compiler_tests/includes"]  # Add the include paths here
+    include_paths = [".", "./tests/compiler_tests"]  # Add the include paths here
     print("uhhh" + os.getcwd())
     compile_file("test.c", no_optimise=True, target_llvm=".", include_paths=include_paths)
     os.remove("test.c")
@@ -36,6 +36,7 @@ def run_clang(input_file):
 def test_compiler(input_file):
     input_file = os.path.join("./files", input_file)
     run_my_compiler(input_file)
+    print(open("test.ll").read())
     my_output = run_lli()
     os.remove("test.ll")
     clang_output = run_clang(input_file)
