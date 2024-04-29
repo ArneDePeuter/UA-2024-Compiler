@@ -42,4 +42,4 @@ def test_2() -> None:
     assert isinstance(main_func, ast.FunctionDeclaration)
     declaration = main_func.body.statements[0]
     assert isinstance(declaration, ast.VariableDeclaration)
-    assert declaration.var_type.base_type == ast.BaseType.int
+    assert declaration.var_type.type == ast.BaseType.int

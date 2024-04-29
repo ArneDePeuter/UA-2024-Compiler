@@ -105,7 +105,7 @@ class TreeVisitor(GrammarVisitor):
             const_qualifier = ctx.const() is not None
             address_qualifiers = [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
             return ast.Type(
-                base_type=ast.BaseType.int,  # Enum types are treated as integers
+                type=ast.BaseType.int,  # Enum types are treated as integers
                 const=const_qualifier,
                 address_qualifiers=address_qualifiers,
                 line=ctx.start.line,
@@ -714,7 +714,7 @@ class TreeVisitor(GrammarVisitor):
         value = 0  # Default start value for enums
         for enumerator in enumerators:
             const_int_declaration = ast.VariableDeclaration(
-                var_type=ast.Type(base_type=ast.BaseType.int, const=True),
+                var_type=ast.Type(type=ast.BaseType.int, const=True),
                 qualifiers=[ast.VariableDeclarationQualifier(
                     identifier=enumerator,
                     initializer=ast.INT(value=value)

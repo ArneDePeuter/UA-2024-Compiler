@@ -36,8 +36,6 @@ enumList
     : ID ('=' expression)? (',' comment? ID ('=' expression)?)* ','? comment?
     ;
 
-forwardDeclaration : type ID '(' typeList? ')' TERMINAL ;
-
 forwardDeclaration : typedIdentifier '(' typeList? ')' TERMINAL ;
 
 typeList : type ID? arraySpecifier? (',' type ID? arraySpecifier?)* ;
