@@ -365,7 +365,10 @@ class TreeVisitor(GrammarVisitor):
         elif ctx.functionCall():
             return self.visitFunctionCall(ctx.functionCall())
         elif ctx.STRING_LITERAL():
-            print(ctx.STRING_LITERAL().getText())
+            string = ctx.STRING_LITERAL().getText()
+            # Zero terminate the string
+            string = string[1:-1] + "\0"
+            return ast.ArrayInitializer(elements=[ast.CHAR(char, line=line, position=position) for char in string], line=line, position=position)
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(

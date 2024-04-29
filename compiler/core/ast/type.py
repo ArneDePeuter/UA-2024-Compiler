@@ -11,7 +11,6 @@ class BaseType(Enum):
     float = "float"
     bool = "bool"
     void = "void"
-    string = "string"
 
     def __str__(self):
         return self.value
