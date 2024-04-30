@@ -19,11 +19,11 @@ statement
     | switchStatement
     | returnStatement
     | expressionStatement
-    | structDeclaration
+    | structDefinition
     | ';'
     ;
 
-structDeclaration: 'struct' ID '{' structList '}' ;
+structDefinition: 'struct' ID '{' structList '}' ;
 
 structList: typedIdentifier ';' (typedIdentifier ';')* ;
 
