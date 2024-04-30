@@ -261,6 +261,9 @@ class SymbolTableVisitor(AstVisitor):
                 if right_expression_hierarchy > left_expression_hierarchy:
                     WarningError(f"Implicit conversion from {right_type} to {left_type}", node.line, node.position).warn()
                     return
+            # String literals (array of strings) are allowed to be assigned to char*
+            elif left_type.type == ast.BaseType.char and right_type.type == ast.BaseType.char and len(left_type.address_qualifiers) > 0:
+                pass
             else:
                 raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
 
