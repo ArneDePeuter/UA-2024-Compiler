@@ -298,3 +298,8 @@ class ArrayInitializer(Expression):
 class ArrayAccess(Expression):
     array_name: str
     index: Expression
+
+@dataclass
+class StructAccess(Expression):
+    struct_name: str
+    member_name: str

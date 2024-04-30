@@ -3,6 +3,7 @@ from typing import Optional, List
 from dataclasses import dataclass
 
 from .ast import AST
+from .statement import StructDefinition
 
 
 class BaseType(Enum):
@@ -41,6 +42,15 @@ class ArraySpecifier(AST):
         return False
 
 @dataclass
+class StructType(AST):
+    definition: StructDefinition
+
+    def __eq__(self, other):
+        if isinstance(other, StructType):
+            return self.definition is other.definition
+        return False
+
+@dataclass
 class ArrayType(AST):
     element_type: 'Type'
     array_sizes: List[ArraySpecifier]
@@ -53,7 +63,7 @@ class ArrayType(AST):
 
 @dataclass
 class Type(AST):
-    type: BaseType | ArrayType
+    type: BaseType | ArrayType | StructType
     const: Optional[bool] = False
     address_qualifiers: Optional[list[AddressQualifier]] = None
 

@@ -210,8 +210,10 @@ primary
     | structAccess
     ;
 
+structType: 'struct' ID;
+
 type
-    : const? (baseType | ID |enumType) addressQualifier*
+    : const? (baseType | ID |enumType | structType) addressQualifier*
     ;
 
 baseType

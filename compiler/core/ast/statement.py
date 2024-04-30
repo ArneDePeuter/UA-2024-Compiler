@@ -131,3 +131,15 @@ class ContinueStatement(Statement):
 class ReturnStatement(Statement):
     function: FunctionDeclaration
     expression: Optional[Expression] = None
+
+
+@dataclass
+class StructMember(Statement):
+    name: str
+    type: Type
+
+
+@dataclass
+class StructDefinition(Statement):
+    name: str
+    fields: list[StructMember]
