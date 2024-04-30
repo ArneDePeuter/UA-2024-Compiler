@@ -1,27 +1,13 @@
-struct B {
-    int num;
-};
+ struct ListNode {
+     int value;
+     struct ListNode* next_ptr;
+ };
 
-struct A {
-    int num;
-    char character;
-    struct B b;
-};
+ int main() {
+    struct ListNode node1 = {1, 0};
+    struct ListNode node2 = {3, &node1};
 
-void printA(struct A a) {
-    printf("%d", a.num);
-    printf("%c", a.character);
-    printf("%d", a.b.num);
-}
-
-int main() {
-    struct A a1 = {10, 'a', {1}};
-
-    printA((struct A){10,  'a', {1}});
-
-    printA(a1);
-    a1.num = 20;
-    printA(a1);
-
-    return 0;
-}
+    printf("%d", node1.value);
+    (*node2.next_ptr).value = 3;
+    printf("%d", node1.value);
+ }

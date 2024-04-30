@@ -587,13 +587,13 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
         struct_type = self.get_struct_type(node.struct_type.definition.name)
-        elements = []
+        struct_initializer = ir.Constant(struct_type, None)
+        counter = 0
         for target, el in zip(struct_type.elements, node.elements):
             value = TypeTranslator.match_llvm_type(self.builder, target, self.visit_expression(el).r_value)
-            elements.append(value)
+            struct_initializer = self.builder.insert_value(struct_initializer, value, [counter])
+            counter += 1
+
         return ExpressionEval(
-            r_value=ir.Constant(
-                struct_type,
-                elements
-            )
+            r_value=struct_initializer
         )

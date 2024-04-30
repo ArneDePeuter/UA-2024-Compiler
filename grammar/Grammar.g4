@@ -188,6 +188,8 @@ shiftExpression
     | unaryExpression
     ;
 
+structAccess: primary '.' ID | structAccess '.' ID;
+
 unaryExpression
     : ('+' | '-' | '!' | '*' | '&' | '++' | '--') unaryExpression
     | primary ('++' | '--')?
@@ -206,8 +208,6 @@ primary
     | printfCall
     | functionCall
     ;
-
-structAccess: primary '.' ID | structAccess '.' ID;
 
 structType: 'struct' ID;
 
