@@ -19,8 +19,15 @@ statement
     | switchStatement
     | returnStatement
     | expressionStatement
+    | structDeclaration
     | ';'
     ;
+
+structDeclaration: 'struct' ID '{' structList '}' ;
+
+structList: typedIdentifier ';' (typedIdentifier ';')* ;
+
+structAccess: ID '.' ID ;
 
 typedIdentifier : type ID arraySpecifier?;
 
@@ -200,6 +207,7 @@ primary
     | castExpression
     | printfCall
     | functionCall
+    | structAccess
     ;
 
 type
