@@ -287,8 +287,8 @@ class PrintFCall(Expression):
         f = "%f"
         c = "%c"
 
-    replacer: Replacer
-    expression: Expression
+    printfFormat: str
+    args: list[Expression]
 
 @dataclass
 class ArrayInitializer(Expression):

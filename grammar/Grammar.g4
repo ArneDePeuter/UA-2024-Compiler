@@ -82,7 +82,7 @@ breakStatement
     ;
 
 printfCall
-    : 'printf' '(' PRINTFREPLACER ',' expression ')'
+    : 'printf' '(' PRINTFFORMAT ',' argumentList? ')'
     ;
 
 continueStatement
@@ -199,7 +199,7 @@ primary
     | STRING_LITERAL
     | arrayInitializer
     | castExpression
-    | printfCall
+    //| printfCall
     | functionCall
     ;
 
@@ -280,8 +280,11 @@ BITAND : '&';
 BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
-PRINTFREPLACER: '"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ;
-STRING_LITERAL : '"' ( '\\' ('"' | '\\' | 'n' | 't' | '0' | 'r' | 'b' | 'f' | 'u' HexDigit HexDigit HexDigit HexDigit) | ~('\\' | '"') )* '"';
+PRINTFFORMAT: '"' (Text | EscapedPercent | FormatSpecifier)* '"';
+fragment Text: ~["%]+ ; // Matches any character except double quote and percent
+fragment EscapedPercent: '%%';  // Matches the escaped percent symbol
+fragment FormatSpecifier: '%' '.'?[0-9]* ('d' | 'x' | 's' | 'f' | 'c');  // Matches the format specifier with an optional width and a mandatory type code;
+STRING_LITERAL: '"' ( '\\' ('"' | '\\' | 'n' | 't' | '0' | 'r' | 'b' | 'f' | 'u' HexDigit HexDigit HexDigit HexDigit) | ~('\\' | '"') )* '"';
 fragment HexDigit : [0-9a-fA-F];
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
