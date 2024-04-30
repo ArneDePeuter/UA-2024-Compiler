@@ -18,12 +18,15 @@ class ExpressionEval:
 
 class LLVMIRGenerator(AstVisitor):
     def __init__(self):
-        self.module = ir.Module()
+        self.context = ir.Context()
+        self.module = ir.Module(context=self.context)
         self.builder = None
         self.var_addresses: dict[str, ir.AllocaInstr] = {}
         self.while_fd = {}
         self.functions = {}
+        self.defined_structs = {}
         self.defined_structs_members = {}
+
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
         self.printf_func = ir.Function(self.module, printf_type, name="printf")
@@ -69,7 +72,11 @@ class LLVMIRGenerator(AstVisitor):
         super().visit_statement(node)
 
     def get_struct_type(self, name: str):
-        return ir.global_context.get_identified_type(f"struct.{name}")
+        if name in self.defined_structs:
+            return self.defined_structs[name]
+        new = self.context.get_identified_type(f"struct.{name}")
+        self.defined_structs[name] = new
+        return new
 
     def visit_type(self, node: ast.Type) -> ir.types.Type:
         if isinstance(node.type, ast.StructType):

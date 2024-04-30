@@ -1,3 +1,4 @@
+ #include <stdio.h>
 
  struct ListNode {
      int value;
@@ -8,9 +9,7 @@
     struct ListNode node1 = {1, 0};
     struct ListNode node2 = {3, &node1};
 
-    printf("%d", (*node2.next_ptr).value);
     printf("%d", node1.value);
-    (*node2.next_ptr).value = 3;
-    printf("%d", (*node2.next_ptr).value);
+    node2.next_ptr->value = 3;
     printf("%d", node1.value);
  }

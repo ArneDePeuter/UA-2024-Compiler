@@ -188,7 +188,12 @@ shiftExpression
     | unaryExpression
     ;
 
-structAccess: primary '.' ID | structAccess '.' ID;
+structAccess
+    : primary method='.' ID
+    | structAccess method='.' ID
+    | primary method='->' ID
+    | structAccess method='->' ID
+    ;
 
 unaryExpression
     : ('+' | '-' | '!' | '*' | '&' | '++' | '--') unaryExpression

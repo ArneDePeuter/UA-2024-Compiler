@@ -800,9 +800,18 @@ class TreeVisitor(GrammarVisitor):
         ]
 
     def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
-        return ast.StructAccess(
+        access = ast.StructAccess(
             target=self.visit(ctx.primary()) if ctx.primary() else self.visitStructAccess(ctx.structAccess()),
             member_name=ctx.ID().getText(),
             line=ctx.start.line,
             position=ctx.start.column
         )
+        if ctx.method.text == "->":
+            access.target = ast.UnaryExpression(
+                value=access.target,
+                operator=ast.UnaryExpression.Operator.DEREFERENCE,
+                prefix=True,
+                line=access.target.line,
+                position=access.target.position
+            )
+        return access
