@@ -79,4 +79,7 @@ class StructType(AST):
             return self.definition is other.definition
         return False
 
+    def __str__(self):
+        return f"struct {self.definition.name}"
+
 from .statement import StructDefinition

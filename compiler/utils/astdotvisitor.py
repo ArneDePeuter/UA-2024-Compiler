@@ -179,10 +179,8 @@ class AstDotVisitor(AstVisitor):
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
             self.total += f"{node_name} -> {array_spec_id};\n"
         elif isinstance(node.type, ast.StructType):
-            descr = f"{const} {node.type.definition.name} {addrs}"
-            definition_name = id(node.type.definition)
+            descr = f"{const} struct {node.type.definition.name} {addrs}"
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
-            self.total += f"{node_name} -> {definition_name};\n"
         else:
             descr = f"{const}{node.type.name} {addrs}"
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
