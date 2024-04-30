@@ -338,13 +338,8 @@ class LLVMIRGenerator(AstVisitor):
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
 
-            # Store the value to the allocated variable
-            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
-                null_ptr = ir.Constant(decl_type, None)
-                self.builder.store(null_ptr, alloc)
-            else:
-                value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
-                self.builder.store(value, alloc)
+            value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
+            self.builder.store(value, alloc)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement) -> None:
         left_eval = self.visit_expression(node.left)
@@ -592,9 +587,13 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
         struct_type = self.get_struct_type(node.struct_type.definition.name)
+        elements = []
+        for target, el in zip(struct_type.elements, node.elements):
+            value = TypeTranslator.match_llvm_type(self.builder, target, self.visit_expression(el).r_value)
+            elements.append(value)
         return ExpressionEval(
             r_value=ir.Constant(
                 struct_type,
-                [self.visit_expression(el).r_value for el in node.elements]
+                elements
             )
         )

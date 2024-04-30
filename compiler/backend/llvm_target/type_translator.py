@@ -57,6 +57,8 @@ class TypeTranslator:
 
         if target == value.type:
             return value
+        elif isinstance(target, ir.PointerType) and not isinstance(value, ir.PointerType):
+            return ir.Constant(target, None)
         elif isinstance(target, ir.IntType) and isinstance(value.type, ir.FloatType):
             return builder.fptosi(value, target)
         elif isinstance(target, ir.FloatType) and isinstance(value.type, ir.IntType):
