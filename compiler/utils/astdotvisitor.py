@@ -324,7 +324,11 @@ class AstDotVisitor(AstVisitor):
 
     def visit_struct_access(self, node: ast.StructAccess):
         node_id = id(node)
-        self.total += f"{node_id} [label=\"Struct access: {node.struct_name}.{node.member_name}\"];\n"
+        self.total += f"{node_id} [label=\"Struct access to member {node.member_name}\"];\n"
+
+        self.visit_expression(node.target)
+        target_id = id(node.target)
+        self.total += f"{node_id} -> {target_id} [label=\"target\"];\n"
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         node_id = id(node)

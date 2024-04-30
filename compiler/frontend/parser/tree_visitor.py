@@ -344,18 +344,20 @@ class TreeVisitor(GrammarVisitor):
                     position=ctx.start.column
                 )
             return self.visit(ctx.primary())
+        if ctx.unaryExpression():
+            expr = self.visit(ctx.unaryExpression())
+            op = ctx.getChild(0).getText()
+            operator = ast.UnaryExpression.Operator(op)
 
-        expr = self.visit(ctx.unaryExpression())
-        op = ctx.getChild(0).getText()
-        operator = ast.UnaryExpression.Operator(op)
-
-        return ast.UnaryExpression(
-            value=expr,
-            operator=operator,
-            prefix=True,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+            return ast.UnaryExpression(
+                value=expr,
+                operator=operator,
+                prefix=True,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        if ctx.structAccess():
+            return self.visitStructAccess(ctx.structAccess())
 
     @staticmethod
     def remove_dashes(input):
@@ -390,8 +392,6 @@ class TreeVisitor(GrammarVisitor):
             return self.visitPrintfCall(ctx.printfCall())
         elif ctx.functionCall():
             return self.visitFunctionCall(ctx.functionCall())
-        elif ctx.structAccess():
-            return self.visitStructAccess(ctx.structAccess())
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
@@ -791,8 +791,8 @@ class TreeVisitor(GrammarVisitor):
 
     def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
         return ast.StructAccess(
-            struct_name=ctx.ID(0).getText(),
-            member_name=ctx.ID(1).getText(),
+            target=self.visit(ctx.primary()),
+            member_name=ctx.ID().getText(),
             line=ctx.start.line,
             position=ctx.start.column
         )

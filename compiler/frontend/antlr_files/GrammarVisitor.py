@@ -29,11 +29,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#structAccess.
-    def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#typedIdentifier.
     def visitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
         return self.visitChildren(ctx)
@@ -251,6 +246,11 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#primary.
     def visitPrimary(self, ctx:GrammarParser.PrimaryContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#structAccess.
+    def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
         return self.visitChildren(ctx)
 
 

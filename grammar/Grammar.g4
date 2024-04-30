@@ -27,8 +27,6 @@ structDefinition: 'struct' ID '{' structList '}' ;
 
 structList: typedIdentifier ';' (typedIdentifier ';')* ;
 
-structAccess: ID '.' ID ;
-
 typedIdentifier : type ID arraySpecifier?;
 
 enumDeclaration
@@ -193,8 +191,8 @@ shiftExpression
 unaryExpression
     : ('+' | '-' | '!' | '*' | '&' | '++' | '--') unaryExpression
     | primary ('++' | '--')?
+    | structAccess
     ;
-
 
 primary
     : NUMBER
@@ -207,8 +205,9 @@ primary
     | castExpression
     | printfCall
     | functionCall
-    | structAccess
     ;
+
+structAccess: primary '.' ID ;
 
 structType: 'struct' ID;
 

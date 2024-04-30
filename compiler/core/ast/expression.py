@@ -301,5 +301,5 @@ class ArrayAccess(Expression):
 
 @dataclass
 class StructAccess(Expression):
-    struct_name: str
+    target: Expression
     member_name: str

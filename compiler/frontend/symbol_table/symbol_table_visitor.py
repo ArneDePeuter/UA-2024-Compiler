@@ -191,11 +191,11 @@ class SymbolTableVisitor(AstVisitor):
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
 
-                # Define the variable in the symbol table
-                self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
+            # Define the variable in the symbol table
+            self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
             # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
-            elif initializer is not None:
+            if initializer is not None:
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration
                 initializer_type = self.visit_expression(initializer)
 
@@ -483,7 +483,27 @@ class SymbolTableVisitor(AstVisitor):
         return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
 
     def visit_struct_access(self, node: ast.StructAccess):
-        ...
+        tgt_type: ast.Type = self.visit_expression(node.target)
+        struct_type = tgt_type.type
+        if not isinstance(struct_type, ast.StructType):
+            raise SemanticError(f"Struct access method to an object which isn't a struct.", node.line, node.position)
+        if len(tgt_type.address_qualifiers) > 0:
+            raise SemanticError(f"Struct access method to a pointer", node.line, node.position)
+
+        target_member = None
+        for member in struct_type.definition.members:
+            if member.name == node.member_name:
+                target_member = member
+                break
+
+        if target_member is None:
+            raise SemanticError(f"Struct variable of struct type: {tgt_type} has no member named {node.member_name}")
+
+        if tgt_type.const:
+            cp = copy.deepcopy(target_member.type)
+            cp.const = tgt_type.const
+            return cp
+        return target_member.type
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         ...

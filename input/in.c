@@ -1,17 +1,14 @@
-struct Leg {
-    int healthy;
-}
 
-struct Dog {
-    int number;
-    struct Leg legs[4];
-    struct Dog* parent;
-}
+
+struct A {
+    int a;
+    char b;
+};
 
 int main() {
-    struct Dog papa = {0, {{0}, {1}, {1}, {1}}, 0};
-    struct Dog kid = {0, {{1}, {1}, {1}, {1}}, &papa};
-    printf("%d", kid.number);
+    struct A a = {1, 'c'};
+    struct A* a_ptr = &a;
+    int a_a = (*(a_ptr+1)).a;
+    
     return 0;
 }
-
