@@ -31,7 +31,7 @@ class LLVMIRGenerator(AstVisitor):
         super().__init__()
 
     def generate_llvm_ir(self, node):
-        self.visit(node)
+        self.visit_statement(node)
         result = str(self.module)
         lines = result.split("\n")
         lines.remove(lines[1])

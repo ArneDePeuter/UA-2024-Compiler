@@ -26,4 +26,4 @@ def test_pass(input_file) -> None:
     symbol_table_dot_visitor.generate_dot(symbol_table_visitor.symbol_table.global_scope)
 
     ast_dot_visitor = AstDotVisitor()
-    ast_dot_visitor.visit(ast)
+    ast_dot_visitor.visit_statement(ast)

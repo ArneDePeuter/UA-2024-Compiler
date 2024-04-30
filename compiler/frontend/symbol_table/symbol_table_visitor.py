@@ -191,9 +191,6 @@ class SymbolTableVisitor(AstVisitor):
                     raise SemanticError(f"Variable '{identifier}' is already declared.", node.line, node.position)
                 raise SemanticError(f"Variable '{identifier}' is already defined.", node.line, node.position)
 
-            # Define the variable in the symbol table
-            self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
-
             # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
             if initializer is not None:
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration

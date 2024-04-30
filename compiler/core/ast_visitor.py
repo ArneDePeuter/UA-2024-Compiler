@@ -43,15 +43,6 @@ class AstVisitor(ABC):
             ast.StructDefinition: self.visit_struct_definition,
         }
 
-    def visit(self, node: ast.AST):
-        # This is the generic visit method.
-        if isinstance(node, ast.Expression):
-            return self.visit_expression(node)
-        elif isinstance(node, ast.Statement):
-            return self.visit_statement(node)
-        else:
-            raise TypeError(f"Unknown node type: {type(node)}")
-
     def visit_expression(self, node: ast.Expression):
         return self.expression_fd.get(type(node))(node)
 
