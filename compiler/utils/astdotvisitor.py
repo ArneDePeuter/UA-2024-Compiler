@@ -195,8 +195,8 @@ class AstDotVisitor(AstVisitor):
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         node_name = id(node)
-
-        self.total += f"{node_name} [label=\"Comment: \n {node.content}\"];\n"
+        valid_content = node.content.replace('"', "'")
+        self.total += f"{node_name} [label=\"Comment: \n {valid_content}\"];\n"
 
     def visit_if_statement(self, node: ast.IfStatement):
         node_name = str(id(node))

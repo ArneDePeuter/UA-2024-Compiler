@@ -1,29 +1,30 @@
-
-
 struct B {
-    int num1;
+    int num;
 };
 
 struct A {
-    int num1[3];
-    char num2;
+    int num;
+    char character;
     struct B b;
-    struct A* parent;
 };
 
 void printA(struct A a) {
-    printf("%d", a.num1);
-    printf("%d", a.num2);
-    printf("%d", a.b.num1);
+//    printf("%d", a.numarray[0]);
+//    printf("%d", a.numarray[1]);
+//    printf("%d", a.numarray[2]);
+    printf("%d", a.num);
+    printf("%c", a.character);
+    printf("%d", a.b.num);
 }
 
 int main() {
-    struct A a1 = {{1, 2, 3}, 'a', {1}, 0};
-    struct A* a_ptr = &a1;
+    struct A a1 = {10, 'a', {1}};
 
-    (*a_ptr).num1;
+    printA((struct A){10,  'a', {1}});
 
-    printA((struct A){{1, 2, 3}, 'a', {1}, &a1});
+    printA(a1);
+    a1.num = 20;
+    printA(a1);
 
     return 0;
 }

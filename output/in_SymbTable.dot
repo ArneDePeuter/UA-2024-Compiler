@@ -12,6 +12,4 @@ digraph SymbolTable {
   node1 -> node3;
   node3 -> node3_a1 [color=black];
   node3_a1 [label="struct A a1", shape=box, style=filled, fillcolor=white];
-  node3 -> node3_a_ptr [color=black];
-  node3_a_ptr [label="struct A* a_ptr", shape=box, style=filled, fillcolor=white];
 }

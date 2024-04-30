@@ -23,6 +23,7 @@ class LLVMIRGenerator(AstVisitor):
         self.var_addresses: dict[str, ir.AllocaInstr] = {}
         self.while_fd = {}
         self.functions = {}
+        self.defined_structs_members = {}
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
         self.printf_func = ir.Function(self.module, printf_type, name="printf")
@@ -44,7 +45,12 @@ class LLVMIRGenerator(AstVisitor):
         return super().visit_expression(node)
 
     def visit_statement(self, node: ast.Statement):
-        if self.builder is None and (isinstance(node, ast.FunctionDeclaration) or isinstance(node, ast.Program) or isinstance(node, ast.ForwardDeclaration)):
+        if self.builder is None and (
+                isinstance(node, ast.FunctionDeclaration)
+                or isinstance(node, ast.Program)
+                or isinstance(node, ast.ForwardDeclaration)
+                or isinstance(node, ast.StructDefinition)
+        ):
             super().visit_statement(node)
             return
 
@@ -62,7 +68,17 @@ class LLVMIRGenerator(AstVisitor):
                 pass
         super().visit_statement(node)
 
+    def get_struct_type(self, name: str):
+        return ir.global_context.get_identified_type(f"struct.{name}")
+
     def visit_type(self, node: ast.Type) -> ir.types.Type:
+        if isinstance(node.type, ast.StructType):
+            struct_type = self.get_struct_type(node.type.definition.name)
+            if node.address_qualifiers:
+                for qualifier in node.address_qualifiers:
+                    if qualifier == ast.AddressQualifier.pointer:
+                        struct_type = ir.PointerType(struct_type)
+            return struct_type
         return TypeTranslator.translate_ast_type(node)
 
     def visit_int(self, node: ast.INT) -> ExpressionEval:
@@ -522,6 +538,8 @@ class LLVMIRGenerator(AstVisitor):
             raise ValueError("All dimensions must have a resolvable size")
         return ExpressionEval(l_value=None, r_value=dimensions)
     def visit_array_initializer(self, node: ast.ArrayInitializer):
+        if node.struct_type:
+            return self.visit_struct_initializer(node)
         array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
         return ExpressionEval(r_value=array)
 
@@ -544,3 +562,39 @@ class LLVMIRGenerator(AstVisitor):
         value_at_index = self.builder.load(element_ptr)
 
         return ExpressionEval(l_value=element_ptr, r_value=value_at_index)
+
+    def visit_struct_access(self, node: ast.StructAccess):
+        eval = self.visit_expression(node.target)
+        if not eval.l_value:
+            raise RuntimeError("No lvalue found for struct access method")
+
+        members = self.defined_structs_members[eval.l_value.type.pointee]
+        member_index = members.index(node.member_name)
+
+        member_address = self.builder.gep(
+            eval.l_value,
+            [IrIntType(0), IrIntType(member_index)]
+        )
+
+        value = self.builder.load(member_address)
+
+        return ExpressionEval(l_value=member_address, r_value=value)
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        struct = self.get_struct_type(node.name)
+        struct_members = []
+        member_names = []
+        for member in node.members:
+            struct_members.append(self.visit_type(member.type))
+            member_names.append(member.name)
+        self.defined_structs_members[struct] = member_names
+        struct.set_body(*struct_members)
+
+    def visit_struct_initializer(self, node: ast.ArrayInitializer):
+        struct_type = self.get_struct_type(node.struct_type.definition.name)
+        return ExpressionEval(
+            r_value=ir.Constant(
+                struct_type,
+                [self.visit_expression(el).r_value for el in node.elements]
+            )
+        )

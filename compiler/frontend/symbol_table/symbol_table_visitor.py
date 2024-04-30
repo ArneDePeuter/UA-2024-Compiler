@@ -494,7 +494,7 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Struct access method to a pointer", node.line, node.position)
 
         target_member = None
-        for member in struct_type.definition.members:
+        for i, member in enumerate(struct_type.definition.members):
             if member.name == node.member_name:
                 target_member = member
                 break

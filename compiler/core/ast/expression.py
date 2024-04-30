@@ -301,7 +301,7 @@ class ArrayInitializer(Expression):
             raise SemanticError(f"Too few elements in struct initializer, default params for struct not implemented.", self.line, self.position)
         self.struct_type = struct_type
         for i, member in enumerate(self.struct_type.definition.members):
-            if isinstance(member.type.type, StructType) and len(member.type.address_qualifiers) == 0:
+            if isinstance(member.type.type, StructType) and len(member.type.address_qualifiers) == 0 and isinstance(self.elements[i], ArrayInitializer):
                 self.elements[i].set_struct_type(member.type.type)
 
 @dataclass
