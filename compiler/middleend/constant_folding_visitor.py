@@ -299,3 +299,11 @@ class ConstantFoldingVisitor(AstVisitor):
     def visit_array_access(self, node: ast.ArrayAccess):
         node.array_name = self.visit_expression(node.array_name)
         return node
+
+    def visit_struct_access(self, node: ast.StructAccess):
+        # TOD0
+        return node
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        # TODO
+        return node

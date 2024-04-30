@@ -19,7 +19,7 @@ def compile_file(input_file: str, render_ast: str = None, render_symb: str = Non
     ast = tree_to_ast(tree, input_stream)
 
     symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
-    symbol_table_visitor.visit_program(ast)
+    # symbol_table_visitor.visit_program(ast)
 
     # middle end
     if not no_optimise:

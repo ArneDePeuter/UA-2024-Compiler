@@ -22,6 +22,7 @@ class AstVisitor(ABC):
             ast.ArraySpecifier: self.visit_array_specifier,
             ast.ArrayInitializer: self.visit_array_initializer,
             ast.ArrayAccess: self.visit_array_access,
+            ast.StructAccess: self.visit_struct_access,
         }
         self.statement_fd = {
             ast.ExpressionStatement: self.visit_expression_statement,
@@ -39,6 +40,7 @@ class AstVisitor(ABC):
             ast.ContinueStatement: self.visit_continue_statement,
             ast.ReturnStatement: self.visit_return_statement,
             ast.ForwardDeclaration: self.visit_forward_declaration,
+            ast.StructDefinition: self.visit_struct_definition,
         }
 
     def visit(self, node: ast.AST):
@@ -182,4 +184,12 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_array_access(self, node: ast.ArrayAccess):
+        ...
+
+    @abstractmethod
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        ...
+
+    @abstractmethod
+    def visit_struct_access(self, node: ast.StructAccess):
         ...

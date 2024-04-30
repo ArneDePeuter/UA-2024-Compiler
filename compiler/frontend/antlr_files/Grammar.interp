@@ -149,7 +149,7 @@ MULTI_LINE_COMMENT
 rule names:
 program
 statement
-structDeclaration
+structDefinition
 structList
 structAccess
 typedIdentifier

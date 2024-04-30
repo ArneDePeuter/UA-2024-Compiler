@@ -178,6 +178,11 @@ class AstDotVisitor(AstVisitor):
             array_spec_id = self.visit_array_specifier(node.type.array_sizes)
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
             self.total += f"{node_name} -> {array_spec_id};\n"
+        elif isinstance(node.type, ast.StructType):
+            descr = f"{const} {node.type.definition.name} {addrs}"
+            definition_name = id(node.type.definition)
+            self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
+            self.total += f"{node_name} -> {definition_name};\n"
         else:
             descr = f"{const}{node.type.name} {addrs}"
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
@@ -307,7 +312,7 @@ class AstDotVisitor(AstVisitor):
         self.total += f"{node_id} [label=\"ArrayInitializer\"];\n"
 
         for element in node.elements:
-            self.visit(element)
+            self.visit_expression(element)
             element_id = id(element)
             self.total += f"{node_id} -> {element_id};\n"
 
@@ -319,3 +324,24 @@ class AstDotVisitor(AstVisitor):
         index_id = id(node.index)
         self.total += f"{node_id} -> {index_id} [label=\"index\"];\n"
 
+    def visit_struct_access(self, node: ast.StructAccess):
+        node_id = id(node)
+        self.total += f"{node_id} [label=\"Struct access: {node.struct_name}.{node.member_name}\"];\n"
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        node_id = id(node)
+        self.total += f"{node_id} [label=\"StructDefinition: {node.name}\"];\n"
+
+        for member in node.members:
+            member_id = id(member)
+            self.visit_struct_member(member)
+            self.total += f"{node_id} -> {member_id};\n"
+
+    def visit_struct_member(self, node: ast.StructMember):
+        node_id = id(node)
+
+        self.total += f"{node_id} [label=\"Struct Member: {node.name}\"];\n"
+
+        type_id = id(node.type)
+        self.visit_type(node.type)
+        self.total += f"{node_id} -> {type_id};\n"

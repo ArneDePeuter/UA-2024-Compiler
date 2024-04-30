@@ -26,12 +26,12 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#structDeclaration.
-    def enterStructDeclaration(self, ctx:GrammarParser.StructDeclarationContext):
+    # Enter a parse tree produced by GrammarParser#structDefinition.
+    def enterStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#structDeclaration.
-    def exitStructDeclaration(self, ctx:GrammarParser.StructDeclarationContext):
+    # Exit a parse tree produced by GrammarParser#structDefinition.
+    def exitStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
         pass
 
 

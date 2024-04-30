@@ -481,3 +481,9 @@ class SymbolTableVisitor(AstVisitor):
         if index_type.type != ast.BaseType.int:
             raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
         return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
+
+    def visit_struct_access(self, node: ast.StructAccess):
+        ...
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        ...

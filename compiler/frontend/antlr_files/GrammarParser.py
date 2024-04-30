@@ -266,7 +266,7 @@ class GrammarParser ( Parser ):
 
     RULE_program = 0
     RULE_statement = 1
-    RULE_structDeclaration = 2
+    RULE_structDefinition = 2
     RULE_structList = 3
     RULE_structAccess = 4
     RULE_typedIdentifier = 5
@@ -321,7 +321,7 @@ class GrammarParser ( Parser ):
     RULE_assignmentOperator = 54
     RULE_comment = 55
 
-    ruleNames =  [ "program", "statement", "structDeclaration", "structList", 
+    ruleNames =  [ "program", "statement", "structDefinition", "structList", 
                    "structAccess", "typedIdentifier", "enumDeclaration", 
                    "enumBody", "enumList", "forwardDeclaration", "typeList", 
                    "returnStatement", "functionDeclaration", "paramList", 
@@ -547,8 +547,8 @@ class GrammarParser ( Parser ):
             return self.getTypedRuleContext(GrammarParser.ExpressionStatementContext,0)
 
 
-        def structDeclaration(self):
-            return self.getTypedRuleContext(GrammarParser.StructDeclarationContext,0)
+        def structDefinition(self):
+            return self.getTypedRuleContext(GrammarParser.StructDefinitionContext,0)
 
 
         def TERMINAL(self):
@@ -675,7 +675,7 @@ class GrammarParser ( Parser ):
             elif la_ == 16:
                 self.enterOuterAlt(localctx, 16)
                 self.state = 133
-                self.structDeclaration()
+                self.structDefinition()
                 pass
 
             elif la_ == 17:
@@ -694,7 +694,7 @@ class GrammarParser ( Parser ):
         return localctx
 
 
-    class StructDeclarationContext(ParserRuleContext):
+    class StructDefinitionContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -709,29 +709,29 @@ class GrammarParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return GrammarParser.RULE_structDeclaration
+            return GrammarParser.RULE_structDefinition
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterStructDeclaration" ):
-                listener.enterStructDeclaration(self)
+            if hasattr( listener, "enterStructDefinition" ):
+                listener.enterStructDefinition(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitStructDeclaration" ):
-                listener.exitStructDeclaration(self)
+            if hasattr( listener, "exitStructDefinition" ):
+                listener.exitStructDefinition(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStructDeclaration" ):
-                return visitor.visitStructDeclaration(self)
+            if hasattr( visitor, "visitStructDefinition" ):
+                return visitor.visitStructDefinition(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def structDeclaration(self):
+    def structDefinition(self):
 
-        localctx = GrammarParser.StructDeclarationContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 4, self.RULE_structDeclaration)
+        localctx = GrammarParser.StructDefinitionContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 4, self.RULE_structDefinition)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 137
