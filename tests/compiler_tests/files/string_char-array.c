@@ -1,3 +1,6 @@
+#include <stdio.h>
+
 int main () {
-    char c[] = "Hello, World!";
+    char c[7] = "Hello!";
+    printf("%c", c[0]);
 }

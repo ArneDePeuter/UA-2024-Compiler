@@ -324,8 +324,18 @@ class LLVMIRGenerator(AstVisitor):
 
             # Store the value to the allocated variable
             if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
-                null_ptr = ir.Constant(decl_type, None)
-                self.builder.store(null_ptr, alloc)
+                # String literal, when the variable is a pointer to char
+                if isinstance(expr_eval.r_value.type, ir.ArrayType) and isinstance(expr_eval.r_value, ir.Constant):
+                    str_val = expr_eval.r_value
+                    global_str = ir.GlobalVariable(self.module, str_val.type, name=qualifier.identifier + "_str")
+                    global_str.linkage = 'internal'
+                    global_str.global_constant = True
+                    global_str.initializer = str_val
+                    str_ptr = global_str.gep([ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                    self.builder.store(str_ptr, alloc)
+                else:
+                    null_ptr = ir.Constant(decl_type, None)
+                    self.builder.store(null_ptr, alloc)
             else:
                 value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
                 self.builder.store(value, alloc)
