@@ -301,9 +301,7 @@ class ConstantFoldingVisitor(AstVisitor):
         return node
 
     def visit_struct_access(self, node: ast.StructAccess):
-        # TOD0
         return node
 
     def visit_struct_definition(self, node: ast.StructDefinition):
-        # TODO
         return node
