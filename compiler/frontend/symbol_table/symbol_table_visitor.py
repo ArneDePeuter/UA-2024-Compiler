@@ -203,6 +203,7 @@ class SymbolTableVisitor(AstVisitor):
                     if not isinstance(initializer, ast.ArrayInitializer):
                         raise SemanticError(f"Array '{identifier}' must be initialized with an array initializer.", node.line, node.position)
                     if initializer_type.type.array_sizes != node.var_type.type.array_sizes: # TODO: if initializer_type.type.array_sizes > node.var_type.type.array_sizes
+                        print(initializer_type.type.array_sizes, node.var_type.type.array_sizes)
                         raise SemanticError(f"Array '{identifier}' must be initialized with {node.var_type.type.array_sizes} elements.", node.line, node.position)
                     if initializer_type.type.element_type != node.var_type.type.element_type:
                         raise SemanticError(f"Array '{identifier}' must be initialized with elements of type {node.var_type.type.element_type}.", node.line, node.position)

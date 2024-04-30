@@ -149,9 +149,10 @@ class TreeVisitor(GrammarVisitor):
         # Check if the type needs to be changed to an array type
         for qualifier in qualifiers:
             if qualifier.array_specifier:
+                array_size = ast.INT(value=len(qualifier.initializer.elements))
                 array_type = ast.ArrayType(
                     element_type=var_type,
-                    array_sizes=qualifier.array_specifier,
+                    array_sizes=qualifier.array_specifier if qualifier.array_specifier.sizes else ast.ArraySpecifier(sizes=[array_size]),
                     line=ctx.start.line, position=ctx.start.column
                 )
                 qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
