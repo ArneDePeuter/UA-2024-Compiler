@@ -150,7 +150,7 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
-            self.visit(statement)
+            self.visit_statement(statement)
         for symbol in self.symbol_table.global_scope.symbols.values():
             if isinstance(symbol.ast_ref, ast.ForwardDeclaration):
                 raise SemanticError(f"Function '{symbol.name}' is forward declared but not defined.", node.line, node.position)
@@ -170,7 +170,7 @@ class SymbolTableVisitor(AstVisitor):
     def visit_body(self, node: ast.Body):
         self.symbol_table.enter_scope()
         for statement in node.statements:
-            self.visit(statement)
+            self.visit_statement(statement)
         self.symbol_table.exit_scope()
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
@@ -234,8 +234,8 @@ class SymbolTableVisitor(AstVisitor):
             self.symbol_table.define_symbol(Symbol(identifier, node.var_type, scope_level=self.symbol_table.current_scope.level))
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        left_type = self.visit(node.left)
-        right_type = self.visit(node.right)
+        left_type = self.visit_expression(node.left)
+        right_type = self.visit_expression(node.right)
 
         # Check if the leftvalue is an expression-unary
         if isinstance(node.left, ast.UnaryExpression) and node.left.operator == ast.UnaryExpression.Operator.ADDRESSOF:
@@ -265,21 +265,21 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Cannot assign to a const variable.", node.line, node.position)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
-        self.visit(node.expression)
+        self.visit_expression(node.expression)
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         ...
 
     def visit_if_statement(self, node: ast.IfStatement):
         self.visit_expression(node.condition)
-        self.visit(node.body)
+        self.visit_statement(node.body)
 
     def visit_else_statement(self, node: ast.ElseStatement):
-        self.visit(node.body)
+        self.visit_statement(node.body)
 
     def visit_while_statement(self, node: ast.WhileStatement):
-        self.visit(node.expression)
-        self.visit(node.to_execute)
+        self.visit_expression(node.expression)
+        self.visit_statement(node.to_execute)
 
     def visit_break_statement(self, node: ast.BreakStatement):
         if node.while_statement is None:
@@ -353,7 +353,7 @@ class SymbolTableVisitor(AstVisitor):
             ))
 
         # Visit the function body
-        self.visit(node.body)
+        self.visit_statement(node.body)
 
         self.symbol_table.exit_scope()
         self.inside_declaration = False
@@ -440,6 +440,9 @@ class SymbolTableVisitor(AstVisitor):
             set.add(self.visit_expression(node))
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
+        if node.struct_type:
+            return self.visit_struct_initializer(node)
+
         element_types = set()
         self.element_type_in_set(element_types, node)
 
@@ -507,3 +510,27 @@ class SymbolTableVisitor(AstVisitor):
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         ...
+
+    def visit_struct_initializer(self, node: ast.ArrayInitializer):
+        struct_type = node.struct_type
+
+        if len(struct_type.definition.members) != len(node.elements):
+            raise SemanticError(f"Struct initializer has {len(node.elements)} elements but the struct has {len(struct_type.definition.members)} members.", node.line, node.position)
+
+        for i, member in enumerate(struct_type.definition.members):
+            member_type = member.type
+            element = node.elements[i]
+            element_type = self.visit_expression(node.elements[i])
+            if member_type.type != element_type.type or len(member_type.address_qualifiers) != len(element_type.address_qualifiers):
+                if isinstance(element, ast.INT) and element.value == 0 and len(member_type.address_qualifiers) > 0:
+                    pass
+                elif len(member_type.address_qualifiers) == 0 and len(element_type.address_qualifiers) == 0:
+                    # Determine the type of the expression based on the hierarchy  float, int, char
+                    member_hierarchy = TypeCaster.get_heirarchy_of_base_type(member_type.type)
+                    element_hierarchy = TypeCaster.get_heirarchy_of_base_type(element_type.type)
+                    if element_hierarchy > member_hierarchy:
+                        WarningError(f"Implicit conversion from {element_type} to {member_type}", node.line, node.position).warn()
+                else:
+                    raise SemanticError(f"Type mismatch in struct initializer: {str(member_type)} and {str(element_type)}.", node.line, node.position)
+
+        return ast.Type(type=struct_type, const=False, address_qualifiers=[], line=node.line, position=node.position)

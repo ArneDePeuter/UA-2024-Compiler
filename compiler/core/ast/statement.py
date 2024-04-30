@@ -135,3 +135,8 @@ class StructMember(Statement):
 class StructDefinition(Statement):
     name: str
     members: list[StructMember]
+
+    def __eq__(self, other):
+        if isinstance(other, StructDefinition):
+            return self.name == other.name
+        return False

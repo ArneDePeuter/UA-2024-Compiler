@@ -76,7 +76,7 @@ class StructType(AST):
 
     def __eq__(self, other):
         if isinstance(other, StructType):
-            return self.definition is other.definition
+            return self.definition == other.definition
         return False
 
     def __str__(self):

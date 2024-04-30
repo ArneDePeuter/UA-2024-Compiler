@@ -207,7 +207,7 @@ primary
     | functionCall
     ;
 
-structAccess: primary '.' ID ;
+structAccess: primary '.' ID | structAccess '.' ID;
 
 structType: 'struct' ID;
 

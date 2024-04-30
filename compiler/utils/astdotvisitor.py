@@ -56,9 +56,9 @@ class AstDotVisitor(AstVisitor):
         type_node_name = str(id(node.cast_type))
         self.total += f'{node_name} -> {type_node_name};\n'
         self.visit_type(node.cast_type)
-        expression_node_name = str(id(ast.expression))
-        self.total += f'{node_name} -> {expression_node_name};\n'
         self.visit_expression(node.expression)
+        expression_node_name = id(node.expression)
+        self.total += f'{node_name} -> {expression_node_name};\n'
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         self.gen_binary_dot(node, node.operator.name)
@@ -307,7 +307,10 @@ class AstDotVisitor(AstVisitor):
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         node_id = id(node)
-        self.total += f"{node_id} [label=\"ArrayInitializer\"];\n"
+        if node.struct_type:
+            self.total += f"{node_id} [label=\"StructInitializer\"];\n"
+        else:
+            self.total += f"{node_id} [label=\"ArrayInitializer\"];\n"
 
         for element in node.elements:
             self.visit_expression(element)

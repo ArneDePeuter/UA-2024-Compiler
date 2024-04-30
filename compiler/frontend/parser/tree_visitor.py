@@ -181,7 +181,6 @@ class TreeVisitor(GrammarVisitor):
                     line=ctx.start.line, position=ctx.start.column
                 )
                 qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
-                #qualifiers.remove(qualifier)
                 var_type = ast.Type(
                     type=array_type,
                     const=var_type.const,
@@ -189,6 +188,12 @@ class TreeVisitor(GrammarVisitor):
                     line=ctx.start.line,
                     position=ctx.start.column
                 )
+
+        # Check if the list initializer needs to be interpreted as a struct initializer
+        if isinstance(var_type.type, ast.StructType) and len(var_type.address_qualifiers) == 0:
+            for qualifier in qualifiers:
+                if qualifier.initializer and isinstance(qualifier.initializer, ast.ArrayInitializer):
+                    qualifier.initializer.set_struct_type(var_type.type)
 
         return ast.VariableDeclaration(
             var_type=var_type,
@@ -217,6 +222,11 @@ class TreeVisitor(GrammarVisitor):
     def visitCastExpression(self, ctx):
         cast_type = self.visit(ctx.type_())
         expression = self.visit(ctx.unaryExpression())
+
+        # check if the cast is for explicit struct definition
+        if isinstance(cast_type.type, ast.StructType) and len(cast_type.address_qualifiers) == 0:
+            if isinstance(expression, ast.ArrayInitializer):
+                expression.set_struct_type(cast_type.type)
 
         return ast.TypeCastExpression(
             cast_type=cast_type,
@@ -791,7 +801,7 @@ class TreeVisitor(GrammarVisitor):
 
     def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
         return ast.StructAccess(
-            target=self.visit(ctx.primary()),
+            target=self.visit(ctx.primary()) if ctx.primary() else self.visitStructAccess(ctx.structAccess()),
             member_name=ctx.ID().getText(),
             line=ctx.start.line,
             position=ctx.start.column
