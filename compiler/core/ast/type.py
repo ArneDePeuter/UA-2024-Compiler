@@ -49,6 +49,9 @@ class ArrayType(AST):
             return self.element_type == other.element_type and self.array_sizes == other.array_sizes
         return False
 
+    def __str__(self):
+        return f"array of {self.element_type}{self.array_sizes}"
+
 @dataclass
 class Type(AST):
     type: BaseType | ArrayType | ForwardRef("StructType")

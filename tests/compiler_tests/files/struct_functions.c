@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-// Define the inner struct
 struct Inner {
     int value;
 };

@@ -1,78 +1,94 @@
 ; ModuleID = ""
 
+%"struct.Inner" = type {i32}
+%"struct.Outer" = type {%"struct.Inner"*}
 declare i32 @"printf"(i8* %".1", ...)
+
+define void @"modifyInner"(%"struct.Outer"* %".1")
+{
+entry:
+  %"outer" = alloca %"struct.Outer"*
+  store %"struct.Outer"* %".1", %"struct.Outer"** %"outer"
+  ; C Syntax: if (outer != 0) {-        if (outer->inner_ptr != 0) {-            outer->inner_ptr->value = 42;-        }-    }
+  ; C Syntax: outer != 0
+  %".6" = load %"struct.Outer"*, %"struct.Outer"** %"outer"
+  %".7" = ptrtoint %"struct.Outer"* %".6" to i32
+  %".8" = icmp ne i32 %".7", 0
+  br i1 %".8", label %"entry.if", label %"entry.endif"
+entry.if:
+  ; C Syntax: if (outer->inner_ptr != 0) {-            outer->inner_ptr->value = 42;-        }
+  ; C Syntax: outer->inner_ptr != 0
+  %".12" = load %"struct.Outer"*, %"struct.Outer"** %"outer"
+  %".13" = load %"struct.Outer", %"struct.Outer"* %".12"
+  %".14" = getelementptr %"struct.Outer", %"struct.Outer"* %".12", i32 0, i32 0
+  %".15" = load %"struct.Inner"*, %"struct.Inner"** %".14"
+  %".16" = ptrtoint %"struct.Inner"* %".15" to i32
+  %".17" = icmp ne i32 %".16", 0
+  br i1 %".17", label %"entry.if.if", label %"entry.if.endif"
+entry.endif:
+  ret void
+entry.if.if:
+  ; C Syntax: outer->inner_ptr->value = 42;
+  ; C Syntax: outer->inner_ptr->value
+  %".21" = load %"struct.Outer"*, %"struct.Outer"** %"outer"
+  %".22" = load %"struct.Outer", %"struct.Outer"* %".21"
+  %".23" = getelementptr %"struct.Outer", %"struct.Outer"* %".21", i32 0, i32 0
+  %".24" = load %"struct.Inner"*, %"struct.Inner"** %".23"
+  %".25" = load %"struct.Inner", %"struct.Inner"* %".24"
+  %".26" = getelementptr %"struct.Inner", %"struct.Inner"* %".24", i32 0, i32 0
+  %".27" = load i32, i32* %".26"
+  ; C Syntax: 42
+  store i32 42, i32* %".26"
+  br label %"entry.if.endif"
+entry.if.endif:
+  br label %"entry.endif"
+}
 
 define i32 @"main"()
 {
 entry:
-  ; C Syntax: struct ListNode node1 = {1, 0};
-  %"node1" = alloca %"struct.ListNode"
-  ; C Syntax: {1, 0}
-  ; C Syntax: 1
-  %".5" = insertvalue %"struct.ListNode" zeroinitializer, i32 1, 0
+  ; C Syntax: struct Inner inner = {10};
+  %"inner" = alloca %"struct.Inner"
+  ; C Syntax: {10}
+  ; C Syntax: 10
+  %".5" = insertvalue %"struct.Inner" zeroinitializer, i32 10, 0
+  store %"struct.Inner" %".5", %"struct.Inner"* %"inner"
+  ; C Syntax: struct Outer outer = {&inner};
+  %"outer" = alloca %"struct.Outer"
+  ; C Syntax: {&inner}
+  ; C Syntax: &inner
+  %".10" = load %"struct.Inner", %"struct.Inner"* %"inner"
+  %".11" = insertvalue %"struct.Outer" zeroinitializer, %"struct.Inner"* %"inner", 0
+  store %"struct.Outer" %".11", %"struct.Outer"* %"outer"
+  ; C Syntax: printf("%d", outer.inner_ptr->value);
+  ; C Syntax: printf("%d", outer.inner_ptr->value)
+  ; C Syntax: outer.inner_ptr->value
+  %".16" = load %"struct.Outer", %"struct.Outer"* %"outer"
+  %".17" = getelementptr %"struct.Outer", %"struct.Outer"* %"outer", i32 0, i32 0
+  %".18" = load %"struct.Inner"*, %"struct.Inner"** %".17"
+  %".19" = load %"struct.Inner", %"struct.Inner"* %".18"
+  %".20" = getelementptr %"struct.Inner", %"struct.Inner"* %".18", i32 0, i32 0
+  %".21" = load i32, i32* %".20"
+  %".22" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_23_4" to i8*), i32 %".21")
+  ; C Syntax: modifyInner(&outer);
+  ; C Syntax: modifyInner(&outer)
+  ; C Syntax: &outer
+  %".26" = load %"struct.Outer", %"struct.Outer"* %"outer"
+  call void @"modifyInner"(%"struct.Outer"* %"outer")
+  ; C Syntax: printf("%d", outer.inner_ptr->value);
+  ; C Syntax: printf("%d", outer.inner_ptr->value)
+  ; C Syntax: outer.inner_ptr->value
+  %".31" = load %"struct.Outer", %"struct.Outer"* %"outer"
+  %".32" = getelementptr %"struct.Outer", %"struct.Outer"* %"outer", i32 0, i32 0
+  %".33" = load %"struct.Inner"*, %"struct.Inner"** %".32"
+  %".34" = load %"struct.Inner", %"struct.Inner"* %".33"
+  %".35" = getelementptr %"struct.Inner", %"struct.Inner"* %".33", i32 0, i32 0
+  %".36" = load i32, i32* %".35"
+  %".37" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_25_4" to i8*), i32 %".36")
+  ; C Syntax: return 0;
   ; C Syntax: 0
-  %".7" = insertvalue %"struct.ListNode" %".5", %"struct.ListNode"* null, 1
-  store %"struct.ListNode" %".7", %"struct.ListNode"* %"node1"
-  ; C Syntax: struct ListNode node2 = {3, &node1};
-  %"node2" = alloca %"struct.ListNode"
-  ; C Syntax: {3, &node1}
-  ; C Syntax: 3
-  %".12" = insertvalue %"struct.ListNode" zeroinitializer, i32 3, 0
-  ; C Syntax: &node1
-  %".14" = load %"struct.ListNode", %"struct.ListNode"* %"node1"
-  %".15" = insertvalue %"struct.ListNode" %".12", %"struct.ListNode"* %"node1", 1
-  store %"struct.ListNode" %".15", %"struct.ListNode"* %"node2"
-  ; C Syntax: printf("%d", (*node2.next_ptr).value);
-  ; C Syntax: printf("%d", (*node2.next_ptr).value)
-  ; C Syntax: (*node2.next_ptr).value
-  ; C Syntax: *node2.next_ptr
-  %".21" = load %"struct.ListNode", %"struct.ListNode"* %"node2"
-  %".22" = getelementptr %"struct.ListNode", %"struct.ListNode"* %"node2", i32 0, i32 1
-  %".23" = load %"struct.ListNode"*, %"struct.ListNode"** %".22"
-  %".24" = load %"struct.ListNode", %"struct.ListNode"* %".23"
-  %".25" = getelementptr %"struct.ListNode", %"struct.ListNode"* %".23", i32 0, i32 0
-  %".26" = load i32, i32* %".25"
-  %".27" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_11_4" to i8*), i32 %".26")
-  ; C Syntax: printf("%d", node1.value);
-  ; C Syntax: printf("%d", node1.value)
-  ; C Syntax: node1.value
-  %".31" = load %"struct.ListNode", %"struct.ListNode"* %"node1"
-  %".32" = getelementptr %"struct.ListNode", %"struct.ListNode"* %"node1", i32 0, i32 0
-  %".33" = load i32, i32* %".32"
-  %".34" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_12_4" to i8*), i32 %".33")
-  ; C Syntax: (*node2.next_ptr).value = 3;
-  ; C Syntax: (*node2.next_ptr).value
-  ; C Syntax: *node2.next_ptr
-  %".38" = load %"struct.ListNode", %"struct.ListNode"* %"node2"
-  %".39" = getelementptr %"struct.ListNode", %"struct.ListNode"* %"node2", i32 0, i32 1
-  %".40" = load %"struct.ListNode"*, %"struct.ListNode"** %".39"
-  %".41" = load %"struct.ListNode", %"struct.ListNode"* %".40"
-  %".42" = getelementptr %"struct.ListNode", %"struct.ListNode"* %".40", i32 0, i32 0
-  %".43" = load i32, i32* %".42"
-  ; C Syntax: 3
-  store i32 3, i32* %".42"
-  ; C Syntax: printf("%d", (*node2.next_ptr).value);
-  ; C Syntax: printf("%d", (*node2.next_ptr).value)
-  ; C Syntax: (*node2.next_ptr).value
-  ; C Syntax: *node2.next_ptr
-  %".50" = load %"struct.ListNode", %"struct.ListNode"* %"node2"
-  %".51" = getelementptr %"struct.ListNode", %"struct.ListNode"* %"node2", i32 0, i32 1
-  %".52" = load %"struct.ListNode"*, %"struct.ListNode"** %".51"
-  %".53" = load %"struct.ListNode", %"struct.ListNode"* %".52"
-  %".54" = getelementptr %"struct.ListNode", %"struct.ListNode"* %".52", i32 0, i32 0
-  %".55" = load i32, i32* %".54"
-  %".56" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_14_4" to i8*), i32 %".55")
-  ; C Syntax: printf("%d", node1.value);
-  ; C Syntax: printf("%d", node1.value)
-  ; C Syntax: node1.value
-  %".60" = load %"struct.ListNode", %"struct.ListNode"* %"node1"
-  %".61" = getelementptr %"struct.ListNode", %"struct.ListNode"* %"node1", i32 0, i32 0
-  %".62" = load i32, i32* %".61"
-  %".63" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_15_4" to i8*), i32 %".62")
   ret i32 0
 }
 
-@"printf_format_11_4" = internal constant [3 x i8] c"%d\00"
-@"printf_format_12_4" = internal constant [3 x i8] c"%d\00"
-@"printf_format_14_4" = internal constant [3 x i8] c"%d\00"
-@"printf_format_15_4" = internal constant [3 x i8] c"%d\00"
+@"printf_format_23_4" = internal constant [3 x i8] c"%d\00"
+@"printf_format_25_4" = internal constant [3 x i8] c"%d\00"

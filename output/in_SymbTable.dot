@@ -2,14 +2,20 @@ digraph SymbolTable {
   node1 [label="Scope Level 0", style=filled, fillcolor=lightblue];
   node1 -> node1_printf [color=black];
   node1_printf [label="void printf", shape=box, style=filled, fillcolor=white];
+  node1 -> node1_modifyInner [color=black];
+  node1_modifyInner [label="void modifyInner", shape=box, style=filled, fillcolor=white];
   node1 -> node1_main [color=black];
   node1_main [label="int main", shape=box, style=filled, fillcolor=white];
   node2 [label="Scope Level 1", style=filled, fillcolor=lightblue];
   node1 -> node2;
   node3 [label="Scope Level 2", style=filled, fillcolor=lightblue];
   node1 -> node3;
-  node3 -> node3_node1 [color=black];
-  node3_node1 [label="struct ListNode node1", shape=box, style=filled, fillcolor=white];
-  node3 -> node3_node2 [color=black];
-  node3_node2 [label="struct ListNode node2", shape=box, style=filled, fillcolor=white];
+  node3 -> node3_inner [color=black];
+  node3_inner [label="struct Inner inner", shape=box, style=filled, fillcolor=white];
+  node3 -> node3_outer [color=black];
+  node3_outer [label="struct Outer outer", shape=box, style=filled, fillcolor=white];
+  node4 [label="Scope Level 3", style=filled, fillcolor=lightblue];
+  node1 -> node4;
+  node5 [label="Scope Level 4", style=filled, fillcolor=lightblue];
+  node1 -> node5;
 }

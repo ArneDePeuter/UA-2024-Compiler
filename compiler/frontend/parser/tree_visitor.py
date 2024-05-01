@@ -789,6 +789,14 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
+
+        if name in self.struct_defintions:
+            raise SemanticError(
+                f"Struct redefinition: {name} already defined",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
         self.struct_defintions[name] = struct
         struct.members = self.visitStructList(ctx.structList())
         return struct

@@ -497,7 +497,7 @@ class SymbolTableVisitor(AstVisitor):
                 break
 
         if target_member is None:
-            raise SemanticError(f"Struct variable of struct type: {tgt_type} has no member named {node.member_name}")
+            raise SemanticError(f"'{tgt_type}' has no member named '{node.member_name}'", node.line, node.position)
 
         if tgt_type.const:
             cp = copy.deepcopy(target_member.type)
@@ -521,6 +521,9 @@ class SymbolTableVisitor(AstVisitor):
             if member_type.type != element_type.type or len(member_type.address_qualifiers) != len(element_type.address_qualifiers):
                 if isinstance(element, ast.INT) and element.value == 0 and len(member_type.address_qualifiers) > 0:
                     pass
+                elif isinstance(element_type.type, ast.ArrayType) or isinstance(member_type.type, ast.ArrayType):
+                    if member_type.type != element_type.type:
+                        raise SemanticError(f"Type mismatch in struct initializer: {str(member_type.type)} and {str(element_type.type)}.", node.line, node.position)
                 elif len(member_type.address_qualifiers) == 0 and len(element_type.address_qualifiers) == 0:
                     # Determine the type of the expression based on the hierarchy  float, int, char
                     member_hierarchy = TypeCaster.get_heirarchy_of_base_type(member_type.type)
