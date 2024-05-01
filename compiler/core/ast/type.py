@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List, ForwardRef
+from typing import Optional, List, ForwardRef, Union
 from dataclasses import dataclass
 
 from .ast import AST
@@ -54,7 +54,7 @@ class ArrayType(AST):
 
 @dataclass
 class Type(AST):
-    type: BaseType | ArrayType | ForwardRef("StructType")
+    type: Union[BaseType, ArrayType, ForwardRef("StructType")]
     const: Optional[bool] = False
     address_qualifiers: Optional[list[AddressQualifier]] = None
 
