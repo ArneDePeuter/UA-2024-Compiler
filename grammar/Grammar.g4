@@ -23,7 +23,7 @@ statement
     | ';'
     ;
 
-structDefinition: 'struct' ID '{' structList '}' ;
+structDefinition: 'struct' ID '{' structList '}' ';' ;
 
 structList: typedIdentifier ';' (typedIdentifier ';')* ;
 

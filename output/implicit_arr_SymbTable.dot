@@ -1,0 +1,15 @@
+digraph SymbolTable {
+  node1 [label="Scope Level 0", style=filled, fillcolor=lightblue];
+  node1 -> node1_printf [color=black];
+  node1_printf [label="void printf", shape=box, style=filled, fillcolor=white];
+  node1 -> node1_main [color=black];
+  node1_main [label="int main", shape=box, style=filled, fillcolor=white];
+  node2 [label="Scope Level 1", style=filled, fillcolor=lightblue];
+  node1 -> node2;
+  node3 [label="Scope Level 2", style=filled, fillcolor=lightblue];
+  node1 -> node3;
+  node3 -> node3_a [color=black];
+  node3_a [label="int a", shape=box, style=filled, fillcolor=white];
+  node3 -> node3_arr [color=black];
+  node3_arr [label="ArrayType(line=4, position=4, c_syntax=None, element_type=Type(line=4, position=4, c_syntax=None, type=<BaseType.int: 'int'>, const=False, address_qualifiers=[<AddressQualifier.pointer: '*'>]), array_sizes=ArraySpecifier(line=4, position=12, c_syntax=None, sizes=[INT(line=4, position=13, c_syntax='1', value=1)])) arr", shape=box, style=filled, fillcolor=white];
+}
