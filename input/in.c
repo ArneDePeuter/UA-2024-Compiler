@@ -1,5 +1,5 @@
 int main () {
-    int a[5] = {1, 2, 3, 4, 5};
-    char c[] = "Hello, World!";
-    char* str = "Hello, World!";
+    int chars_printed = printf("Hello, %s!", "World");
+    printf("Hello, World!");
+    printf("Argument %d", 1);
 }

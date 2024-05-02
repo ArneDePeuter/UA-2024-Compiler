@@ -82,7 +82,7 @@ breakStatement
     ;
 
 printfCall
-    : 'printf' '(' PRINTFFORMAT ',' argumentList? ')'
+    : 'printf' '(' STRING_LITERAL (',' argumentList)? ')'
     ;
 
 continueStatement
@@ -192,6 +192,7 @@ unaryExpression
 primary
     : NUMBER
     | FLOAT
+    | printfCall
     | '(' expression ')'
     | ID arraySpecifier?
     | CHAR
@@ -199,7 +200,6 @@ primary
     | STRING_LITERAL
     | arrayInitializer
     | castExpression
-    //| printfCall
     | functionCall
     ;
 
@@ -280,12 +280,38 @@ BITAND : '&';
 BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
-PRINTFFORMAT: '"' (Text | EscapedPercent | FormatSpecifier)* '"';
-fragment Text: ~["%]+ ; // Matches any character except double quote and percent
-fragment EscapedPercent: '%%';  // Matches the escaped percent symbol
-fragment FormatSpecifier: '%' '.'?[0-9]* ('d' | 'x' | 's' | 'f' | 'c');  // Matches the format specifier with an optional width and a mandatory type code;
-STRING_LITERAL: '"' ( '\\' ('"' | '\\' | 'n' | 't' | '0' | 'r' | 'b' | 'f' | 'u' HexDigit HexDigit HexDigit HexDigit) | ~('\\' | '"') )* '"';
-fragment HexDigit : [0-9a-fA-F];
+STRING_LITERAL
+    : '"' ( EscapeSequence | FormatSpecifier | ~('\\' | '"' | '%') )* '"'
+    ;
+
+fragment EscapeSequence
+    : '\\' ( '"'    // Double quote
+           | '\\'   // Backslash
+           | 'n'    // Newline
+           | 't'    // Tab
+           | 'r'    // Carriage return
+           | 'b'    // Backspace
+           | 'f'    // Formfeed
+           | 'u' HexDigit HexDigit HexDigit HexDigit  // Unicode
+           | 'x' HexDigit HexDigit  // Hex code
+           | OctalEscape  // Octal escape
+           )
+    ;
+
+fragment FormatSpecifier
+    : '%' [+-0#]* [0-9]* ('.' [0-9]+)? [diufFeEgGxXoscpaAn]
+    ;
+
+fragment OctalEscape
+    : [0-3] [0-7] [0-7]  // 3-digit octal
+    | [0-7] [0-7]?       // 1 or 2-digit octal
+    ;
+
+fragment HexDigit
+    : [0-9a-fA-F]  // Hexadecimal digit
+    ;
+
+
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
 MULTI_LINE_COMMENT : '/*' .*? '*/' ;
