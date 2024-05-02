@@ -1,4 +1,5 @@
 import copy
+import re
 
 from llvmlite import ir
 from compiler.core.ast_visitor import AstVisitor
@@ -331,8 +332,13 @@ class LLVMIRGenerator(AstVisitor):
                     global_str.linkage = 'internal'
                     global_str.global_constant = True
                     global_str.initializer = str_val
-                    str_ptr = global_str.gep([ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                    #str_ptr = global_str.gep([ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                    str_ptr = self.builder.bitcast(global_str, ir.PointerType(ir.IntType(8)))  # Correctly cast to i8* (char*)
                     self.builder.store(str_ptr, alloc)
+                # The other way around when the variable is a char* to an array of char aka a string
+                elif isinstance(decl_type, ir.PointerType) and isinstance(expr_eval.r_value.type, ir.ArrayType):
+                    null_ptr = ir.Constant(decl_type, None)
+                    self.builder.store(null_ptr, alloc)
                 else:
                     null_ptr = ir.Constant(decl_type, None)
                     self.builder.store(null_ptr, alloc)
@@ -428,8 +434,11 @@ class LLVMIRGenerator(AstVisitor):
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
 
-    def visit_printf_call(self, node: ast.PrintFCall) -> None:
-        format_string = node.replacer.value
+    def visit_printf_call(self, node: ast.PrintFCall):
+        format_string = node.printfFormat
+        format_string = format_string.replace("\"", "")
+
+        arguments = [self.visit_expression(arg).r_value for arg in node.args]
 
         # Create the format string constant
         format_string_constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
@@ -443,14 +452,37 @@ class LLVMIRGenerator(AstVisitor):
         format_string_global.global_constant = True
         format_string_global.initializer = format_string_constant
 
-        expression_value = self.visit_expression(node.expression).r_value
-        if isinstance(expression_value.type, ir.FloatType):
-            expression_value = self.builder.fpext(expression_value, ir.DoubleType())
+        # Prepare the arguments based on the format string
+        args_to_pass = [format_string_global.bitcast(ir.PointerType(ir.IntType(8)))]
+        format_specifiers = re.findall(r'%(\d*)([dxscf%])', format_string)
 
-        self.builder.call(self.printf_func, [
-            format_string_global.bitcast(ir.PointerType(ir.IntType(8))),
-            expression_value
-        ])
+        arg_index = 0
+        for width, code in format_specifiers:
+            if code == '%':
+                continue  # Skip %% which is just a literal %
+            if arg_index >= len(arguments):
+                raise ValueError(f"Not enough arguments provided for format specifiers in {format_string}")
+
+            arg = arguments[arg_index]
+            arg_index += 1
+
+            if code == 'd' and isinstance(arg.type, ir.IntType):
+                args_to_pass.append(arg)
+            elif code == 'x' and isinstance(arg.type, ir.IntType):
+                args_to_pass.append(arg)
+            elif code == 's' and isinstance(arg.type, ir.PointerType) and isinstance(arg.type.pointee, ir.IntType) and arg.type.pointee.width == 8:
+                args_to_pass.append(arg)
+            elif code == 'f' and isinstance(arg.type, ir.FloatType):
+                #arg = self.builder.fpext(arg, ir.DoubleType()) if arg.type.width == 32 else arg
+                args_to_pass.append(arg)
+            elif code == 'c' and isinstance(arg.type, ir.IntType) and arg.type.width == 8:
+                args_to_pass.append(arg)
+            else:
+                raise ValueError(f"Unsupported format specifier: %{width}{code}")
+
+        # Call printf with the prepared arguments
+        self.builder.call(self.printf_func, args_to_pass)
+        return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
         func = self.functions.get(node.name) # Check if the function is already declared

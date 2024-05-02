@@ -318,19 +318,38 @@ class SymbolTableVisitor(AstVisitor):
             %% for printf with length sub-specifier
             """
             if specifier.endswith('d'):
-                expected_type = ast.Type(ast.BaseType.int)
+                if isinstance(arg.type, ast.ArrayType):
+                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.int), array_sizes=arg.type.array_sizes)
+                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
+                else:
+                    expected_type = ast.Type(ast.BaseType.int, const=arg.const, address_qualifiers=arg.address_qualifiers)
             elif specifier.endswith('x'):
-                expected_type = ast.Type(ast.BaseType.int)
+                if isinstance(arg.type, ast.ArrayType):
+                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.int), array_sizes=arg.type.array_sizes)
+                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
+                else:
+                    expected_type = ast.Type(ast.BaseType.int, const=arg.const, address_qualifiers=arg.address_qualifiers)
             elif specifier.endswith('s'):
                 if isinstance(arg.type, ast.ArrayType):
                     array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.char), array_sizes=arg.type.array_sizes)
-                    expected_type = ast.Type(array_type)
+                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
+                # char* is also allowed as a string
+                elif arg.type == ast.BaseType.char and len(arg.address_qualifiers) > 0:
+                    expected_type = ast.Type(type=ast.BaseType.char, address_qualifiers=[ast.AddressQualifier.pointer], const=arg.const)
             elif specifier.endswith('f'):
-                expected_type = ast.Type(ast.BaseType.float)
+                if isinstance(arg.type, ast.ArrayType):
+                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.float), array_sizes=arg.type.array_sizes)
+                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
+                else:
+                    expected_type = ast.Type(ast.BaseType.float, const=arg.const, address_qualifiers=arg.address_qualifiers)
             elif specifier.endswith('c'):
-                expected_type = ast.Type(ast.BaseType.char)
+                if isinstance(arg.type, ast.ArrayType):
+                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.char), array_sizes=arg.type.array_sizes)
+                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
+                else:
+                    expected_type = ast.Type(ast.BaseType.char, const=arg.const, address_qualifiers=arg.address_qualifiers)
             elif specifier.endswith('%%'):
-                expected_type = ast.Type(ast.BaseType.int)
+                expected_type = ast.Type(ast.BaseType.int, const=arg.const, address_qualifiers=arg.address_qualifiers)
 
             # Check if the argument type matches the expected type
             if not arg == expected_type:

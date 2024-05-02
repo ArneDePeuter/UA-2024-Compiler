@@ -193,7 +193,7 @@ class AstDotVisitor(AstVisitor):
     def visit_comment_statement(self, node: ast.CommentStatement):
         node_name = id(node)
 
-        self.total += f"{node_name} [label=\"Comment: \n {node.content}\"];\n"
+        self.total += f"{node_name} [label=\"Comment: \n {self.escape_dot_string(node.content)}\"];\n"
 
     def visit_if_statement(self, node: ast.IfStatement):
         node_name = str(id(node))
@@ -280,7 +280,7 @@ class AstDotVisitor(AstVisitor):
         escaped_string = raw_string.replace("\\", "\\\\")
 
         # Escape quotes
-        escaped_string = escaped_string.replace('"', '\\"')
+        escaped_string = escaped_string.replace('"', '')
 
         # Escape newlines (if you intend to preserve format in labels)
         escaped_string = escaped_string.replace('\n', '\\n')
