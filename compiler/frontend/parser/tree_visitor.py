@@ -627,7 +627,7 @@ class TreeVisitor(GrammarVisitor):
 
     def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
         return ast.PrintFCall(
-            printfFormat=ctx.PRINTFFORMAT().getText(),
+            printfFormat=ctx.STRING_LITERAL().getText(),
             args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
             line=ctx.start.line,
             position=ctx.start.column

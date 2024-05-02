@@ -53,6 +53,9 @@ class ArrayType(AST):
             return self.element_type == other.element_type and self.array_sizes == other.array_sizes
         return False
 
+    def __str__(self):
+        return str(self.element_type)+str(self.array_sizes)
+
 
 @dataclass
 class Type(AST):
