@@ -275,15 +275,48 @@ class AstDotVisitor(AstVisitor):
             param_name = str(id(param))
             self.total += f'{node_name} -> {param_name};\n'
             self.visit_type(param)
+    def escape_dot_string(self, raw_string):
+        # Replace backslashes first to avoid escaping already escaped characters
+        escaped_string = raw_string.replace("\\", "\\\\")
+
+        # Escape quotes
+        escaped_string = escaped_string.replace('"', '\\"')
+
+        # Escape newlines (if you intend to preserve format in labels)
+        escaped_string = escaped_string.replace('\n', '\\n')
+
+        # Escape other potentially problematic characters
+        special_chars = {
+            ',': '\\,',
+            '{': '\\{',
+            '}': '\\}',
+            '[': '\\[',
+            ']': '\\]',
+            '=': '\\='
+        }
+
+        for char, escape in special_chars.items():
+            escaped_string = escaped_string.replace(char, escape)
+
+        return escaped_string
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        node_name = id(node)
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="PrintFCall"];\n'
 
-        self.total += f"{node_name} [label=\"PrintFCall {node.replacer.value}\"];\n"
+        # Arrow to the format string
+        format_string_node_name = str(id(node.printfFormat))
+        self.total += f'{node_name} -> {format_string_node_name} [label="Format"];\n'
+        # Escape the format string to prevent breaking the DOT syntax
+        escaped_format_string = self.escape_dot_string(node.printfFormat)
+        self.total += f'{format_string_node_name} [label="{escaped_format_string}"];\n'
 
-        expression_node_name = str(id(node.expression))
-        self.total += f'{node_name} -> {expression_node_name};\n'
-        self.visit_expression(node.expression)
+        # Arrow to the arguments
+        for i, arg in enumerate(node.args):
+            arg_node_name = str(id(arg))
+            self.total += f'{node_name} -> {arg_node_name} [label="arg {i + 1}"];\n'
+            self.visit_expression(arg)
+
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         node_id = id(node)
