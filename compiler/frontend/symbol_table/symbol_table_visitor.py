@@ -66,7 +66,7 @@ class SymbolTableVisitor(AstVisitor):
 
                 return Type(type=right_type.type, line=node.line, position=node.position,
                             address_qualifiers=right_type.address_qualifiers)
-            raise SemanticError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position)
+            raise SemanticError(f"Type mismatch in binary arithmetic operation: {left_type} and {right_type}.", node.line, node.position)
 
         return Type(type=left_type.type, line=node.line, position=node.position)
 
@@ -93,7 +93,7 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
         if left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
-            WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
+            WarningError(f"Type mismatch in binary logical operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
         return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
@@ -105,7 +105,10 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Cannot perform arithmetic operations on void type.", node.line, node.position)
 
         if left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
-            WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
+            if isinstance(node.right, ast.INT) and node.right.value == 0 and len(left_type.address_qualifiers) > 0:
+                pass
+            else:
+                WarningError(f"Type mismatch in binary operation: {left_type} and {right_type}.", node.line, node.position).warn()
 
         return Type(type=ast.BaseType.int, line=node.line, position=node.position)
 
@@ -376,7 +379,9 @@ class SymbolTableVisitor(AstVisitor):
         for argument, expected_type in zip(node.arguments, param_types):
             expression_type = self.visit_expression(argument)
             if expression_type.type != expected_type.type or len(expression_type.address_qualifiers) != len(expected_type.address_qualifiers):
-                if len(expression_type.address_qualifiers) == 0 and len(expected_type.address_qualifiers) == 0:
+                if isinstance(argument, ast.INT) and argument.value == 0 and len(expected_type.address_qualifiers) > 0:
+                    pass
+                elif len(expression_type.address_qualifiers) == 0 and len(expected_type.address_qualifiers) == 0:
                     # Determine the type of the expression based on the hierarchy  float, int, char
                     expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(expression_type.type)
                     expected_hierarchy = TypeCaster.get_heirarchy_of_base_type(expected_type.type)

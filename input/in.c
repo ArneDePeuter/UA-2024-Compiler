@@ -22,7 +22,7 @@ int main() {
     struct Outer outer = {&inner};
 
     struct Outer *outer_ptr = 0;
-    modifyInner(0);
+    modifyInner(outer_ptr);
 
     return 0;
 }

@@ -514,7 +514,7 @@ class LLVMIRGenerator(AstVisitor):
         if not func:
             raise NotImplementedError(f"Function {node.name} not found")
 
-        args = [self.visit_expression(arg).r_value for arg in node.arguments]
+        args = [TypeTranslator.match_llvm_type(self.builder, func.args[i].type, self.visit_expression(arg).r_value) for i, arg in enumerate(node.arguments)]
         return ExpressionEval(r_value=self.builder.call(func, args))
 
     def visit_variable_declaration_global(self, node: ast.VariableDeclaration):
