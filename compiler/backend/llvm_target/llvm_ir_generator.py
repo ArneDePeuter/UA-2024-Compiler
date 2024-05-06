@@ -445,24 +445,27 @@ class LLVMIRGenerator(AstVisitor):
         self.visit_statement(node.body)
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        format_string = node.printfFormat
-        format_string = format_string.replace("\"", "")
+        format_string = node.printfFormat.strip('"')
 
+        # Visit and evaluate arguments
         arguments = [self.visit_expression(arg).r_value for arg in node.args]
 
         # Create the format string constant
-        format_string_constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-                                             bytearray(format_string.encode('utf-8') + b'\00'))
+        format_string_constant = ir.Constant(
+            ir.ArrayType(ir.IntType(8), len(format_string) + 1),
+            bytearray(format_string.encode('utf-8') + b'\00')
+        )
 
         # Create the format string global variable
         format_string_global = ir.GlobalVariable(
-            self.module, format_string_constant.type, name=f"printf_format_{node.line}_{node.position}"
+            self.module, format_string_constant.type,
+            name=f"printf_format_{node.line}_{node.position}"
         )
-        format_string_global.linkage = "internal"
+        format_string_global.linkage = 'internal'
         format_string_global.global_constant = True
         format_string_global.initializer = format_string_constant
 
-        # Prepare the arguments based on the format string
+        # Prepare the arguments for printf
         args_to_pass = [format_string_global.bitcast(ir.PointerType(ir.IntType(8)))]
         format_specifiers = re.findall(r'%(\d*)([dxscf%])', format_string)
 
@@ -476,6 +479,7 @@ class LLVMIRGenerator(AstVisitor):
             arg = arguments[arg_index]
             arg_index += 1
 
+            # Match argument types to format specifiers
             if code == 'd' and isinstance(arg.type, ir.IntType):
                 args_to_pass.append(arg)
             elif code == 'x' and isinstance(arg.type, ir.IntType):
@@ -483,10 +487,13 @@ class LLVMIRGenerator(AstVisitor):
             elif code == 's' and isinstance(arg.type, ir.PointerType) and isinstance(arg.type.pointee, ir.IntType) and arg.type.pointee.width == 8:
                 args_to_pass.append(arg)
             elif code == 'f' and isinstance(arg.type, ir.FloatType):
-                #arg = self.builder.fpext(arg, ir.DoubleType()) if arg.type.width == 32 else arg
                 args_to_pass.append(arg)
             elif code == 'c' and isinstance(arg.type, ir.IntType) and arg.type.width == 8:
                 args_to_pass.append(arg)
+            # Handle null pointers
+            elif isinstance(arg.type, ir.PointerType):
+                null_ptr = ir.Constant(arg.type, None)
+                args_to_pass.append(null_ptr)
             else:
                 raise ValueError(f"Unsupported format specifier: %{width}{code}")
 
