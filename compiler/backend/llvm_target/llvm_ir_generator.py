@@ -323,28 +323,38 @@ class LLVMIRGenerator(AstVisitor):
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
 
-            # Store the value to the allocated variable
-            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
-                # String literal, when the variable is a pointer to char
-                if isinstance(expr_eval.r_value.type, ir.ArrayType) and isinstance(expr_eval.r_value, ir.Constant):
-                    str_val = expr_eval.r_value
-                    global_str = ir.GlobalVariable(self.module, str_val.type, name=qualifier.identifier + "_str")
-                    global_str.linkage = 'internal'
-                    global_str.global_constant = True
-                    global_str.initializer = str_val
-                    #str_ptr = global_str.gep([ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
-                    str_ptr = self.builder.bitcast(global_str, ir.PointerType(ir.IntType(8)))  # Correctly cast to i8* (char*)
-                    self.builder.store(str_ptr, alloc)
-                # The other way around when the variable is a char* to an array of char aka a string
-                elif isinstance(decl_type, ir.PointerType) and isinstance(expr_eval.r_value.type, ir.ArrayType):
-                    null_ptr = ir.Constant(decl_type, None)
-                    self.builder.store(null_ptr, alloc)
+            if isinstance(decl_type, ir.PointerType):
+                # Handle char* initialization with array of chars
+                if isinstance(expr_eval.r_value.type, ir.ArrayType) and isinstance(expr_eval.r_value.type.element, ir.IntType):
+                    # Directly store the address of the first element of the array if the initializer is an array
+                    if isinstance(expr_eval.r_value, ir.Constant):
+                        # Allocate memory for the array
+                        array_alloc = self.builder.alloca(expr_eval.r_value.type, name=qualifier.identifier + "_array")
+                        # Store the constant array
+                        self.builder.store(expr_eval.r_value, array_alloc)
+                        # Get a pointer to the first element of the array
+                        first_element_ptr = self.builder.gep(array_alloc, [ ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                        # Store the pointer to the first element in the allocated variable
+                        self.builder.store(first_element_ptr, alloc)
+                    else:
+                        # This should get the pointer to the first element of the array
+                        # Evaluate and store the result dynamically if the initializer is not a simple constant
+                        dynamic_array_alloc = self.builder.alloca(expr_eval.r_value.type, name=qualifier.identifier + "_array")
+                        self.builder.store(expr_eval.r_value, dynamic_array_alloc)
+                        # Get a pointer to the first element of the dynamically allocated array
+                        dynamic_first_element_ptr = self.builder.gep(dynamic_array_alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                        # Store the pointer to the first element in the allocated variable
+                        self.builder.store(dynamic_first_element_ptr, alloc)
+                elif isinstance(expr_eval.r_value.type, ir.PointerType):
+                    # Directly store the pointer value if the initializer is a pointer
+                    self.builder.store(expr_eval.r_value, alloc)
                 else:
                     null_ptr = ir.Constant(decl_type, None)
                     self.builder.store(null_ptr, alloc)
             else:
                 value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
                 self.builder.store(value, alloc)
+
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement) -> None:
         left_eval = self.visit_expression(node.left)
@@ -563,6 +573,7 @@ class LLVMIRGenerator(AstVisitor):
         if any(dim is None for dim in dimensions):
             raise ValueError("All dimensions must have a resolvable size")
         return ExpressionEval(l_value=None, r_value=dimensions)
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
         return ExpressionEval(r_value=array)
@@ -572,6 +583,10 @@ class LLVMIRGenerator(AstVisitor):
         if base_address is None:
             raise ValueError(f"Variable '{node.array_name}' not found")
 
+        # Determine if the base_address is indeed a pointer to a type (likely from an alloca of a pointer type)
+        if not isinstance(base_address.type, ir.PointerType):
+            raise ValueError("The base address must be a pointer to access array elements.")
+
         indices = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
         for index in indices.r_value:
             if not isinstance(index.type, ir.IntType):
@@ -579,8 +594,15 @@ class LLVMIRGenerator(AstVisitor):
 
         # Insert 0 as the first index for the array start
         indices.r_value.insert(0, ir.Constant(ir.IntType(32), 0))
-        # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
-        element_ptr = self.builder.gep(base_address, indices.r_value)
+
+        # Check if we try to modify an array of chars, through a char* pointer
+        if isinstance(base_address.type.pointee, ir.PointerType) and isinstance(base_address.type.pointee.pointee, ir.IntType) and base_address.type.pointee.pointee.width == 8:
+            # Then the element pointer should be to the char at given index
+            first_elem_ptr = self.builder.load(base_address)
+            element_ptr = self.builder.gep(first_elem_ptr, indices.r_value[1:])
+        else:
+            # Otherwise, get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
+            element_ptr = self.builder.gep(base_address, indices.r_value)
 
         # Load the value at the element pointer
         value_at_index = self.builder.load(element_ptr)

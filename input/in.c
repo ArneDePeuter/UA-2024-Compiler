@@ -1,6 +1,9 @@
-int main () {
-    int chars_printed = printf("Hello, %s!", "World");
-    printf("Counting: %d %d %d %d %d", 1.5, 2, 3, 4, 5);
-    printf("Hello, World!");
-    printf("Argument %d", 1);
+int main() {
+    char str[] = "Hello, World!"; // Mutable array
+    char *ptr = str;
+    printf("%c", *ptr);
+    printf("%s", ptr);
+    ptr[7] = 'P'; // Modify the string through the pointer
+    printf("%s", ptr); // Prints "Hello, Porld!"
+    return 0;
 }

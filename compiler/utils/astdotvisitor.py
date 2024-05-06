@@ -33,18 +33,7 @@ class AstDotVisitor(AstVisitor):
 
     def visit_char(self, node: ast.CHAR):
         node_name = id(node)
-        # Map common escape sequences to their .dot file representations
-        escape_sequences = {
-            "\\": "\\\\",  # Backslash
-            "\"": "\\\"",  # Double quote
-            "\n": "\\n",  # Newline
-            "\t": "\\t",  # Tab
-            "\0": "\\0",  # Null
-            # Add more escape sequences as needed
-        }
-        # Replace each escape sequence in node.value
-        escaped_value = "".join(escape_sequences.get(char, char) for char in node.value)
-        self.total += f"{node_name} [label=\"CHAR: {escaped_value}\"];\n"
+        self.total += f"{node_name} [label=\"CHAR: {self.escape_dot_string(node.value)}\"];\n"
 
     def visit_identifier(self, node: ast.IDENTIFIER):
         node_name = id(node)
@@ -292,7 +281,8 @@ class AstDotVisitor(AstVisitor):
             '}': '\\}',
             '[': '\\[',
             ']': '\\]',
-            '=': '\\='
+            '=': '\\=',
+            '\x00': '\\x00',
         }
 
         for char, escape in special_chars.items():

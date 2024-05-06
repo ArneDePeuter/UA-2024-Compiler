@@ -67,6 +67,14 @@ class TypeTranslator:
             return builder.fptosi(value, target)
         elif isinstance(target, ir.ArrayType):
             return TypeTranslator.match_llvm_type(builder, target.elements, value)
+        elif isinstance(target, ir.ArrayType) and isinstance(value.type, ir.ArrayType) and target.element == value.type.element:
+            # Handle partial array initialization
+            if value.type.count < target.count:
+                # Fill remaining elements with zeros if partially initialized
+                extended_value = [value.getelement(i) for i in range(value.type.count)]
+                extended_value += [ir.Constant(value.type.element, 0) for _ in range(target.count - value.type.count)]
+                return ir.Constant(target, extended_value)
+            return value
         elif target.width > value.type.width:
             return builder.zext(value, target)
         elif target.width < value.type.width:
