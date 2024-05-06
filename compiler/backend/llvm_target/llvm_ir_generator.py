@@ -487,6 +487,7 @@ class LLVMIRGenerator(AstVisitor):
             elif code == 's' and isinstance(arg.type, ir.PointerType) and isinstance(arg.type.pointee, ir.IntType) and arg.type.pointee.width == 8:
                 args_to_pass.append(arg)
             elif code == 'f' and isinstance(arg.type, ir.FloatType):
+                arg = self.builder.fpext(arg, ir.DoubleType())  # cast to double for stdout bug
                 args_to_pass.append(arg)
             elif code == 'c' and isinstance(arg.type, ir.IntType) and arg.type.width == 8:
                 args_to_pass.append(arg)
