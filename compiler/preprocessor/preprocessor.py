@@ -22,6 +22,7 @@ class Preprocessor:
         for include_file in includes:
             if include_file == 'stdio.h':
                 self.stdio_included = True
+                self.include_files[include_file] = ""
             elif include_file not in self.include_files:
                 file_path = self.find_include_file(include_file, include_paths)
                 if file_path:
