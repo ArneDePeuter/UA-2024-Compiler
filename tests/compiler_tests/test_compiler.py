@@ -35,8 +35,17 @@ def run_clang(input_file, include_paths):
 
 @pytest.mark.parametrize("input_file", os.listdir("./tests/compiler_tests/files"))
 def test_compiler(input_file):
-    input_file = os.path.join("./tests/compiler_tests/files", input_file)
-    include_paths = ["./tests/compiler_tests/includes"]  # Add the include paths here
+    # Specify the relative path (can be '.' for the current directory)
+    relative_path = '.'
+
+    # Get the absolute path
+    absolute_path = os.path.abspath(relative_path)
+
+    # Print the absolute path
+    print("Absolute path:", absolute_path)
+
+    input_file = os.path.join("files", input_file)
+    include_paths = ["includes"]  # Add the include paths here
     run_my_compiler(input_file, include_paths)
     print(open("test.ll").read())
     my_output = run_lli()
