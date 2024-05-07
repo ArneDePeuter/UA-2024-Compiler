@@ -295,10 +295,10 @@ class AstDotVisitor(AstVisitor):
         self.total += f'{node_name} [label="PrintFCall"];\n'
 
         # Arrow to the format string
-        format_string_node_name = str(id(node.printfFormat))
+        format_string_node_name = str(id(node.format))
         self.total += f'{node_name} -> {format_string_node_name} [label="Format"];\n'
         # Escape the format string to prevent breaking the DOT syntax
-        escaped_format_string = self.escape_dot_string(node.printfFormat)
+        escaped_format_string = self.escape_dot_string(node.format)
         self.total += f'{format_string_node_name} [label="{escaped_format_string}"];\n'
 
         # Arrow to the arguments
@@ -307,6 +307,22 @@ class AstDotVisitor(AstVisitor):
             self.total += f'{node_name} -> {arg_node_name} [label="arg {i + 1}"];\n'
             self.visit_expression(arg)
 
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        node_name = str(id(node))
+        self.total += f'{node_name} [label="ScanFCall"];\n'
+
+        # Arrow to the format string
+        format_string_node_name = str(id(node.format))
+        self.total += f'{node_name} -> {format_string_node_name} [label="Format"];\n'
+        # Escape the format string to prevent breaking the DOT syntax
+        escaped_format_string = self.escape_dot_string(node.format)
+        self.total += f'{format_string_node_name} [label="{escaped_format_string}"];\n'
+
+        # Arrow to the arguments
+        for i, arg in enumerate(node.args):
+            arg_node_name = str(id(arg))
+            self.total += f'{node_name} -> {arg_node_name} [label="arg {i + 1}"];\n'
+            self.visit_expression(arg)
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         node_id = id(node)

@@ -363,6 +363,8 @@ class TreeVisitor(GrammarVisitor):
             return self.visit(ctx.castExpression())
         elif ctx.printfCall():
             return self.visitPrintfCall(ctx.printfCall())
+        elif ctx.scanfCall():
+            return self.visitScanfCall(ctx.scanfCall())
         elif ctx.functionCall():
             return self.visitFunctionCall(ctx.functionCall())
         elif ctx.STRING_LITERAL():
@@ -613,7 +615,6 @@ class TreeVisitor(GrammarVisitor):
             ), identifier
         return type_, identifier
 
-
     def visitParamList(self, ctx:GrammarParser.ParamListContext):
         params = []
         for i in range(len(ctx.typedIdentifier())):  # This is done to match the type with the name
@@ -627,7 +628,15 @@ class TreeVisitor(GrammarVisitor):
 
     def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
         return ast.PrintFCall(
-            printfFormat=ctx.STRING_LITERAL().getText(),
+            format=ctx.STRING_LITERAL().getText(),
+            args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitScanfCall(self, ctx:GrammarParser.ScanfCallContext):
+        return ast.ScanFCall(
+            format=ctx.STRING_LITERAL().getText(),
             args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
             line=ctx.start.line,
             position=ctx.start.column

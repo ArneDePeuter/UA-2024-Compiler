@@ -11,11 +11,11 @@ from compiler.core.type_caster import TypeCaster
 
 
 class SymbolTableVisitor(AstVisitor):
-    def __init__(self, symbol_table: Optional[SymbolTable] = None):
+    def __init__(self, symbol_table: Optional[SymbolTable] = None, stdio_included: bool = True):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
-        self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
         self.inside_declaration = False
+        self.stdio_included = stdio_included
 
     def visit_type(self, node: ast.Type):
         ...
@@ -297,68 +297,17 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        # Extract format specifiers from the format string
-        import re
-        format_string = node.printfFormat
-        format_specifiers = re.findall(r'%([+-]?[\d]*\.?[\d]*[diufFeEgGxXoscpaA])', format_string)
+        if not self.stdio_included:
+            raise SemanticError(f"Function 'printf' is not declared.", node.line, node.position)
+        for argument in node.args:
+            self.visit_expression(argument)
+        return ast.Type(ast.BaseType.int)
 
-        if len(format_specifiers) != len(node.args):
-            raise SemanticError(f"Number of arguments ({len(node.args)}) does not match the number of specifiers ({len(format_specifiers)}).", node.line, node.position)
-
-        # Iterate through the format specifiers and corresponding arguments
-        for i, specifier in enumerate(format_specifiers):
-            arg = self.visit(node.args[i])
-            expected_type = None
-            """
-            %d for int
-            %x for hex
-            %s for string
-            %f for float
-            %c for char
-            %% for printf with length sub-specifier
-            """
-            if specifier.endswith('d'):
-                if isinstance(arg.type, ast.ArrayType):
-                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.int), array_sizes=arg.type.array_sizes)
-                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
-                else:
-                    expected_type = ast.Type(ast.BaseType.int, const=arg.const, address_qualifiers=arg.address_qualifiers)
-            elif specifier.endswith('x'):
-                if isinstance(arg.type, ast.ArrayType):
-                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.int), array_sizes=arg.type.array_sizes)
-                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
-                else:
-                    expected_type = ast.Type(ast.BaseType.int, const=arg.const, address_qualifiers=arg.address_qualifiers)
-            elif specifier.endswith('s'):
-                if isinstance(arg.type, ast.ArrayType):
-                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.char), array_sizes=arg.type.array_sizes)
-                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
-                # char* is also allowed as a string
-                elif arg.type == ast.BaseType.char and len(arg.address_qualifiers) > 0:
-                    expected_type = ast.Type(type=ast.BaseType.char, address_qualifiers=[ast.AddressQualifier.pointer], const=arg.const)
-            elif specifier.endswith('f'):
-                if isinstance(arg.type, ast.ArrayType):
-                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.float), array_sizes=arg.type.array_sizes)
-                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
-                else:
-                    expected_type = ast.Type(ast.BaseType.float, const=arg.const, address_qualifiers=arg.address_qualifiers)
-            elif specifier.endswith('c'):
-                if isinstance(arg.type, ast.ArrayType):
-                    array_type = ast.ArrayType(element_type=ast.Type(ast.BaseType.char), array_sizes=arg.type.array_sizes)
-                    expected_type = ast.Type(array_type, const=arg.const, address_qualifiers=arg.address_qualifiers)
-                else:
-                    expected_type = ast.Type(ast.BaseType.char, const=arg.const, address_qualifiers=arg.address_qualifiers)
-            elif specifier.endswith('%%'):
-                expected_type = ast.Type(ast.BaseType.int, const=arg.const, address_qualifiers=arg.address_qualifiers)
-
-            # Check if the argument type matches the expected type
-            if not arg == expected_type:
-                # Check if type casting is possible
-                if TypeCaster.get_heirarchy_of_base_type(arg.type) > TypeCaster.get_heirarchy_of_base_type(expected_type.type):
-                    WarningError(f"Implicit conversion from {arg} to {expected_type}", node.line, node.position).warn()
-                else:
-                    raise SemanticError( f"Type mismatch: Argument {i + 1} expected to be {expected_type}, but got {arg}.", node.line, node.position)
-
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        if not self.stdio_included:
+            raise SemanticError(f"Function 'scanf' is not declared.", node.line, node.position)
+        for argument in node.args:
+            self.visit_expression(argument)
         return ast.Type(ast.BaseType.int)
 
     def visit_return_statement(self, node: ast.ReturnStatement):

@@ -197,6 +197,15 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#scanfCall.
+    def enterScanfCall(self, ctx:GrammarParser.ScanfCallContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#scanfCall.
+    def exitScanfCall(self, ctx:GrammarParser.ScanfCallContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#continueStatement.
     def enterContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
         pass

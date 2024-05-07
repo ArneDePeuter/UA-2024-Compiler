@@ -85,6 +85,10 @@ printfCall
     : 'printf' '(' STRING_LITERAL (',' argumentList)? ')'
     ;
 
+scanfCall
+    : 'scanf' '(' STRING_LITERAL (',' argumentList)? ')'
+    ;
+
 continueStatement
     : CONTINUE TERMINAL
     ;
@@ -193,6 +197,7 @@ primary
     : NUMBER
     | FLOAT
     | printfCall
+    | scanfCall
     | '(' expression ')'
     | ID arraySpecifier?
     | CHAR

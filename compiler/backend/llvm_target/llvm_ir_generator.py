@@ -9,6 +9,7 @@ from typing import Optional
 
 from .type_translator import TypeTranslator
 from .ir_types import IrIntType, IrFloatType, IrCharType
+import uuid
 
 
 @dataclass
@@ -26,7 +27,10 @@ class LLVMIRGenerator(AstVisitor):
         self.functions = {}
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-        self.printf_func = ir.Function(self.module, printf_type, name="printf")
+        self.printf = ir.Function(self.module, printf_type, name="printf")
+
+        scanf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+        self.scanf = ir.Function(self.module, scanf_type, name="scanf")
 
         super().__init__()
 
@@ -82,9 +86,16 @@ class LLVMIRGenerator(AstVisitor):
         )
 
     def visit_identifier(self, node: ast.IDENTIFIER) -> ExpressionEval:
+        alloc = self.var_addresses.get(node.name)
+        alloc_type = alloc.type.pointee
+        if isinstance(alloc_type, ir.ArrayType) and isinstance(alloc_type.element, ir.IntType) and alloc_type.element.width == 8:
+            return ExpressionEval(
+                l_value=alloc,
+                r_value=self.builder.gep(alloc, [ir.Constant(IrIntType, 0), ir.Constant(IrIntType, 0)])
+            )
         return ExpressionEval(
-            l_value=self.var_addresses[node.name],
-            r_value=self.builder.load(self.var_addresses[node.name])
+            l_value=alloc,
+            r_value=self.builder.load(alloc)
         )
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression) -> ExpressionEval:
@@ -444,62 +455,32 @@ class LLVMIRGenerator(AstVisitor):
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
 
+    def create_format_string(self, format_string: str):
+        # remove string dashes
+        format_string = format_string[:-1]
+        format_string = format_string[1:]
+        format_string = format_string.replace("\\n", "\n")
+        fmt = ir.ArrayType(ir.IntType(8), len(format_string) + 1)
+        fmt_global = ir.GlobalVariable(self.module, fmt, name=str(uuid.uuid4()))
+        fmt_global.global_constant = True
+        fmt_global.initializer = ir.Constant(fmt, bytearray(format_string.encode("utf8")) + b"\00")
+        return fmt_global
+
     def visit_printf_call(self, node: ast.PrintFCall):
-        format_string = node.printfFormat.strip('"')
+        fmt_global = self.create_format_string(node.format)
+        fmt_ptr = self.builder.bitcast(fmt_global, ir.PointerType(ir.IntType(8)))
+        args = [self.visit_expression(arg).r_value for arg in node.args]
+        for i, arg in enumerate(args):
+            if isinstance(arg.type, ir.FloatType):
+                args[i] = self.builder.fpext(arg, ir.DoubleType())
+        self.builder.call(self.printf, [fmt_ptr] + args)
+        return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
-        # Visit and evaluate arguments
-        arguments = [self.visit_expression(arg).r_value for arg in node.args]
-
-        # Create the format string constant
-        format_string_constant = ir.Constant(
-            ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-            bytearray(format_string.encode('utf-8') + b'\00')
-        )
-
-        # Create the format string global variable
-        format_string_global = ir.GlobalVariable(
-            self.module, format_string_constant.type,
-            name=f"printf_format_{node.line}_{node.position}"
-        )
-        format_string_global.linkage = 'internal'
-        format_string_global.global_constant = True
-        format_string_global.initializer = format_string_constant
-
-        # Prepare the arguments for printf
-        args_to_pass = [format_string_global.bitcast(ir.PointerType(ir.IntType(8)))]
-        format_specifiers = re.findall(r'%(\d*)([dxscf%])', format_string)
-
-        arg_index = 0
-        for width, code in format_specifiers:
-            if code == '%':
-                continue  # Skip %% which is just a literal %
-            if arg_index >= len(arguments):
-                raise ValueError(f"Not enough arguments provided for format specifiers in {format_string}")
-
-            arg = arguments[arg_index]
-            arg_index += 1
-
-            # Match argument types to format specifiers
-            if code == 'd' and isinstance(arg.type, ir.IntType):
-                args_to_pass.append(arg)
-            elif code == 'x' and isinstance(arg.type, ir.IntType):
-                args_to_pass.append(arg)
-            elif code == 's' and isinstance(arg.type, ir.PointerType) and isinstance(arg.type.pointee, ir.IntType) and arg.type.pointee.width == 8:
-                args_to_pass.append(arg)
-            elif code == 'f' and isinstance(arg.type, ir.FloatType):
-                arg = self.builder.fpext(arg, ir.DoubleType())  # cast to double for stdout bug
-                args_to_pass.append(arg)
-            elif code == 'c' and isinstance(arg.type, ir.IntType) and arg.type.width == 8:
-                args_to_pass.append(arg)
-            # Handle null pointers
-            elif isinstance(arg.type, ir.PointerType):
-                null_ptr = ir.Constant(arg.type, None)
-                args_to_pass.append(null_ptr)
-            else:
-                raise ValueError(f"Unsupported format specifier: %{width}{code}")
-
-        # Call printf with the prepared arguments
-        self.builder.call(self.printf_func, args_to_pass)
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        fmt_global = self.create_format_string(node.format)
+        fmt_ptr = self.builder.bitcast(fmt_global, ir.PointerType(ir.IntType(8)))
+        args = [self.visit_expression(arg).r_value for arg in node.args]
+        self.builder.call(self.scanf, [fmt_ptr] + args)
         return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:

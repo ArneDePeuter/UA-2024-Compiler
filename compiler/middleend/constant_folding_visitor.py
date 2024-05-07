@@ -288,8 +288,12 @@ class ConstantFoldingVisitor(AstVisitor):
             node.args[i] = self.visit_expression(arg)
         return node
 
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        for i, arg in enumerate(node.args):
+            node.args[i] = self.visit_expression(arg)
+        return node
+
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        node.size = self.visit_expression(node.size)
         return node
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
@@ -298,5 +302,5 @@ class ConstantFoldingVisitor(AstVisitor):
         return node
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        node.array_name = self.visit_expression(node.array_name)
+        node.index = self.visit_expression(node.index)
         return node

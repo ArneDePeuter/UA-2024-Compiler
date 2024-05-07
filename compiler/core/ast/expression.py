@@ -280,19 +280,20 @@ class FunctionCall(Expression):
 
 @dataclass
 class PrintFCall(Expression):
-    class Replacer(Enum):
-        s = "%s"
-        d = "%d"
-        x = "%x"
-        f = "%f"
-        c = "%c"
-
-    printfFormat: str
+    format: str
     args: list[Expression]
+
+
+@dataclass
+class ScanFCall(Expression):
+    format: str
+    args: list[Expression]
+
 
 @dataclass
 class ArrayInitializer(Expression):
     elements: Tuple[Expression]
+
 
 @dataclass
 class ArrayAccess(Expression):

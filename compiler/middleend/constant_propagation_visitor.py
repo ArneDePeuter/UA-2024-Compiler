@@ -174,6 +174,11 @@ class ConstantPropagationVisitor(AstVisitor):
             node.args[i] = self.visit_expression(arg)
         return node
 
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        for i, arg in enumerate(node.args):
+            node.args[i] = self.visit_expression(arg)
+        return node
+
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         for i, size in enumerate(node.sizes):
             simplified_size = self.visit_expression(size)
