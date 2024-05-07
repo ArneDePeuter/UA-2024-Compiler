@@ -54,9 +54,10 @@ class TypeTranslator:
         #        num_it = target.count - value.type.count
         #        for _ in range(num_it):
         #            builder.insert_value(value, ir.Constant(IrIntType, 0), value.type.count)
-
         if target == value.type:
             return value
+        elif isinstance(target, ir.PointerType) and not isinstance(value, ir.PointerType):
+            return ir.Constant(target, None)
         elif isinstance(target, ir.IntType) and isinstance(value.type, ir.FloatType):
             return builder.fptosi(value, target)
         elif isinstance(target, ir.FloatType) and isinstance(value.type, ir.IntType):

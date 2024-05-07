@@ -19,8 +19,13 @@ statement
     | switchStatement
     | returnStatement
     | expressionStatement
+    | structDefinition
     | ';'
     ;
+
+structDefinition: 'struct' ID '{' structList '}' ';' ;
+
+structList: typedIdentifier ';' (typedIdentifier ';')* ;
 
 typedIdentifier : type ID arraySpecifier?;
 
@@ -183,11 +188,18 @@ shiftExpression
     | unaryExpression
     ;
 
+structAccess
+    : primary method='.' ID
+    | structAccess method='.' ID
+    | primary method='->' ID
+    | structAccess method='->' ID
+    ;
+
 unaryExpression
     : ('+' | '-' | '!' | '*' | '&' | '++' | '--') unaryExpression
     | primary ('++' | '--')?
+    | structAccess
     ;
-
 
 primary
     : NUMBER
@@ -202,8 +214,10 @@ primary
     | functionCall
     ;
 
+structType: 'struct' ID;
+
 type
-    : const? (baseType | ID |enumType) addressQualifier*
+    : const? (baseType | ID |enumType | structType) addressQualifier*
     ;
 
 baseType

@@ -20,6 +20,7 @@ class TreeVisitor(GrammarVisitor):
         self.input_stream = input_stream
         self.function_decl = None
         self.current_scope = None
+        self.struct_defintions: dict[str, ast.StructDefinition] = {}
 
     def get_original_text(self, ctx):
         return self.input_stream.getText(ctx.start.start, ctx.stop.stop)
@@ -48,6 +49,8 @@ class TreeVisitor(GrammarVisitor):
         prev_scope = self.current_scope
         statements = []
         self.current_scope = statements
+        struct_definitions_before = copy.deepcopy(self.struct_defintions)
+
         for child in ctx.getChildren():
             if isinstance(child, TerminalNode):
                 continue
@@ -59,6 +62,8 @@ class TreeVisitor(GrammarVisitor):
         self.typedef_scope = typedef_scope_before
         self.current_scope = prev_scope
         self.enum_scope = prev_enum_scope
+        self.struct_defintions = struct_definitions_before
+
         return ast.Body(
             statements=statements,
             line=ctx.start.line,
@@ -111,16 +116,37 @@ class TreeVisitor(GrammarVisitor):
                 line=ctx.start.line,
                 position=ctx.start.column
             )
+        if ctx.structType():
+            const_qualifier = ctx.const() is not None
+            address_qualifiers = [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+            return ast.Type(
+                type=self.visitStructType(ctx.structType()),
+                const=const_qualifier,
+                address_qualifiers=address_qualifiers,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
         else:
             # Handle typedef replacements
             typedef_name = ctx.ID().getText()
             replace = copy.deepcopy(self.typedef_scope.get(typedef_name))
+            if not replace:
+                raise SemanticError(f"Typedef with name: {typedef_name} not defined", ctx.start.line, ctx.start.column)
             replace.const = replace.const or ctx.const() is not None
             replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in
                                            ctx.addressQualifier()]
             replace.line = ctx.start.line
             replace.position = ctx.start.column
             return replace
+
+    def visitStructType(self, ctx:GrammarParser.StructTypeContext):
+        name = ctx.ID().getText()
+        definition = self.struct_defintions.get(name)
+        if not definition:
+            raise SemanticError(f"Struct with name: {name} is not defined", ctx.start.line, ctx.start.column)
+        return ast.StructType(
+            definition=definition
+        )
 
     def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
         text = ctx.getText()
@@ -155,7 +181,6 @@ class TreeVisitor(GrammarVisitor):
                     line=ctx.start.line, position=ctx.start.column
                 )
                 qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
-                #qualifiers.remove(qualifier)
                 var_type = ast.Type(
                     type=array_type,
                     const=var_type.const,
@@ -163,6 +188,12 @@ class TreeVisitor(GrammarVisitor):
                     line=ctx.start.line,
                     position=ctx.start.column
                 )
+
+        # Check if the list initializer needs to be interpreted as a struct initializer
+        if isinstance(var_type.type, ast.StructType) and len(var_type.address_qualifiers) == 0:
+            for qualifier in qualifiers:
+                if qualifier.initializer and isinstance(qualifier.initializer, ast.ArrayInitializer):
+                    qualifier.initializer.set_struct_type(var_type.type)
 
         return ast.VariableDeclaration(
             var_type=var_type,
@@ -191,6 +222,11 @@ class TreeVisitor(GrammarVisitor):
     def visitCastExpression(self, ctx):
         cast_type = self.visit(ctx.type_())
         expression = self.visit(ctx.unaryExpression())
+
+        # check if the cast is for explicit struct definition
+        if isinstance(cast_type.type, ast.StructType) and len(cast_type.address_qualifiers) == 0:
+            if isinstance(expression, ast.ArrayInitializer):
+                expression.set_struct_type(cast_type.type)
 
         return ast.TypeCastExpression(
             cast_type=cast_type,
@@ -318,18 +354,20 @@ class TreeVisitor(GrammarVisitor):
                     position=ctx.start.column
                 )
             return self.visit(ctx.primary())
+        if ctx.unaryExpression():
+            expr = self.visit(ctx.unaryExpression())
+            op = ctx.getChild(0).getText()
+            operator = ast.UnaryExpression.Operator(op)
 
-        expr = self.visit(ctx.unaryExpression())
-        op = ctx.getChild(0).getText()
-        operator = ast.UnaryExpression.Operator(op)
-
-        return ast.UnaryExpression(
-            value=expr,
-            operator=operator,
-            prefix=True,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+            return ast.UnaryExpression(
+                value=expr,
+                operator=operator,
+                prefix=True,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        if ctx.structAccess():
+            return self.visitStructAccess(ctx.structAccess())
 
     @staticmethod
     def remove_dashes(input):
@@ -742,3 +780,46 @@ class TreeVisitor(GrammarVisitor):
         for enumerator in ctx.ID():
             enumerators.append(enumerator.getText())
         return enumerators
+
+    def visitStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
+        name = ctx.ID().getText()
+        struct = ast.StructDefinition(
+            name=name,
+            members=[],
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+        if name in self.struct_defintions:
+            raise SemanticError(
+                f"Struct redefinition: {name} already defined",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
+        self.struct_defintions[name] = struct
+        struct.members = self.visitStructList(ctx.structList())
+        return struct
+
+    def visitStructList(self, ctx: GrammarParser.StructListContext):
+        return [
+            ast.StructMember(name=name, type=type_)
+            for type_, name in (self.visitTypedIdentifier(typed_id) for typed_id in ctx.typedIdentifier())
+        ]
+
+    def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
+        access = ast.StructAccess(
+            target=self.visit(ctx.primary()) if ctx.primary() else self.visitStructAccess(ctx.structAccess()),
+            member_name=ctx.ID().getText(),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+        if ctx.method.text == "->":
+            access.target = ast.UnaryExpression(
+                value=access.target,
+                operator=ast.UnaryExpression.Operator.DEREFERENCE,
+                prefix=True,
+                line=access.target.line,
+                position=access.target.position
+            )
+        return access

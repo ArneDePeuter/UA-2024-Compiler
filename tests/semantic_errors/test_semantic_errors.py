@@ -12,7 +12,7 @@ error_dict = {
     "proj2_man_semanticErr_incompatibleTypes1.c": SemanticError("Type mismatch in assignment: int** and int*.", 9, 0),
     "proj2_man_semanticErr_incompatibleTypes2.c": SemanticError("Incompatible types for variable 'x_ptr': int** and int*.", 6, 0),
     "proj2_man_semanticErr_incompatibleTypes3.c": SemanticError("Incompatible types for variable 'y': float and int*.", 5, 0),
-    "proj2_man_semanticErr_incompatibleTypes4.c": SemanticError("Type mismatch in binary operation: float* and int*.", 7, 18),
+    "proj2_man_semanticErr_incompatibleTypes4.c": SemanticError("Type mismatch in binary arithmetic operation: float* and int*.", 7, 18),
     "proj2_man_semanticErr_incompatibleTypes5.c": SemanticError("Cannot dereference a non pointer type: int.", 9, 4),
     "proj2_man_semanticErr_redeclaration.c": SemanticError("Variable 'x' is already declared.", 5, 0),
     "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already defined.", 4, 0),
@@ -38,8 +38,13 @@ error_dict = {
     "proj6_man_semanticError_arrayTypeChecking.c": SemanticError("Array 'a' must be initialized with elements of type int.", 2, 4),
     "proj6_man_semanticError_array-length.c": SemanticError("Array 'a' must be initialized with [2] elements.", 2, 4),
     "proj6_man_semanticError_array-length-multi.c": SemanticError("Array initializer elements must all be of the same length.", 2, 18),
+    "proj_7_struct_invalid_access.c": SemanticError("Struct access method to an object which isn't a struct.", 7, 4),
+    "proj_7_struct_invalid_constructor_1.c": SemanticError("Type mismatch in struct initializer: int and array of int[3].", 6, 17),
+    "proj_7_struct_invalid_constructor_2.c": SemanticError("Too few elements in struct initializer, default params for struct not implemented.", 7, 21),
+    "proj_7_struct_invalid_access_no_member.c": SemanticError("'struct Point' has no member named 'z'", 10, 4),
+    "proj_7_struct_invalid_access_typo_member.c": SemanticError("'struct Point' has no member named 'yy'", 12, 4),
+    "proj_7_struct_redefinition.c": SemanticError("Struct redefinition: Point already defined", 6, 0),
 }
-
 
 @pytest.mark.parametrize("input_file", os.listdir("./tests/semantic_errors/files"))
 def test_semantic_err(input_file) -> None:
