@@ -175,9 +175,10 @@ class TreeVisitor(GrammarVisitor):
         # Check if the type needs to be changed to an array type
         for qualifier in qualifiers:
             if qualifier.array_specifier:
+                array_size = ast.INT(value=len(qualifier.initializer.elements)) if qualifier.initializer else ast.INT(value=0)
                 array_type = ast.ArrayType(
                     element_type=var_type,
-                    array_sizes=qualifier.array_specifier,
+                    array_sizes=qualifier.array_specifier if qualifier.array_specifier.sizes else ast.ArraySpecifier(sizes=[array_size]),
                     line=ctx.start.line, position=ctx.start.column
                 )
                 qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
@@ -400,8 +401,15 @@ class TreeVisitor(GrammarVisitor):
             return self.visit(ctx.castExpression())
         elif ctx.printfCall():
             return self.visitPrintfCall(ctx.printfCall())
+        elif ctx.scanfCall():
+            return self.visitScanfCall(ctx.scanfCall())
         elif ctx.functionCall():
             return self.visitFunctionCall(ctx.functionCall())
+        elif ctx.STRING_LITERAL():
+            string = ctx.STRING_LITERAL().getText()
+            # Zero terminate the string
+            string = string[1:-1] + "\0"
+            return ast.ArrayInitializer(elements=[ast.CHAR(char, line=line, position=position) for char in string], line=line, position=position)
 
     def visitComment(self, ctx:GrammarParser.CommentContext):
         return ast.CommentStatement(
@@ -645,7 +653,6 @@ class TreeVisitor(GrammarVisitor):
             ), identifier
         return type_, identifier
 
-
     def visitParamList(self, ctx:GrammarParser.ParamListContext):
         params = []
         for i in range(len(ctx.typedIdentifier())):  # This is done to match the type with the name
@@ -659,8 +666,16 @@ class TreeVisitor(GrammarVisitor):
 
     def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
         return ast.PrintFCall(
-            replacer=ast.PrintFCall.Replacer(self.remove_dashes(ctx.PRINTFREPLACER().getText())),
-            expression=self.visitExpression(ctx.expression()),
+            format=ctx.STRING_LITERAL().getText(),
+            args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitScanfCall(self, ctx:GrammarParser.ScanfCallContext):
+        return ast.ScanFCall(
+            format=ctx.STRING_LITERAL().getText(),
+            args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
             line=ctx.start.line,
             position=ctx.start.column
         )

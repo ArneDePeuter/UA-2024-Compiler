@@ -87,7 +87,11 @@ breakStatement
     ;
 
 printfCall
-    : 'printf' '(' PRINTFREPLACER ',' expression ')'
+    : 'printf' '(' STRING_LITERAL (',' argumentList)? ')'
+    ;
+
+scanfCall
+    : 'scanf' '(' STRING_LITERAL (',' argumentList)? ')'
     ;
 
 continueStatement
@@ -204,21 +208,21 @@ unaryExpression
 primary
     : NUMBER
     | FLOAT
+    | printfCall
+    | scanfCall
     | '(' expression ')'
     | ID arraySpecifier?
     | CHAR
     | CHAR_ESC
+    | STRING_LITERAL
     | arrayInitializer
     | castExpression
-    | printfCall
     | functionCall
     ;
 
 structType: 'struct' ID;
 
-type
-    : const? (baseType | ID |enumType | structType) addressQualifier*
-    ;
+type: const? (baseType | ID |enumType | structType) addressQualifier*;
 
 baseType
     : 'int'
@@ -293,7 +297,38 @@ BITAND : '&';
 BITOR  : '|';
 BITXOR : '^';
 BITNOT : '~';
-PRINTFREPLACER: '"%s"' | '"%d"' | '"%x"' | '"%f"' | '"%c"' ;
+STRING_LITERAL
+    : '"' ( EscapeSequence | FormatSpecifier | ~('\\' | '"' | '%') )* '"'
+    ;
+
+fragment EscapeSequence
+    : '\\' ( '"'    // Double quote
+           | '\\'   // Backslash
+           | 'n'    // Newline
+           | 't'    // Tab
+           | 'r'    // Carriage return
+           | 'b'    // Backspace
+           | 'f'    // Formfeed
+           | 'u' HexDigit HexDigit HexDigit HexDigit  // Unicode
+           | 'x' HexDigit HexDigit  // Hex code
+           | OctalEscape  // Octal escape
+           )
+    ;
+
+fragment FormatSpecifier
+    : '%' [+-0#]* [0-9]* ('.' [0-9]+)? [diufFeEgGxXoscpaAn%]
+    ;
+
+fragment OctalEscape
+    : [0-3] [0-7] [0-7]  // 3-digit octal
+    | [0-7] [0-7]?       // 1 or 2-digit octal
+    ;
+
+fragment HexDigit
+    : [0-9a-fA-F]  // Hexadecimal digit
+    ;
+
+
 WS     : [ \t\r\n]+ -> skip ;
 SINGLE_LINE_COMMENT: '//' .*? ('\n' | EOF);
 MULTI_LINE_COMMENT : '/*' .*? '*/' ;

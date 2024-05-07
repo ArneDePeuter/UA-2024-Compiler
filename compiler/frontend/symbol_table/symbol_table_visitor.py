@@ -11,11 +11,11 @@ from compiler.core.type_caster import TypeCaster
 
 
 class SymbolTableVisitor(AstVisitor):
-    def __init__(self, symbol_table: Optional[SymbolTable] = None):
+    def __init__(self, stdio_included: bool = True, symbol_table: Optional[SymbolTable] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
-        self.symbol_table.define_symbol(Symbol(name="printf", type=ast.Type(ast.BaseType.void)))
         self.inside_declaration = False
+        self.stdio_included = stdio_included
 
     def visit_type(self, node: ast.Type):
         ...
@@ -203,6 +203,7 @@ class SymbolTableVisitor(AstVisitor):
                     if not isinstance(initializer, ast.ArrayInitializer):
                         raise SemanticError(f"Array '{identifier}' must be initialized with an array initializer.", node.line, node.position)
                     if initializer_type.type.array_sizes != node.var_type.type.array_sizes: # TODO: if initializer_type.type.array_sizes > node.var_type.type.array_sizes
+                        print(initializer_type.type.array_sizes, node.var_type.type.array_sizes)
                         raise SemanticError(f"Array '{identifier}' must be initialized with {node.var_type.type.array_sizes} elements.", node.line, node.position)
                     if initializer_type.type.element_type != node.var_type.type.element_type:
                         raise SemanticError(f"Array '{identifier}' must be initialized with elements of type {node.var_type.type.element_type}.", node.line, node.position)
@@ -224,6 +225,9 @@ class SymbolTableVisitor(AstVisitor):
                         right_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(initializer_type.type)
                         if right_expression_hierarchy > left_expression_hierarchy:
                             WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line, node.position).warn()
+                    # Check if we have an array pointer
+                    elif node.var_type.address_qualifiers == [ast.AddressQualifier.pointer] and node.var_type.type == ast.BaseType.char:
+                        pass
                     else:
                         raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
 
@@ -257,6 +261,9 @@ class SymbolTableVisitor(AstVisitor):
                 if right_expression_hierarchy > left_expression_hierarchy:
                     WarningError(f"Implicit conversion from {right_type} to {left_type}", node.line, node.position).warn()
                     return
+            # String literals (array of strings) are allowed to be assigned to char*
+            elif left_type.type == ast.BaseType.char and right_type.type == ast.BaseType.char and len(left_type.address_qualifiers) > 0:
+                pass
             else:
                 raise SemanticError(f"Type mismatch in assignment: {str(left_type)} and {str(right_type)}.", node.line, node.position)
 
@@ -290,6 +297,17 @@ class SymbolTableVisitor(AstVisitor):
             raise SemanticError(f"Continue statement outside of loop.", node.line, node.position)
 
     def visit_printf_call(self, node: ast.PrintFCall):
+        if not self.stdio_included:
+            raise SemanticError(f"Function 'printf' is not declared.", node.line, node.position)
+        for argument in node.args:
+            self.visit_expression(argument)
+        return ast.Type(ast.BaseType.int)
+
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        if not self.stdio_included:
+            raise SemanticError(f"Function 'scanf' is not declared.", node.line, node.position)
+        for argument in node.args:
+            self.visit_expression(argument)
         return ast.Type(ast.BaseType.int)
 
     def visit_return_statement(self, node: ast.ReturnStatement):
