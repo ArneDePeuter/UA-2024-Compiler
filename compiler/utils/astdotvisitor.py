@@ -279,6 +279,33 @@ class AstDotVisitor(AstVisitor):
             self.total += f'{node_name} -> {param_name};\n'
             self.visit_type(param)
 
+    @staticmethod
+    def escape_dot_string(raw_string):
+        # Replace backslashes first to avoid escaping already escaped characters
+        escaped_string = raw_string.replace("\\", "\\\\")
+
+        # Escape quotes
+        escaped_string = escaped_string.replace('"', '')
+
+        # Escape newlines (if you intend to preserve format in labels)
+        escaped_string = escaped_string.replace('\n', '\\n')
+
+        # Escape other potentially problematic characters
+        special_chars = {
+            ',': '\\,',
+            '{': '\\{',
+            '}': '\\}',
+            '[': '\\[',
+            ']': '\\]',
+            '=': '\\=',
+            '\x00': '\\x00',
+        }
+
+        for char, escape in special_chars.items():
+            escaped_string = escaped_string.replace(char, escape)
+
+        return escaped_string
+
     def visit_printf_call(self, node: ast.PrintFCall):
         node_name = str(id(node))
         self.total += f'{node_name} [label="PrintFCall"];\n'
