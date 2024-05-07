@@ -12,7 +12,7 @@ error_dict = {
     "proj2_man_semanticErr_incompatibleTypes1.c": SemanticError("Type mismatch in assignment: int** and int*.", 9, 0),
     "proj2_man_semanticErr_incompatibleTypes2.c": SemanticError("Incompatible types for variable 'x_ptr': int** and int*.", 6, 0),
     "proj2_man_semanticErr_incompatibleTypes3.c": SemanticError("Incompatible types for variable 'y': float and int*.", 5, 0),
-    "proj2_man_semanticErr_incompatibleTypes4.c": SemanticError("Type mismatch in binary operation: float* and int*.", 7, 18),
+    "proj2_man_semanticErr_incompatibleTypes4.c": SemanticError("Type mismatch in binary arithmetic operation: float* and int*.", 7, 18),
     "proj2_man_semanticErr_incompatibleTypes5.c": SemanticError("Cannot dereference a non pointer type: int.", 9, 4),
     "proj2_man_semanticErr_redeclaration.c": SemanticError("Variable 'x' is already declared.", 5, 0),
     "proj2_man_semanticErr_redefinition.c": SemanticError("Variable 'f' is already defined.", 4, 0),
