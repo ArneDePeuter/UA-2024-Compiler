@@ -299,7 +299,7 @@ fragment EscapeSequence
     ;
 
 fragment FormatSpecifier
-    : '%' [+-0#]* [0-9]* ('.' [0-9]+)? [diufFeEgGxXoscpaAn]
+    : '%' [+-0#]* [0-9]* ('.' [0-9]+)? [diufFeEgGxXoscpaAn%]
     ;
 
 fragment OctalEscape
