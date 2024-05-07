@@ -8,6 +8,7 @@ class Preprocessor:
     def __init__(self):
         self.include_files = {}
         self.defines = {}
+        self.stdio_included = False
 
     def preprocess(self, input_code, include_paths):
         self.collect_includes(input_code, include_paths)
@@ -19,7 +20,9 @@ class Preprocessor:
         include_pattern = re.compile(r'#include\s*[<"](.+?)[>"]')
         includes = include_pattern.findall(input_code)
         for include_file in includes:
-            if include_file not in self.include_files:
+            if include_file == 'stdio.h':
+                self.stdio_included = True
+            elif include_file not in self.include_files:
                 file_path = self.find_include_file(include_file, include_paths)
                 if file_path:
                     with open(file_path, 'r') as file:

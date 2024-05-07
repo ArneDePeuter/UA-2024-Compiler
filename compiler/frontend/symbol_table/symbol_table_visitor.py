@@ -11,7 +11,7 @@ from compiler.core.type_caster import TypeCaster
 
 
 class SymbolTableVisitor(AstVisitor):
-    def __init__(self, symbol_table: Optional[SymbolTable] = None, stdio_included: bool = True):
+    def __init__(self, stdio_included: bool = True, symbol_table: Optional[SymbolTable] = None):
         super().__init__()  # This is important so that we can call the generic visit method and get usage to the dict
         self.symbol_table = SymbolTable() if not symbol_table else symbol_table
         self.inside_declaration = False

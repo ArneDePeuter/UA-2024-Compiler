@@ -33,7 +33,7 @@ def compile_file(input_file: str,
     tree, input_stream = tree_from_str(preprocessed_code)
     ast = tree_to_ast(tree, input_stream)
 
-    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+    symbol_table_visitor = SymbolTableVisitor(stdio_included=preprocessor.stdio_included, symbol_table=SymbolTable())
     symbol_table_visitor.visit_program(ast)
 
     # middle end
