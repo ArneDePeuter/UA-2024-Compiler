@@ -26,6 +26,24 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#structDefinition.
+    def enterStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#structDefinition.
+    def exitStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#structList.
+    def enterStructList(self, ctx:GrammarParser.StructListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#structList.
+    def exitStructList(self, ctx:GrammarParser.StructListContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#typedIdentifier.
     def enterTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
         pass
@@ -413,6 +431,15 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by GrammarParser#structAccess.
+    def enterStructAccess(self, ctx:GrammarParser.StructAccessContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#structAccess.
+    def exitStructAccess(self, ctx:GrammarParser.StructAccessContext):
+        pass
+
+
     # Enter a parse tree produced by GrammarParser#unaryExpression.
     def enterUnaryExpression(self, ctx:GrammarParser.UnaryExpressionContext):
         pass
@@ -428,6 +455,15 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#primary.
     def exitPrimary(self, ctx:GrammarParser.PrimaryContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#structType.
+    def enterStructType(self, ctx:GrammarParser.StructTypeContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#structType.
+    def exitStructType(self, ctx:GrammarParser.StructTypeContext):
         pass
 
 

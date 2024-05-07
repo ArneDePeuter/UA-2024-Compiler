@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, ForwardRef, Union
 from dataclasses import dataclass
 
 from .ast import AST
-
 
 class BaseType(Enum):
     int = "int"
@@ -54,12 +53,11 @@ class ArrayType(AST):
         return False
 
     def __str__(self):
-        return str(self.element_type)+str(self.array_sizes)
-
+        return f"array of {self.element_type}{self.array_sizes}"
 
 @dataclass
 class Type(AST):
-    type: BaseType | ArrayType
+    type: Union[BaseType, ArrayType, ForwardRef("StructType")]
     const: Optional[bool] = False
     address_qualifiers: Optional[list[AddressQualifier]] = None
 
@@ -77,3 +75,17 @@ class Type(AST):
 
     def __hash__(self):
         return hash(str(self))
+
+@dataclass
+class StructType(AST):
+    definition: "StructDefinition"
+
+    def __eq__(self, other):
+        if isinstance(other, StructType):
+            return self.definition == other.definition
+        return False
+
+    def __str__(self):
+        return f"struct {self.definition.name}"
+
+from .statement import StructDefinition

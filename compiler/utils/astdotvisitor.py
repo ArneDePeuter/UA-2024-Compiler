@@ -33,7 +33,18 @@ class AstDotVisitor(AstVisitor):
 
     def visit_char(self, node: ast.CHAR):
         node_name = id(node)
-        self.total += f"{node_name} [label=\"CHAR: {self.escape_dot_string(node.value)}\"];\n"
+        # Map common escape sequences to their .dot file representations
+        escape_sequences = {
+            "\\": "\\\\",  # Backslash
+            "\"": "\\\"",  # Double quote
+            "\n": "\\n",  # Newline
+            "\t": "\\t",  # Tab
+            "\0": "\\0",  # Null
+            # Add more escape sequences as needed
+        }
+        # Replace each escape sequence in node.value
+        escaped_value = "".join(escape_sequences.get(char, char) for char in node.value)
+        self.total += f"{node_name} [label=\"CHAR: {escaped_value}\"];\n"
 
     def visit_identifier(self, node: ast.IDENTIFIER):
         node_name = id(node)
@@ -45,9 +56,9 @@ class AstDotVisitor(AstVisitor):
         type_node_name = str(id(node.cast_type))
         self.total += f'{node_name} -> {type_node_name};\n'
         self.visit_type(node.cast_type)
-        expression_node_name = str(id(ast.expression))
-        self.total += f'{node_name} -> {expression_node_name};\n'
         self.visit_expression(node.expression)
+        expression_node_name = id(node.expression)
+        self.total += f'{node_name} -> {expression_node_name};\n'
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         self.gen_binary_dot(node, node.operator.name)
@@ -167,6 +178,9 @@ class AstDotVisitor(AstVisitor):
             array_spec_id = self.visit_array_specifier(node.type.array_sizes)
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
             self.total += f"{node_name} -> {array_spec_id};\n"
+        elif isinstance(node.type, ast.StructType):
+            descr = f"{const} struct {node.type.definition.name} {addrs}"
+            self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
         else:
             descr = f"{const}{node.type.name} {addrs}"
             self.total += f"{node_name} [label=\"Type: {descr}\"];\n"
@@ -181,8 +195,8 @@ class AstDotVisitor(AstVisitor):
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         node_name = id(node)
-
-        self.total += f"{node_name} [label=\"Comment: \n {self.escape_dot_string(node.content)}\"];\n"
+        valid_content = node.content.replace('"', "'")
+        self.total += f"{node_name} [label=\"Comment: \n {valid_content}\"];\n"
 
     def visit_if_statement(self, node: ast.IfStatement):
         node_name = str(id(node))
@@ -264,31 +278,6 @@ class AstDotVisitor(AstVisitor):
             param_name = str(id(param))
             self.total += f'{node_name} -> {param_name};\n'
             self.visit_type(param)
-    def escape_dot_string(self, raw_string):
-        # Replace backslashes first to avoid escaping already escaped characters
-        escaped_string = raw_string.replace("\\", "\\\\")
-
-        # Escape quotes
-        escaped_string = escaped_string.replace('"', '')
-
-        # Escape newlines (if you intend to preserve format in labels)
-        escaped_string = escaped_string.replace('\n', '\\n')
-
-        # Escape other potentially problematic characters
-        special_chars = {
-            ',': '\\,',
-            '{': '\\{',
-            '}': '\\}',
-            '[': '\\[',
-            ']': '\\]',
-            '=': '\\=',
-            '\x00': '\\x00',
-        }
-
-        for char, escape in special_chars.items():
-            escaped_string = escaped_string.replace(char, escape)
-
-        return escaped_string
 
     def visit_printf_call(self, node: ast.PrintFCall):
         node_name = str(id(node))
@@ -343,10 +332,13 @@ class AstDotVisitor(AstVisitor):
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         node_id = id(node)
-        self.total += f"{node_id} [label=\"ArrayInitializer\"];\n"
+        if node.struct_type:
+            self.total += f"{node_id} [label=\"StructInitializer\"];\n"
+        else:
+            self.total += f"{node_id} [label=\"ArrayInitializer\"];\n"
 
         for element in node.elements:
-            self.visit(element)
+            self.visit_expression(element)
             element_id = id(element)
             self.total += f"{node_id} -> {element_id};\n"
 
@@ -358,3 +350,28 @@ class AstDotVisitor(AstVisitor):
         index_id = id(node.index)
         self.total += f"{node_id} -> {index_id} [label=\"index\"];\n"
 
+    def visit_struct_access(self, node: ast.StructAccess):
+        node_id = id(node)
+        self.total += f"{node_id} [label=\"Struct access to member {node.member_name}\"];\n"
+
+        self.visit_expression(node.target)
+        target_id = id(node.target)
+        self.total += f"{node_id} -> {target_id} [label=\"target\"];\n"
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        node_id = id(node)
+        self.total += f"{node_id} [label=\"StructDefinition: {node.name}\"];\n"
+
+        for member in node.members:
+            member_id = id(member)
+            self.visit_struct_member(member)
+            self.total += f"{node_id} -> {member_id};\n"
+
+    def visit_struct_member(self, node: ast.StructMember):
+        node_id = id(node)
+
+        self.total += f"{node_id} [label=\"Struct Member: {node.name}\"];\n"
+
+        type_id = id(node.type)
+        self.visit_type(node.type)
+        self.total += f"{node_id} -> {type_id};\n"

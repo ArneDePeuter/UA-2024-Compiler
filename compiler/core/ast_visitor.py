@@ -23,6 +23,7 @@ class AstVisitor(ABC):
             ast.ArraySpecifier: self.visit_array_specifier,
             ast.ArrayInitializer: self.visit_array_initializer,
             ast.ArrayAccess: self.visit_array_access,
+            ast.StructAccess: self.visit_struct_access,
         }
         self.statement_fd = {
             ast.ExpressionStatement: self.visit_expression_statement,
@@ -40,16 +41,8 @@ class AstVisitor(ABC):
             ast.ContinueStatement: self.visit_continue_statement,
             ast.ReturnStatement: self.visit_return_statement,
             ast.ForwardDeclaration: self.visit_forward_declaration,
+            ast.StructDefinition: self.visit_struct_definition,
         }
-
-    def visit(self, node: ast.AST):
-        # This is the generic visit method.
-        if isinstance(node, ast.Expression):
-            return self.visit_expression(node)
-        elif isinstance(node, ast.Statement):
-            return self.visit_statement(node)
-        else:
-            raise TypeError(f"Unknown node type: {type(node)}")
 
     def visit_expression(self, node: ast.Expression):
         return self.expression_fd.get(type(node))(node)
@@ -187,4 +180,12 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_scanf_call(self, node: ast.ScanFCall):
+        ...
+
+    @abstractmethod
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        ...
+
+    @abstractmethod
+    def visit_struct_access(self, node: ast.StructAccess):
         ...
