@@ -499,6 +499,10 @@ class LLVMIRGenerator(AstVisitor):
         for i, arg in enumerate(args):
             if isinstance(arg.type, ir.FloatType):
                 args[i] = self.builder.fpext(arg, ir.DoubleType())
+            if isinstance(arg.type, ir.ArrayType) and isinstance(arg.type.element, ir.IntType) and arg.type.element.width == 8:
+                temp_alloc = self.builder.alloca(arg.type, name="temp_str")
+                self.builder.store(arg, temp_alloc)
+                args[i] = self.builder.gep(temp_alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
         self.builder.call(self.printf, [fmt_ptr] + args)
         return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
