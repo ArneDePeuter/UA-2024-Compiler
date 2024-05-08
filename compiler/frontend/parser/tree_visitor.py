@@ -752,9 +752,27 @@ class TreeVisitor(GrammarVisitor):
             if ctx.getChild(i).getText() == "(":
                 if isinstance(current_expr, ast.IDENTIFIER):
                     if current_expr.name == "scanf":
-                        pass
+                        args = ctx.getChild(i+1)
+                        fmt = args.logicalOrExpression(0).getText()
+                        current_expr = ast.ScanFCall(
+                            format=fmt,
+                            args=self.visitArgumentExpressionList(args, skip_first=True),
+                            line=ctx.start.line,
+                            position=ctx.start.column
+                        )
+                        i += 3
+                        continue
                     elif current_expr.name == "printf":
-                        pass
+                        args = ctx.getChild(i+1)
+                        fmt = args.logicalOrExpression(0).getText()
+                        current_expr = ast.PrintFCall(
+                            format=fmt,
+                            args=self.visitArgumentExpressionList(args, skip_first=True),
+                            line=ctx.start.line,
+                            position=ctx.start.column
+                        )
+                        i += 3
+                        continue
                 current_expr = ast.FunctionCall(
                     callable=current_expr,
                     arguments=self.visitArgumentList(ctx.getChild(i+1)),
@@ -807,8 +825,20 @@ class TreeVisitor(GrammarVisitor):
             )
         elif constant := ctx.constant():
             return self.visitConstant(constant)
-        elif ctx.StringLiteral():
-            raise NotImplementedError("String literals are not supported")
+        elif str_lit := ctx.StringLiteral():
+            string = str_lit.getText()
+            # Zero terminate the string
+            string = string[1:-1] + "\0"
+            return ast.ArrayInitializer(
+                elements=[
+                    ast.CHAR(
+                        value=char,
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    ) for char in string],
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
         elif expr := ctx.expression():
             return self.visitExpression(expr)
         elif init_list := ctx.initializerList():
@@ -836,7 +866,7 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
 
-    def visitArgumentExpressionList(self, ctx: GrammarParser.ArgumentExpressionListContext):
+    def visitArgumentExpressionList(self, ctx: GrammarParser.ArgumentExpressionListContext, skip_first: bool = False):
         return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()]
 
     def visitInitializerList(self, ctx: GrammarParser.InitializerListContext):
