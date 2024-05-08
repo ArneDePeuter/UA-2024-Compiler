@@ -724,9 +724,17 @@ class TreeVisitor(GrammarVisitor):
 
     def visitCastExpression(self, ctx: GrammarParser.CastExpressionContext):
         if type_ := ctx.type_():
+            cast_type = self.visit(type_)
+            expression = self.visitCastExpression(ctx.castExpression())
+
+            # check if the cast is for explicit struct definition
+            if isinstance(cast_type.type, ast.StructType) and len(cast_type.address_qualifiers) == 0:
+                if isinstance(expression, ast.ArrayInitializer):
+                    expression.set_struct_type(cast_type.type)
+
             return ast.TypeCastExpression(
-                cast_type=self.visitType(type_),
-                expression=self.visitCastExpression(ctx.castExpression()),
+                cast_type=cast_type,
+                expression=expression,
                 line=ctx.start.line,
                 position=ctx.start.column
             )
