@@ -249,7 +249,11 @@ class SymbolTableVisitor(AstVisitor):
 
         if isinstance(left_type.type, ast.ArrayType):
             if left_type.type.element_type != right_type:
-                raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
+                if TypeCaster.get_heirarchy_of_base_type(left_type.type.element_type.type) > TypeCaster.get_heirarchy_of_base_type(right_type.type):
+                    WarningError(f"Implicit conversion from {right_type} to {left_type.type.element_type}", node.line, node.position).warn()
+                    node.right = TypeCaster.upcast(node.right)
+                else:
+                    raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
             if node.left.index > left_type.type.array_sizes:
                 raise SemanticError(f"Array index out of bounds", node.line, node.position)
 
