@@ -184,8 +184,8 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#typedefType.
-    def visitTypedefType(self, ctx:GrammarParser.TypedefTypeContext):
+    # Visit a parse tree produced by GrammarParser#typedefName.
+    def visitTypedefName(self, ctx:GrammarParser.TypedefNameContext):
         return self.visitChildren(ctx)
 
 

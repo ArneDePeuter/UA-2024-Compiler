@@ -323,12 +323,12 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#typedefType.
-    def enterTypedefType(self, ctx:GrammarParser.TypedefTypeContext):
+    # Enter a parse tree produced by GrammarParser#typedefName.
+    def enterTypedefName(self, ctx:GrammarParser.TypedefNameContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#typedefType.
-    def exitTypedefType(self, ctx:GrammarParser.TypedefTypeContext):
+    # Exit a parse tree produced by GrammarParser#typedefName.
+    def exitTypedefName(self, ctx:GrammarParser.TypedefNameContext):
         pass
 
 

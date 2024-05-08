@@ -116,7 +116,7 @@ defaultCaseStatement
     ;
 
 typedefStatement
-    : Typedef type Identifier Delimiter;
+    : Typedef type typedefName Delimiter;
 
 expressionStatement
     : expression Delimiter

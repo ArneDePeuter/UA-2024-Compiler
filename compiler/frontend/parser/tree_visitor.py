@@ -127,7 +127,7 @@ class TreeVisitor(GrammarVisitor):
             )
         else:
             # Handle typedef replacements
-            typedef_name = ctx.typedefType().getText()
+            typedef_name = self.visitTypedefName(ctx.typedefName())
             replace = copy.deepcopy(self.typedef_scope.get(typedef_name))
             if not replace:
                 raise SemanticError(f"Typedef with name: {typedef_name} not defined", ctx.start.line, ctx.start.column)
@@ -148,7 +148,7 @@ class TreeVisitor(GrammarVisitor):
 
     def visitTypedefStatement(self, ctx: GrammarParser.TypedefStatementContext):
         my_type = self.visitType(ctx.type_())
-        name = ctx.Identifier().getText()
+        name = self.visitTypedefName(ctx.typedefName())
         if name in self.typedef_scope:
             raise SemanticError(
                 f"Typedef redefinition: {name} already defined",
@@ -156,7 +156,12 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
         self.typedef_scope[name] = my_type
-    
+
+    def visitTypedefName(self, ctx: GrammarParser.TypedefNameContext):
+        if ctx.Identifier():
+            return ctx.Identifier().getText()
+        return ctx.BaseType().getText()
+
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
         qualifiers = self.visit(ctx.variableDeclarationQualifiers())

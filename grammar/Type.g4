@@ -1,9 +1,9 @@
 grammar Type;
 import Tokens;
 
-type: Const? (BaseType | typedefType | enumType | structType) Multiply*;
+type: Const? (BaseType | typedefName | enumType | structType) Multiply*;
 
-typedefType: Identifier;
+typedefName: Identifier | BaseType;
 
 enumType: Enum Identifier;
 
