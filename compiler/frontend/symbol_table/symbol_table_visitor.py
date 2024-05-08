@@ -446,6 +446,18 @@ class SymbolTableVisitor(AstVisitor):
             fits = fits and SymbolTableVisitor.fits_dimensions(dimension[1:], newnode)
         return fits
 
+    def count_element_types(self, node, counter):
+        """
+        This count the amount of different element types in the array, usefull for implicit type casting
+        :param node:
+        :return:
+        """
+        if isinstance(node, ast.ArrayInitializer):
+            for element in node.elements:
+                self.count_element_types(element, counter)
+        else:
+            counter[self.visit_expression(node).type] = 1 + counter.get(self.visit_expression(node).type, 0)
+
     def element_type_in_set(self, set, node):
         """
         Check if the element type of the node is in the set
@@ -459,9 +471,34 @@ class SymbolTableVisitor(AstVisitor):
         else:
             set.add(self.visit_expression(node))
 
+    def process_array_elements_implicit_casting(self, node, most_common_type, org_array):
+        """
+        Process each element in the node to check type hierarchy and perform necessary upcasting.
+        :param node: The node containing elements to process.
+        :param most_common_type: The most common base type found in the node for potential upcasting.
+        """
+        if isinstance(node, ast.ArrayInitializer):
+            for i, element in enumerate(node.elements):
+                self.process_array_elements_implicit_casting(element, most_common_type, org_array)  # Recursive handling for multi-dimensional arrays
+        else:
+            element_eval = self.visit_expression(node)
+            element_type = element_eval.type
+            if TypeCaster.get_heirarchy_of_base_type(most_common_type) > TypeCaster.get_heirarchy_of_base_type(element_type):
+                WarningError(f"Implicit conversion from {element_type} to {most_common_type}", node.line, node.position).warn()
+                # Loop through the org_array to find the element and replace it with the upcasted version
+                for i, element in enumerate(org_array.elements):
+                    if element == node:
+                        org_array.elements[i] = TypeCaster.upcast(node)
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if node.struct_type:
             return self.visit_struct_initializer(node)
+
+        # Apply implicit type conversions
+        counter = {}
+        self.count_element_types(node, counter)
+        most_common_type = max(counter, key=counter.get)
+        self.process_array_elements_implicit_casting(node, most_common_type, node)
 
         element_types = set()
         self.element_type_in_set(element_types, node)
