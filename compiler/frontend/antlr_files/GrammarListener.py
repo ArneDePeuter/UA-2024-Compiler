@@ -125,15 +125,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#functionCall.
-    def enterFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#functionCall.
-    def exitFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#argumentList.
     def enterArgumentList(self, ctx:GrammarParser.ArgumentListContext):
         pass
@@ -500,6 +491,15 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#primaryExpression.
     def exitPrimaryExpression(self, ctx:GrammarParser.PrimaryExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#constant.
+    def enterConstant(self, ctx:GrammarParser.ConstantContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#constant.
+    def exitConstant(self, ctx:GrammarParser.ConstantContext):
         pass
 
 

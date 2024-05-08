@@ -39,32 +39,6 @@ Continue: 'continue';
 While: 'while';
 For: 'for';
 
-// Values
-Identifier
-    : [a-zA-Z_][a-zA-Z_0-9]*
-    ;
-Constant
-    : Int
-    | Float
-    | Char
-    ;
-Int
-    : '0' | [1-9][0-9]*
-    ;
-Float
-    : [0-9]+ '.' [0-9]* | '.' [0-9]+
-    ;
-Char
-    : '\'' CharContent '\''
-    ;
-CharContent
-    : ~['\\\r\n]
-    | ( '\\n' | '\\t' | '\\0' )
-    ;
-StringLiteral
-    : '"' CharContent+ '"'
-    ;
-
 // Operators
 AndBit: '&';
 OrBit: '|';
@@ -88,8 +62,27 @@ LessThanEqual: '<=';
 GreaterThanEqual: '>=';
 PlusPlus: '++';
 MinusMinus: '--';
-AddressOf: AndBit;
-Dereference: Multiply;
+
+// Values
+Identifier
+    : [a-zA-Z_][a-zA-Z_0-9]*
+    ;
+Int
+    : '0' | [1-9][0-9]*
+    ;
+Float
+    : [0-9]+ '.' [0-9]* | '.' [0-9]+
+    ;
+Char
+    : '\'' CharContent '\''
+    ;
+CharContent
+    : ~['\\\r\n]
+    | ( '\\n' | '\\t' | '\\0' )
+    ;
+StringLiteral
+    : '"' CharContent+ '"'
+    ;
 
 // Misc
 Comment: SingleLineComment | MultiLineComment;

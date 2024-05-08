@@ -50,8 +50,6 @@ functionDeclaration : type Identifier OpenParan paramList? CloseParan body ;
 
 paramList : typedIdentifier (Comma typedIdentifier)* ;
 
-functionCall : Identifier OpenParan argumentList? CloseParan ;
-
 argumentList : expression (Comma expression)* ;
 
 body : OpenBrace statement* CloseBrace ;

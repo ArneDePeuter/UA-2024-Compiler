@@ -91,7 +91,7 @@ class TreeVisitor(GrammarVisitor):
             return ast.Type(
                 type=ast.BaseType((ctx.BaseType().getText())),
                 const=ctx.Const() is not None,
-                address_qualifiers=[ast.AddressQualifier(addr.getText()) for addr in ctx.AddressOf()],
+                address_qualifiers=[ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()],
                 line=ctx.start.line,
                 position=ctx.start.column
             )
@@ -107,7 +107,7 @@ class TreeVisitor(GrammarVisitor):
                 )
 
             const_qualifier = ctx.Const() is not None
-            address_qualifiers = [ast.AddressQualifier(addr.getText()) for addr in ctx.AddressOf()]
+            address_qualifiers = [ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()]
             return ast.Type(
                 type=ast.BaseType.int,  # Enum types are treated as integers
                 const=const_qualifier,
@@ -117,7 +117,7 @@ class TreeVisitor(GrammarVisitor):
             )
         if ctx.structType():
             const_qualifier = ctx.Const() is not None
-            address_qualifiers = [ast.AddressQualifier(addr.getText()) for addr in ctx.AddressOf()]
+            address_qualifiers = [ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()]
             return ast.Type(
                 type=self.visitStructType(ctx.structType()),
                 const=const_qualifier,
@@ -132,7 +132,7 @@ class TreeVisitor(GrammarVisitor):
             if not replace:
                 raise SemanticError(f"Typedef with name: {typedef_name} not defined", ctx.start.line, ctx.start.column)
             replace.const = replace.const or ctx.Const() is not None
-            replace.address_qualifiers += [ast.AddressQualifier(addr.getText()) for addr in ctx.AddressOf()]
+            replace.address_qualifiers += [ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()]
             replace.line = ctx.start.line
             replace.position = ctx.start.column
             return replace
@@ -156,11 +156,6 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
         self.typedef_scope[name] = my_type
-
-    def visitExpression(self, ctx: GrammarParser.ExpressionContext):
-        ast = self.visitChildren(ctx)
-        ast.c_syntax = self.get_original_text(ctx)
-        return ast
     
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
@@ -502,18 +497,8 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitArgumentList(self, ctx: GrammarParser.ArgumentListContext):
-        return [self.visitExpression(arg) for arg in ctx.expression()]
-
-    def visitFunctionCall(self, ctx: GrammarParser.FunctionCallContext):
-        name = ctx.Identifier().getText()
-        arguments = self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else []
-        return ast.FunctionCall(
-            name=name,
-            arguments=arguments,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+    def visitArgumentList(self, ctx: GrammarParser.ArgumentExpressionListContext):
+        return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()]
 
     def visitTypeList(self, ctx:GrammarParser.TypeListContext):
         return [self.visitType(type_) for type_ in ctx.type_()]
@@ -600,3 +585,266 @@ class TreeVisitor(GrammarVisitor):
             ast.StructMember(name=name, type=type_)
             for type_, name in (self.visitTypedIdentifier(typed_id) for typed_id in ctx.typedIdentifier())
         ]
+
+    def visitExpression(self, ctx: GrammarParser.ExpressionContext):
+        ast = self.visitChildren(ctx)
+        ast.c_syntax = self.get_original_text(ctx)
+        return ast
+
+    def visitLogicalOrExpression(self, ctx: GrammarParser.LogicalOrExpressionContext):
+        current_expr = self.visitLogicalAndExpression(ctx.logicalAndExpression(0))
+
+        for i in range(1, len(ctx.logicalAndExpression())):
+            current_expr = ast.BinaryLogicalOperation(
+                left=current_expr,
+                operator=ast.BinaryLogicalOperation.Operator.OR,
+                right=self.visitLogicalAndExpression(ctx.logicalAndExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitLogicalAndExpression(self, ctx: GrammarParser.LogicalAndExpressionContext):
+        current_expr = self.visitInclusiveOrExpression(ctx.inclusiveOrExpression(0))
+
+        for i in range(1, len(ctx.inclusiveOrExpression())):
+            current_expr = ast.BinaryLogicalOperation(
+                left=current_expr,
+                operator=ast.BinaryLogicalOperation.Operator.AND,
+                right=self.visitInclusiveOrExpression(ctx.inclusiveOrExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitInclusiveOrExpression(self, ctx: GrammarParser.InclusiveOrExpressionContext):
+        current_expr = self.visitExclusiveOrExpression(ctx.exclusiveOrExpression(0))
+
+        for i in range(1, len(ctx.exclusiveOrExpression())):
+            current_expr = ast.BinaryBitwiseArithmetic(
+                left=current_expr,
+                operator=ast.BinaryBitwiseArithmetic.Operator.OR,
+                right=self.visitExclusiveOrExpression(ctx.exclusiveOrExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitExclusiveOrExpression(self, ctx: GrammarParser.ExclusiveOrExpressionContext):
+        current_expr = self.visitAndExpression(ctx.andExpression(0))
+
+        for i in range(1, len(ctx.andExpression())):
+            current_expr = ast.BinaryBitwiseArithmetic(
+                left=current_expr,
+                operator=ast.BinaryBitwiseArithmetic.Operator.XOR,
+                right=self.visitAndExpression(ctx.andExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitAndExpression(self, ctx: GrammarParser.AndExpressionContext):
+        current_expr = self.visitEqualityExpression(ctx.equalityExpression(0))
+
+        for i in range(1, len(ctx.equalityExpression())):
+            current_expr = ast.BinaryBitwiseArithmetic(
+                left=current_expr,
+                operator=ast.BinaryBitwiseArithmetic.Operator.AND,
+                right=self.visitEqualityExpression(ctx.equalityExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitEqualityExpression(self, ctx: GrammarParser.EqualityExpressionContext):
+        current_expr = self.visitRelationalExpression(ctx.relationalExpression(0))
+
+        for i in range(1, len(ctx.relationalExpression())):
+            current_expr = ast.ComparisonOperation(
+                left=current_expr,
+                operator=ast.ComparisonOperation.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitRelationalExpression(ctx.relationalExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitRelationalExpression(self, ctx: GrammarParser.RelationalExpressionContext):
+        current_expr = self.visitShiftExpression(ctx.shiftExpression(0))
+
+        for i in range(1, len(ctx.shiftExpression())):
+            current_expr = ast.ComparisonOperation(
+                left=current_expr,
+                operator=ast.ComparisonOperation.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitShiftExpression(ctx.shiftExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitShiftExpression(self, ctx: GrammarParser.ShiftExpressionContext):
+        current_expr = self.visitAdditiveExpression(ctx.additiveExpression(0))
+
+        for i in range(1, len(ctx.additiveExpression())):
+            current_expr = ast.ShiftExpression(
+                value=current_expr,
+                operator=ast.ShiftExpression.Operator(ctx.getChild(2*i-1).getText()),
+                amount=self.visitAdditiveExpression(ctx.additiveExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitAdditiveExpression(self, ctx: GrammarParser.AdditiveExpressionContext):
+        current_expr = self.visitMultiplicativeExpression(ctx.multiplicativeExpression(0))
+
+        for i in range(1, len(ctx.multiplicativeExpression())):
+            current_expr = ast.BinaryArithmetic(
+                left=current_expr,
+                operator=ast.BinaryArithmetic.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitMultiplicativeExpression(ctx.multiplicativeExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitMultiplicativeExpression(self, ctx: GrammarParser.MultiplicativeExpressionContext):
+        current_expr = self.visitCastExpression(ctx.castExpression(0))
+
+        for i in range(1, len(ctx.castExpression())):
+            current_expr = ast.BinaryArithmetic(
+                left=current_expr,
+                operator=ast.BinaryArithmetic.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitCastExpression(ctx.castExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
+        return current_expr
+
+    def visitCastExpression(self, ctx: GrammarParser.CastExpressionContext):
+        if type_ := ctx.type_():
+            return ast.TypeCastExpression(
+                cast_type=self.visitType(type_),
+                expression=self.visitCastExpression(ctx.castExpression()),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return self.visitUnaryExpression(ctx.unaryExpression())
+
+    def visitUnaryExpression(self, ctx: GrammarParser.UnaryExpressionContext):
+        if postfix_expression := ctx.postfixExpression():
+            return self.visitPostfixExpression(postfix_expression)
+
+        return ast.UnaryExpression(
+            value=self.visitCastExpression(ctx.castExpression()),
+            operator=ast.UnaryExpression.Operator(ctx.unaryOperator().getText()),
+            prefix=True,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitPostfixExpression(self, ctx: GrammarParser.PostfixExpressionContext):
+        current_expr = self.visitPrimaryExpression(ctx.primaryExpression())
+
+        i = 1
+        while i < len(ctx.children):
+            if ctx.getChild(i).getText() == "(":
+                if isinstance(current_expr, ast.IDENTIFIER):
+                    if current_expr.name == "scanf":
+                        pass
+                    elif current_expr.name == "printf":
+                        pass
+                current_expr = ast.FunctionCall(
+                    callable=current_expr,
+                    arguments=self.visitArgumentList(ctx.getChild(i+1)),
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 3
+            elif ctx.getChild(i).getText() == "[":
+                current_expr = ast.ArrayAccess(
+                    target=current_expr,
+                    index=self.visitLogicalOrExpression(ctx.getChild(i+1)),
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 3
+            elif ctx.getChild(i).getText() in [".", "->"]:
+                if ctx.getChild(i).getText() == "->":
+                    current_expr = ast.UnaryExpression(
+                        value=current_expr,
+                        operator=ast.UnaryExpression.Operator.DEREFERENCE,
+                        prefix=True,
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                current_expr = ast.StructAccess(
+                    target=current_expr,
+                    member_name=ctx.getChild(i+1).getText(),
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 2
+            elif ctx.getChild(i).getText() in ["++", "--"]:
+                current_expr = ast.UnaryExpression(
+                    value=current_expr,
+                    operator=ast.UnaryExpression.Operator(ctx.getChild(i).getText()),
+                    prefix=False,
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 1
+
+        return current_expr
+
+    def visitPrimaryExpression(self, ctx: GrammarParser.PrimaryExpressionContext):
+        if ctx.Identifier():
+            return ast.IDENTIFIER(
+                name=ctx.Identifier().getText(),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif constant := ctx.constant():
+            return self.visitConstant(constant)
+        elif ctx.StringLiteral():
+            raise NotImplementedError("String literals are not supported")
+        elif expr := ctx.expression():
+            return self.visitExpression(expr)
+        elif init_list := ctx.initializerList():
+            return self.visitInitializerList(init_list)
+
+    def visitConstant(self, ctx: GrammarParser.ConstantContext):
+        if int_ := ctx.Int():
+            return ast.INT(
+                value=int(int_.getText()),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif float_ := ctx.Float():
+            return ast.FLOAT(
+                value=float(float_.getText()),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif char := ctx.Char():
+            # remove single quotes
+            char = char.getText()[1:-1]
+            return ast.CHAR(
+                value=char,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
+    def visitArgumentExpressionList(self, ctx: GrammarParser.ArgumentExpressionListContext):
+        return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()]
+
+    def visitInitializerList(self, ctx: GrammarParser.InitializerListContext):
+        return ast.ArrayInitializer(
+            elements=self.visitInitializerListBody(ctx.initializerListBody()),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitInitializerListBody(self, ctx: GrammarParser.InitializerListBodyContext):
+        return [self.visitExpression(expression) for expression in ctx.expression()]

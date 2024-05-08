@@ -71,8 +71,8 @@ unaryExpression
     ;
 
 unaryOperator
-    : AddressOf
-    | Dereference
+    : Multiply
+    | AndBit
     | Plus
     | Minus
     | NotBit
@@ -94,10 +94,16 @@ postfixExpression
 
 primaryExpression
     : Identifier
-    | Constant
+    | constant
     | StringLiteral
     | OpenParan expression CloseParan
     | initializerList
+    ;
+
+constant
+    : Int
+    | Float
+    | Char
     ;
 
 argumentExpressionList

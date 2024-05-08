@@ -275,7 +275,7 @@ class ShiftExpression(Expression):
 
 @dataclass
 class FunctionCall(Expression):
-    name: str
+    callable: Expression
     arguments: list[Expression]
 
 
@@ -306,7 +306,7 @@ class ArrayInitializer(Expression):
 
 @dataclass
 class ArrayAccess(Expression):
-    array_name: str
+    target: Expression
     index: Expression
 
 @dataclass

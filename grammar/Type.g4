@@ -1,7 +1,7 @@
 grammar Type;
 import Tokens;
 
-type: Const? (BaseType | typedefType | enumType | structType) AddressOf*;
+type: Const? (BaseType | typedefType | enumType | structType) Multiply*;
 
 typedefType: Identifier;
 
