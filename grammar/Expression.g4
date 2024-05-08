@@ -84,7 +84,7 @@ unaryOperator
 postfixExpression
     : primaryExpression (
         OpenBracket logicalOrExpression CloseBracket
-        | OpenParan argumentExpressionList CloseParan
+        | OpenParan argumentExpressionList? CloseParan
         | DotOp Identifier
         | ArrowOp Identifier
         | PlusPlus

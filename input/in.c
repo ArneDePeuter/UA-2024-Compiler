@@ -1,12 +1,16 @@
 #include <stdio.h>
 
-typedef int bool;
-
-int main() {
-    bool b = 0;
-    b = 1;
-    bool* b_ptr = &b;
-    *b_ptr = 0;
-    printf("%d", b);
+int test() {
+    enum Days {
+        MONDAY,
+        TUESDAY
+    };
+    enum Days day;
+    return 0;
 }
 
+int main() {
+    test();
+//    enum Days day;
+    return 0;
+}

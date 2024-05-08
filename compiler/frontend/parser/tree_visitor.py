@@ -750,35 +750,45 @@ class TreeVisitor(GrammarVisitor):
         i = 1
         while i < len(ctx.children):
             if ctx.getChild(i).getText() == "(":
-                if isinstance(current_expr, ast.IDENTIFIER):
-                    if current_expr.name == "scanf":
-                        args = ctx.getChild(i+1)
-                        fmt = args.logicalOrExpression(0).getText()
-                        current_expr = ast.ScanFCall(
-                            format=fmt,
-                            args=self.visitArgumentExpressionList(args, skip_first=True),
-                            line=ctx.start.line,
-                            position=ctx.start.column
-                        )
-                    elif current_expr.name == "printf":
-                        args = ctx.getChild(i+1)
-                        fmt = args.logicalOrExpression(0).getText()
-                        current_expr = ast.PrintFCall(
-                            format=fmt,
-                            args=self.visitArgumentExpressionList(args, skip_first=True),
-                            line=ctx.start.line,
-                            position=ctx.start.column
-                        )
-                    else:
-                        current_expr = ast.FunctionCall(
-                            name=current_expr.name,
-                            arguments=self.visitArgumentList(ctx.getChild(i+1)),
-                            line=ctx.start.line,
-                            position=ctx.start.column
-                        )
-                    i += 3
-                else:
+                if not isinstance(current_expr, ast.IDENTIFIER):
                     raise NotImplementedError("Function calls on non-identifiers are not supported")
+
+                if ctx.getChild(i+1).getText() == ")":
+                    current_expr = ast.FunctionCall(
+                        name=current_expr.name,
+                        arguments=[],
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                    i += 2
+                    continue
+
+                if current_expr.name == "scanf":
+                    args = ctx.getChild(i+1)
+                    fmt = args.logicalOrExpression(0).getText()
+                    current_expr = ast.ScanFCall(
+                        format=fmt,
+                        args=self.visitArgumentExpressionList(args, skip_first=True),
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                elif current_expr.name == "printf":
+                    args = ctx.getChild(i+1)
+                    fmt = args.logicalOrExpression(0).getText()
+                    current_expr = ast.PrintFCall(
+                        format=fmt,
+                        args=self.visitArgumentExpressionList(args, skip_first=True),
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                else:
+                    current_expr = ast.FunctionCall(
+                        name=current_expr.name,
+                        arguments=self.visitArgumentList(ctx.getChild(i+1)),
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                i += 3
             elif ctx.getChild(i).getText() == "[":
                 current_expr = ast.ArrayAccess(
                     target=current_expr,
