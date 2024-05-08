@@ -275,7 +275,7 @@ class ShiftExpression(Expression):
 
 @dataclass
 class FunctionCall(Expression):
-    callable: Expression
+    name: str
     arguments: list[Expression]
 
 

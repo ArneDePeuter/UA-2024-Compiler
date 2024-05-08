@@ -760,8 +760,6 @@ class TreeVisitor(GrammarVisitor):
                             line=ctx.start.line,
                             position=ctx.start.column
                         )
-                        i += 3
-                        continue
                     elif current_expr.name == "printf":
                         args = ctx.getChild(i+1)
                         fmt = args.logicalOrExpression(0).getText()
@@ -771,15 +769,16 @@ class TreeVisitor(GrammarVisitor):
                             line=ctx.start.line,
                             position=ctx.start.column
                         )
-                        i += 3
-                        continue
-                current_expr = ast.FunctionCall(
-                    callable=current_expr,
-                    arguments=self.visitArgumentList(ctx.getChild(i+1)),
-                    line=ctx.start.line,
-                    position=ctx.start.column
-                )
-                i += 3
+                    else:
+                        current_expr = ast.FunctionCall(
+                            name=current_expr.name,
+                            arguments=self.visitArgumentList(ctx.getChild(i+1)),
+                            line=ctx.start.line,
+                            position=ctx.start.column
+                        )
+                    i += 3
+                else:
+                    raise NotImplementedError("Function calls on non-identifiers are not supported")
             elif ctx.getChild(i).getText() == "[":
                 current_expr = ast.ArrayAccess(
                     target=current_expr,
