@@ -73,15 +73,13 @@ Int
 Float
     : [0-9]+ '.' [0-9]* | '.' [0-9]+
     ;
+fragment EscSeq : '\\' [nt\\] ;
 Char
-    : '\'' CharContent '\''
+    : '\'' (EscSeq | ~['])* '\''
     ;
-CharContent
-    : ~['\\\r\n]
-    | ( '\\n' | '\\t' | '\\0' )
-    ;
+
 StringLiteral
-    : '"' CharContent+ '"'
+    : '"' (EscSeq | ~["])* '"'
     ;
 
 // Misc

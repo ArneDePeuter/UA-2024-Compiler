@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,59,598,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,58,598,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,
         7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,
@@ -84,7 +84,7 @@ def serializedATN():
         11,0,125,140,3,44,22,0,126,140,3,10,5,0,127,140,3,62,31,0,128,140,
         3,58,29,0,129,140,3,64,32,0,130,140,3,30,15,0,131,140,3,40,20,0,
         132,140,3,42,21,0,133,140,3,52,26,0,134,140,3,20,10,0,135,140,3,
-        60,30,0,136,140,3,4,2,0,137,140,5,11,0,0,138,140,5,57,0,0,139,122,
+        60,30,0,136,140,3,4,2,0,137,140,5,11,0,0,138,140,5,56,0,0,139,122,
         1,0,0,0,139,123,1,0,0,0,139,124,1,0,0,0,139,125,1,0,0,0,139,126,
         1,0,0,0,139,127,1,0,0,0,139,128,1,0,0,0,139,129,1,0,0,0,139,130,
         1,0,0,0,139,131,1,0,0,0,139,132,1,0,0,0,139,133,1,0,0,0,139,134,
@@ -99,19 +99,19 @@ def serializedATN():
         0,0,165,167,5,18,0,0,166,168,5,51,0,0,167,166,1,0,0,0,167,168,1,
         0,0,0,168,169,1,0,0,0,169,170,5,4,0,0,170,171,3,12,6,0,171,172,5,
         5,0,0,172,11,1,0,0,0,173,175,3,14,7,0,174,173,1,0,0,0,174,175,1,
-        0,0,0,175,183,1,0,0,0,176,178,5,57,0,0,177,176,1,0,0,0,177,178,1,
+        0,0,0,175,183,1,0,0,0,176,178,5,56,0,0,177,176,1,0,0,0,177,178,1,
         0,0,0,178,179,1,0,0,0,179,180,5,8,0,0,180,182,3,14,7,0,181,177,1,
         0,0,0,182,185,1,0,0,0,183,181,1,0,0,0,183,184,1,0,0,0,184,187,1,
-        0,0,0,185,183,1,0,0,0,186,188,5,57,0,0,187,186,1,0,0,0,187,188,1,
+        0,0,0,185,183,1,0,0,0,186,188,5,56,0,0,187,186,1,0,0,0,187,188,1,
         0,0,0,188,190,1,0,0,0,189,191,5,8,0,0,190,189,1,0,0,0,190,191,1,
         0,0,0,191,13,1,0,0,0,192,195,5,51,0,0,193,194,5,10,0,0,194,196,3,
         76,38,0,195,193,1,0,0,0,195,196,1,0,0,0,196,208,1,0,0,0,197,199,
-        5,8,0,0,198,200,5,57,0,0,199,198,1,0,0,0,199,200,1,0,0,0,200,201,
+        5,8,0,0,198,200,5,56,0,0,199,198,1,0,0,0,199,200,1,0,0,0,200,201,
         1,0,0,0,201,204,5,51,0,0,202,203,5,10,0,0,203,205,3,76,38,0,204,
         202,1,0,0,0,204,205,1,0,0,0,205,207,1,0,0,0,206,197,1,0,0,0,207,
         210,1,0,0,0,208,206,1,0,0,0,208,209,1,0,0,0,209,212,1,0,0,0,210,
         208,1,0,0,0,211,213,5,8,0,0,212,211,1,0,0,0,212,213,1,0,0,0,213,
-        215,1,0,0,0,214,216,5,57,0,0,215,214,1,0,0,0,215,216,1,0,0,0,216,
+        215,1,0,0,0,214,216,5,56,0,0,215,214,1,0,0,0,215,216,1,0,0,0,216,
         15,1,0,0,0,217,218,3,6,3,0,218,220,5,2,0,0,219,221,3,18,9,0,220,
         219,1,0,0,0,220,221,1,0,0,0,221,222,1,0,0,0,222,223,5,3,0,0,223,
         224,5,11,0,0,224,17,1,0,0,0,225,227,3,68,34,0,226,228,5,51,0,0,227,
@@ -214,7 +214,7 @@ def serializedATN():
         1,0,0,0,560,554,1,0,0,0,560,556,1,0,0,0,560,558,1,0,0,0,560,559,
         1,0,0,0,561,564,1,0,0,0,562,560,1,0,0,0,562,563,1,0,0,0,563,105,
         1,0,0,0,564,562,1,0,0,0,565,574,5,51,0,0,566,574,3,108,54,0,567,
-        574,5,56,0,0,568,569,5,2,0,0,569,570,3,76,38,0,570,571,5,3,0,0,571,
+        574,5,55,0,0,568,569,5,2,0,0,569,570,3,76,38,0,570,571,5,3,0,0,571,
         574,1,0,0,0,572,574,3,112,56,0,573,565,1,0,0,0,573,566,1,0,0,0,573,
         567,1,0,0,0,573,568,1,0,0,0,573,572,1,0,0,0,574,107,1,0,0,0,575,
         576,7,6,0,0,576,109,1,0,0,0,577,582,3,78,39,0,578,579,5,8,0,0,579,
@@ -261,8 +261,8 @@ class GrammarParser ( Parser ):
                       "Divide", "Modulus", "Equal", "NotEqual", "LessThan", 
                       "GreaterThan", "LessThanEqual", "GreaterThanEqual", 
                       "PlusPlus", "MinusMinus", "Identifier", "Int", "Float", 
-                      "Char", "CharContent", "StringLiteral", "Comment", 
-                      "SingleLineComment", "MultiLineComment" ]
+                      "Char", "StringLiteral", "Comment", "SingleLineComment", 
+                      "MultiLineComment" ]
 
     RULE_program = 0
     RULE_statement = 1
@@ -397,11 +397,10 @@ class GrammarParser ( Parser ):
     Int=52
     Float=53
     Char=54
-    CharContent=55
-    StringLiteral=56
-    Comment=57
-    SingleLineComment=58
-    MultiLineComment=59
+    StringLiteral=55
+    Comment=56
+    SingleLineComment=57
+    MultiLineComment=58
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -456,7 +455,7 @@ class GrammarParser ( Parser ):
             self.state = 119
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 251640593041573908) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 143554201984682004) != 0):
                 self.state = 116
                 self.statement()
                 self.state = 121
@@ -1047,7 +1046,7 @@ class GrammarParser ( Parser ):
                     self.state = 177
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==57:
+                    if _la==56:
                         self.state = 176
                         self.match(GrammarParser.Comment)
 
@@ -1063,7 +1062,7 @@ class GrammarParser ( Parser ):
             self.state = 187
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==57:
+            if _la==56:
                 self.state = 186
                 self.match(GrammarParser.Comment)
 
@@ -1172,7 +1171,7 @@ class GrammarParser ( Parser ):
                     self.state = 199
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if _la==57:
+                    if _la==56:
                         self.state = 198
                         self.match(GrammarParser.Comment)
 
@@ -1458,7 +1457,7 @@ class GrammarParser ( Parser ):
             self.state = 247
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 107525404440395796) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 71496607421431828) != 0):
                 self.state = 246
                 self.expression()
 
@@ -1748,7 +1747,7 @@ class GrammarParser ( Parser ):
             self.state = 280
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 251640593041573908) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 143554201984682004) != 0):
                 self.state = 277
                 self.statement()
                 self.state = 282
@@ -2049,7 +2048,7 @@ class GrammarParser ( Parser ):
             self.state = 311
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [2, 4, 29, 32, 35, 38, 39, 40, 49, 50, 51, 52, 53, 54, 56]:
+            if token in [2, 4, 29, 32, 35, 38, 39, 40, 49, 50, 51, 52, 53, 54, 55]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 309
                 self.expressionStatement()
@@ -2112,7 +2111,7 @@ class GrammarParser ( Parser ):
             self.state = 314
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 107525404440395796) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 71496607421431828) != 0):
                 self.state = 313
                 self.expression()
 
@@ -2520,7 +2519,7 @@ class GrammarParser ( Parser ):
             self.state = 351
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 107525404440395796) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 71496607421431828) != 0):
                 self.state = 350
                 self.expression()
 
@@ -2536,7 +2535,7 @@ class GrammarParser ( Parser ):
                 self.state = 356
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 107525404440395796) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 71496607421431828) != 0):
                     self.state = 355
                     self.expression()
 
@@ -2719,7 +2718,7 @@ class GrammarParser ( Parser ):
             self.state = 386
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 251640593041573908) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 143554201984682004) != 0):
                 self.state = 383
                 self.statement()
                 self.state = 388
@@ -2789,7 +2788,7 @@ class GrammarParser ( Parser ):
             self.state = 394
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 251640593041573908) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 143554201984682004) != 0):
                 self.state = 391
                 self.statement()
                 self.state = 396
@@ -4342,7 +4341,7 @@ class GrammarParser ( Parser ):
             self.state = 540
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [2, 4, 51, 52, 53, 54, 56]:
+            if token in [2, 4, 51, 52, 53, 54, 55]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 536
                 self.postfixExpression()
@@ -4569,7 +4568,7 @@ class GrammarParser ( Parser ):
                     self.state = 551
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if (((_la) & ~0x3f) == 0 and ((1 << _la) & 107525404440395796) != 0):
+                    if (((_la) & ~0x3f) == 0 and ((1 << _la) & 71496607421431828) != 0):
                         self.state = 550
                         self.argumentExpressionList()
 
@@ -4682,7 +4681,7 @@ class GrammarParser ( Parser ):
                 self.state = 566
                 self.constant()
                 pass
-            elif token in [56]:
+            elif token in [55]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 567
                 self.match(GrammarParser.StringLiteral)

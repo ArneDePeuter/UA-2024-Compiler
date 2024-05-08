@@ -1,16 +1,11 @@
 #include <stdio.h>
 
-int test() {
-    enum Days {
-        MONDAY,
-        TUESDAY
-    };
-    enum Days day;
-    return 0;
-}
-
 int main() {
-    test();
-//    enum Days day;
+    char str[] = "Hello, World!"; // Mutable array
+    char *ptr = str;
+    printf("%c", *ptr);
+    printf("%s", ptr);
+    ptr[7] = 'P'; // Modify the string through the pointer
+    printf("%s", ptr); // Prints "Hello, Porld!"
     return 0;
 }
