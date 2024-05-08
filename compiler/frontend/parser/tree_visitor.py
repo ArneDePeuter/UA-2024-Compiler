@@ -859,6 +859,8 @@ class TreeVisitor(GrammarVisitor):
         elif char := ctx.Char():
             # remove single quotes
             char = char.getText()[1:-1]
+            # decode escape sequences
+            char = char.encode().decode('unicode_escape')
             return ast.CHAR(
                 value=char,
                 line=ctx.start.line,
