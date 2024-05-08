@@ -868,6 +868,8 @@ class TreeVisitor(GrammarVisitor):
             )
 
     def visitArgumentExpressionList(self, ctx: GrammarParser.ArgumentExpressionListContext, skip_first: bool = False):
+        if skip_first:
+            return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()[1:]]
         return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()]
 
     def visitInitializerList(self, ctx: GrammarParser.InitializerListContext):
