@@ -8,6 +8,7 @@ from typing import Optional
 
 from .type_translator import TypeTranslator
 from .ir_types import IrIntType, IrFloatType, IrCharType
+import uuid
 
 
 @dataclass
@@ -29,7 +30,10 @@ class LLVMIRGenerator(AstVisitor):
 
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-        self.printf_func = ir.Function(self.module, printf_type, name="printf")
+        self.printf = ir.Function(self.module, printf_type, name="printf")
+
+        scanf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+        self.scanf = ir.Function(self.module, scanf_type, name="scanf")
 
         super().__init__()
 
@@ -104,9 +108,16 @@ class LLVMIRGenerator(AstVisitor):
         )
 
     def visit_identifier(self, node: ast.IDENTIFIER) -> ExpressionEval:
+        alloc = self.var_addresses.get(node.name)
+        alloc_type = alloc.type.pointee
+        if isinstance(alloc_type, ir.ArrayType) and isinstance(alloc_type.element, ir.IntType) and alloc_type.element.width == 8:
+            return ExpressionEval(
+                l_value=alloc,
+                r_value=self.builder.gep(alloc, [ir.Constant(IrIntType, 0), ir.Constant(IrIntType, 0)])
+            )
         return ExpressionEval(
-            l_value=self.var_addresses[node.name],
-            r_value=self.builder.load(self.var_addresses[node.name])
+            l_value=alloc,
+            r_value=self.builder.load(alloc)
         )
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression) -> ExpressionEval:
@@ -347,6 +358,38 @@ class LLVMIRGenerator(AstVisitor):
 
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             self.builder.store(value, alloc)
+            if isinstance(decl_type, ir.PointerType):
+                # Handle char* initialization with array of chars
+                if isinstance(expr_eval.r_value.type, ir.ArrayType) and isinstance(expr_eval.r_value.type.element, ir.IntType):
+                    # Directly store the address of the first element of the array if the initializer is an array
+                    if isinstance(expr_eval.r_value, ir.Constant):
+                        # Allocate memory for the array
+                        array_alloc = self.builder.alloca(expr_eval.r_value.type, name=qualifier.identifier + "_array")
+                        # Store the constant array
+                        self.builder.store(expr_eval.r_value, array_alloc)
+                        # Get a pointer to the first element of the array
+                        first_element_ptr = self.builder.gep(array_alloc, [ ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                        # Store the pointer to the first element in the allocated variable
+                        self.builder.store(first_element_ptr, alloc)
+                    else:
+                        # This should get the pointer to the first element of the array
+                        # Evaluate and store the result dynamically if the initializer is not a simple constant
+                        dynamic_array_alloc = self.builder.alloca(expr_eval.r_value.type, name=qualifier.identifier + "_array")
+                        self.builder.store(expr_eval.r_value, dynamic_array_alloc)
+                        # Get a pointer to the first element of the dynamically allocated array
+                        dynamic_first_element_ptr = self.builder.gep(dynamic_array_alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                        # Store the pointer to the first element in the allocated variable
+                        self.builder.store(dynamic_first_element_ptr, alloc)
+                elif isinstance(expr_eval.r_value.type, ir.PointerType):
+                    # Directly store the pointer value if the initializer is a pointer
+                    self.builder.store(expr_eval.r_value, alloc)
+                else:
+                    null_ptr = ir.Constant(decl_type, None)
+                    self.builder.store(null_ptr, alloc)
+            else:
+                value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
+                self.builder.store(value, alloc)
+
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement) -> None:
         left_eval = self.visit_expression(node.left)
@@ -392,6 +435,8 @@ class LLVMIRGenerator(AstVisitor):
             self.builder.branch(w_condition_block)
 
         # After block
+        if self.builder.block is not None and not self.builder.block.is_terminated:
+            self.builder.branch(w_condition_block)
         self.builder.position_at_start(w_after_block)
 
     def to_bool_expr(self, node: ast.Expression):
@@ -436,29 +481,37 @@ class LLVMIRGenerator(AstVisitor):
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
 
-    def visit_printf_call(self, node: ast.PrintFCall) -> None:
-        format_string = node.replacer.value
+    def create_format_string(self, format_string: str):
+        # remove string dashes
+        format_string = format_string[:-1]
+        format_string = format_string[1:]
+        format_string = format_string.replace("\\n", "\n")
+        fmt = ir.ArrayType(ir.IntType(8), len(format_string) + 1)
+        fmt_global = ir.GlobalVariable(self.module, fmt, name=str(uuid.uuid4()))
+        fmt_global.global_constant = True
+        fmt_global.initializer = ir.Constant(fmt, bytearray(format_string.encode("utf8")) + b"\00")
+        return fmt_global
 
-        # Create the format string constant
-        format_string_constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-                                             bytearray(format_string.encode('utf-8') + b'\00'))
+    def visit_printf_call(self, node: ast.PrintFCall):
+        fmt_global = self.create_format_string(node.format)
+        fmt_ptr = self.builder.bitcast(fmt_global, ir.PointerType(ir.IntType(8)))
+        args = [self.visit_expression(arg).r_value for arg in node.args]
+        for i, arg in enumerate(args):
+            if isinstance(arg.type, ir.FloatType):
+                args[i] = self.builder.fpext(arg, ir.DoubleType())
+            if isinstance(arg.type, ir.ArrayType) and isinstance(arg.type.element, ir.IntType) and arg.type.element.width == 8:
+                temp_alloc = self.builder.alloca(arg.type, name="temp_str")
+                self.builder.store(arg, temp_alloc)
+                args[i] = self.builder.gep(temp_alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+        self.builder.call(self.printf, [fmt_ptr] + args)
+        return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
-        # Create the format string global variable
-        format_string_global = ir.GlobalVariable(
-            self.module, format_string_constant.type, name=f"printf_format_{node.line}_{node.position}"
-        )
-        format_string_global.linkage = "internal"
-        format_string_global.global_constant = True
-        format_string_global.initializer = format_string_constant
-
-        expression_value = self.visit_expression(node.expression).r_value
-        if isinstance(expression_value.type, ir.FloatType):
-            expression_value = self.builder.fpext(expression_value, ir.DoubleType())
-
-        self.builder.call(self.printf_func, [
-            format_string_global.bitcast(ir.PointerType(ir.IntType(8))),
-            expression_value
-        ])
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        fmt_global = self.create_format_string(node.format)
+        fmt_ptr = self.builder.bitcast(fmt_global, ir.PointerType(ir.IntType(8)))
+        args = [self.visit_expression(arg).r_value for arg in node.args]
+        self.builder.call(self.scanf, [fmt_ptr] + args)
+        return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
         func = self.functions.get(node.name) # Check if the function is already declared
@@ -539,6 +592,7 @@ class LLVMIRGenerator(AstVisitor):
         if any(dim is None for dim in dimensions):
             raise ValueError("All dimensions must have a resolvable size")
         return ExpressionEval(l_value=None, r_value=dimensions)
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if node.struct_type:
             return self.visit_struct_initializer(node)
@@ -550,6 +604,10 @@ class LLVMIRGenerator(AstVisitor):
         if base_address is None:
             raise ValueError(f"Variable '{node.array_name}' not found")
 
+        # Determine if the base_address is indeed a pointer to a type (likely from an alloca of a pointer type)
+        if not isinstance(base_address.type, ir.PointerType):
+            raise ValueError("The base address must be a pointer to access array elements.")
+
         indices = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
         for index in indices.r_value:
             if not isinstance(index.type, ir.IntType):
@@ -557,8 +615,15 @@ class LLVMIRGenerator(AstVisitor):
 
         # Insert 0 as the first index for the array start
         indices.r_value.insert(0, ir.Constant(ir.IntType(32), 0))
-        # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
-        element_ptr = self.builder.gep(base_address, indices.r_value)
+
+        # Check if we try to modify an array of chars, through a char* pointer
+        if isinstance(base_address.type.pointee, ir.PointerType) and isinstance(base_address.type.pointee.pointee, ir.IntType) and base_address.type.pointee.pointee.width == 8:
+            # Then the element pointer should be to the char at given index
+            first_elem_ptr = self.builder.load(base_address)
+            element_ptr = self.builder.gep(first_elem_ptr, indices.r_value[1:])
+        else:
+            # Otherwise, get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
+            element_ptr = self.builder.gep(base_address, indices.r_value)
 
         # Load the value at the element pointer
         value_at_index = self.builder.load(element_ptr)

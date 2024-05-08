@@ -1,81 +1,41 @@
 ; ModuleID = ""
 
-%"struct.Inner" = type {i32}
-%"struct.Outer" = type {%"struct.Inner"*}
 declare i32 @"printf"(i8* %".1", ...)
 
-define void @"modifyInner"(%"struct.Outer"* %".1")
-{
-entry:
-  %"outer" = alloca %"struct.Outer"*
-  store %"struct.Outer"* %".1", %"struct.Outer"** %"outer"
-  ; C Syntax: if (outer != 0) {-        if (outer->inner_ptr != 0) {-            outer->inner_ptr->value = 42;-            return;-        }-    }
-  ; C Syntax: outer != 0
-  %".6" = load %"struct.Outer"*, %"struct.Outer"** %"outer"
-  %".7" = ptrtoint %"struct.Outer"* %".6" to i32
-  %".8" = icmp ne i32 %".7", 0
-  br i1 %".8", label %"entry.if", label %"entry.endif"
-entry.if:
-  ; C Syntax: if (outer->inner_ptr != 0) {-            outer->inner_ptr->value = 42;-            return;-        }
-  ; C Syntax: outer->inner_ptr != 0
-  %".12" = load %"struct.Outer"*, %"struct.Outer"** %"outer"
-  %".13" = load %"struct.Outer", %"struct.Outer"* %".12"
-  %".14" = getelementptr %"struct.Outer", %"struct.Outer"* %".12", i32 0, i32 0
-  %".15" = load %"struct.Inner"*, %"struct.Inner"** %".14"
-  %".16" = ptrtoint %"struct.Inner"* %".15" to i32
-  %".17" = icmp ne i32 %".16", 0
-  br i1 %".17", label %"entry.if.if", label %"entry.if.endif"
-entry.endif:
-  ; C Syntax: printf("%d", 0);
-  ; C Syntax: printf("%d", 0)
-  ; C Syntax: 0
-  %".36" = call i32 (i8*, ...) @"printf"(i8* bitcast ([3 x i8]* @"printf_format_17_4" to i8*), i32 0)
-  ret void
-entry.if.if:
-  ; C Syntax: outer->inner_ptr->value = 42;
-  ; C Syntax: outer->inner_ptr->value
-  %".21" = load %"struct.Outer"*, %"struct.Outer"** %"outer"
-  %".22" = load %"struct.Outer", %"struct.Outer"* %".21"
-  %".23" = getelementptr %"struct.Outer", %"struct.Outer"* %".21", i32 0, i32 0
-  %".24" = load %"struct.Inner"*, %"struct.Inner"** %".23"
-  %".25" = load %"struct.Inner", %"struct.Inner"* %".24"
-  %".26" = getelementptr %"struct.Inner", %"struct.Inner"* %".24", i32 0, i32 0
-  %".27" = load i32, i32* %".26"
-  ; C Syntax: 42
-  store i32 42, i32* %".26"
-  ; C Syntax: return;
-  ret void
-entry.if.endif:
-  br label %"entry.endif"
-}
+declare i32 @"scanf"(i8* %".1", ...)
 
-@"printf_format_17_4" = internal constant [3 x i8] c"%d\00"
 define i32 @"main"()
 {
 entry:
-  ; C Syntax: struct Inner inner = {10};
-  %"inner" = alloca %"struct.Inner"
-  ; C Syntax: {10}
-  ; C Syntax: 10
-  %".5" = insertvalue %"struct.Inner" zeroinitializer, i32 10, 0
-  store %"struct.Inner" %".5", %"struct.Inner"* %"inner"
-  ; C Syntax: struct Outer outer = {&inner};
-  %"outer" = alloca %"struct.Outer"
-  ; C Syntax: {&inner}
-  ; C Syntax: &inner
-  %".10" = load %"struct.Inner", %"struct.Inner"* %"inner"
-  %".11" = insertvalue %"struct.Outer" zeroinitializer, %"struct.Inner"* %"inner", 0
-  store %"struct.Outer" %".11", %"struct.Outer"* %"outer"
-  ; C Syntax: struct Outer *outer_ptr = 0;
-  %"outer_ptr" = alloca %"struct.Outer"*
-  ; C Syntax: 0
-  store %"struct.Outer"* null, %"struct.Outer"** %"outer_ptr"
-  ; C Syntax: modifyInner(outer_ptr);
-  ; C Syntax: modifyInner(outer_ptr)
-  ; C Syntax: outer_ptr
-  %".19" = load %"struct.Outer"*, %"struct.Outer"** %"outer_ptr"
-  call void @"modifyInner"(%"struct.Outer"* %".19")
+  ; C Syntax: printf("%s\n", "Hello, World!");
+  ; C Syntax: printf("%s\n", "Hello, World!")
+  %".4" = bitcast [4 x i8]* @"39b52278-a470-48a0-bf3a-3496042f6294" to i8*
+  ; C Syntax: "Hello, World!"
+  %"temp_str" = alloca [14 x i8]
+  store [14 x i8] [i8 72, i8 101, i8 108, i8 108, i8 111, i8 44, i8 32, i8 87, i8 111, i8 114, i8 108, i8 100, i8 33, i8 0], [14 x i8]* %"temp_str"
+  %".7" = getelementptr [14 x i8], [14 x i8]* %"temp_str", i32 0, i32 0
+  %".8" = call i32 (i8*, ...) @"printf"(i8* %".4", i8* %".7")
+  ; C Syntax: printf("%s\n", "Hello, World!");
+  ; C Syntax: printf("%s\n", "Hello, World!")
+  %".11" = bitcast [4 x i8]* @"dab47243-0a0f-4368-956f-72fd48c763ba" to i8*
+  ; C Syntax: "Hello, World!"
+  %"temp_str.1" = alloca [14 x i8]
+  store [14 x i8] [i8 72, i8 101, i8 108, i8 108, i8 111, i8 44, i8 32, i8 87, i8 111, i8 114, i8 108, i8 100, i8 33, i8 0], [14 x i8]* %"temp_str.1"
+  %".14" = getelementptr [14 x i8], [14 x i8]* %"temp_str.1", i32 0, i32 0
+  %".15" = call i32 (i8*, ...) @"printf"(i8* %".11", i8* %".14")
+  ; C Syntax: printf("%s\n", "Hello, World!");
+  ; C Syntax: printf("%s\n", "Hello, World!")
+  %".18" = bitcast [4 x i8]* @"5a34170a-e866-46fc-8685-6ac1c228bb16" to i8*
+  ; C Syntax: "Hello, World!"
+  %"temp_str.2" = alloca [14 x i8]
+  store [14 x i8] [i8 72, i8 101, i8 108, i8 108, i8 111, i8 44, i8 32, i8 87, i8 111, i8 114, i8 108, i8 100, i8 33, i8 0], [14 x i8]* %"temp_str.2"
+  %".21" = getelementptr [14 x i8], [14 x i8]* %"temp_str.2", i32 0, i32 0
+  %".22" = call i32 (i8*, ...) @"printf"(i8* %".18", i8* %".21")
   ; C Syntax: return 0;
   ; C Syntax: 0
   ret i32 0
 }
+
+@"39b52278-a470-48a0-bf3a-3496042f6294" = constant [4 x i8] c"%s\0a\00"
+@"dab47243-0a0f-4368-956f-72fd48c763ba" = constant [4 x i8] c"%s\0a\00"
+@"5a34170a-e866-46fc-8685-6ac1c228bb16" = constant [4 x i8] c"%s\0a\00"

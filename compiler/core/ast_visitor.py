@@ -19,6 +19,7 @@ class AstVisitor(ABC):
             ast.ShiftExpression: self.visit_shift_expression,
             ast.FunctionCall: self.visit_function_call,
             ast.PrintFCall: self.visit_printf_call,
+            ast.ScanFCall: self.visit_scanf_call,
             ast.ArraySpecifier: self.visit_array_specifier,
             ast.ArrayInitializer: self.visit_array_initializer,
             ast.ArrayAccess: self.visit_array_access,
@@ -175,6 +176,10 @@ class AstVisitor(ABC):
 
     @abstractmethod
     def visit_array_access(self, node: ast.ArrayAccess):
+        ...
+
+    @abstractmethod
+    def visit_scanf_call(self, node: ast.ScanFCall):
         ...
 
     @abstractmethod

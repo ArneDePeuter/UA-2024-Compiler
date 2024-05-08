@@ -2,7 +2,7 @@ import argparse
 import subprocess
 from colored import Fore, Back, Style
 
-from compiler.frontend import tree_from_file, tree_to_ast
+from compiler.frontend import tree_from_str, tree_to_ast
 from compiler.frontend.symbol_table.symbol_table_visitor import SymbolTableVisitor
 from compiler.frontend.symbol_table.symboltable import SymbolTable
 from compiler.middleend import optimise_ast
@@ -11,14 +11,29 @@ from compiler.utils.symboltabledotvisitor import SymbolTableDotVisitor
 from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.compiler_syntaxerror import CompilerSyntaxError
+from compiler.preprocessor.preprocessor import Preprocessor
 
 
-def compile_file(input_file: str, render_ast: str = None, render_symb: str = None, no_optimise: bool = False, target_llvm: str = None):
+def compile_file(input_file: str,
+                 render_ast: str = None,
+                 render_symb: str = None,
+                 no_optimise: bool = False,
+                 target_llvm: str = None,
+                 include_paths=None,):
+
+    # preprocessor
+    with open(input_file, 'r') as file:
+        input_code = file.read()
+
+    preprocessor = Preprocessor()
+    preprocessed_code = preprocessor.preprocess(input_code, include_paths)
+
+
     # frontend
-    tree, input_stream = tree_from_file(filename=input_file)
+    tree, input_stream = tree_from_str(preprocessed_code)
     ast = tree_to_ast(tree, input_stream)
 
-    symbol_table_visitor = SymbolTableVisitor(symbol_table=SymbolTable())
+    symbol_table_visitor = SymbolTableVisitor(stdio_included=preprocessor.stdio_included, symbol_table=SymbolTable())
     symbol_table_visitor.visit_program(ast)
 
     # middle end
@@ -78,10 +93,12 @@ def main():
     parser.add_argument('--no-optimise', action='store_true', help='Dont optimise the ast if this flag is provided.')
     parser.add_argument('--target_llvm', help='LLvm Target. Specify output folder.')
     parser.add_argument('--throw', action='store_true', help='Raise python exception.')
+    parser.add_argument('--include_paths', nargs='*', help='Include paths for the pre-processor')
 
     args = parser.parse_args()
     try:
-        compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm)
+        include_paths = args.include_paths or []
+        compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm, include_paths)
     except SemanticError as e:
         if args.throw:
             raise e

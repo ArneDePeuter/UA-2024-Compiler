@@ -281,15 +281,15 @@ class FunctionCall(Expression):
 
 @dataclass
 class PrintFCall(Expression):
-    class Replacer(Enum):
-        s = "%s"
-        d = "%d"
-        x = "%x"
-        f = "%f"
-        c = "%c"
+    format: str
+    args: list[Expression]
 
-    replacer: Replacer
-    expression: Expression
+
+@dataclass
+class ScanFCall(Expression):
+    format: str
+    args: list[Expression]
+
 
 @dataclass
 class ArrayInitializer(Expression):
@@ -304,10 +304,12 @@ class ArrayInitializer(Expression):
             if isinstance(member.type.type, StructType) and len(member.type.address_qualifiers) == 0 and isinstance(self.elements[i], ArrayInitializer):
                 self.elements[i].set_struct_type(member.type.type)
 
+
 @dataclass
 class ArrayAccess(Expression):
     target: Expression
     index: Expression
+
 
 @dataclass
 class StructAccess(Expression):
