@@ -254,8 +254,18 @@ class SymbolTableVisitor(AstVisitor):
                     node.right = TypeCaster.upcast(node.right)
                 else:
                     raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
-            if node.left.index > left_type.type.array_sizes:
-                raise SemanticError(f"Array index out of bounds", node.line, node.position)
+
+            """dimensions = []
+            current_node = node.left.index
+            while current_node is not None:
+                if isinstance(current_node, ast.ArrayInitializer):
+                    dimensions.append(len(current_node.elements))
+                    current_node = current_node.elements[0]
+                else:
+                    current_node = None
+
+            if not SymbolTableVisitor.fits_dimensions(dimensions, node.right):
+                raise SemanticError(f"Array dimensions do not match.", node.line, node.position)"""
 
         elif left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             if len(left_type.address_qualifiers) == 0 and len(right_type.address_qualifiers) == 0:
@@ -537,14 +547,22 @@ class SymbolTableVisitor(AstVisitor):
         return ast.Type(type=array_type, const=False, address_qualifiers=[], line=node.line, position=node.position)
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        array_symbol = self.symbol_table.lookup(node.array_name, current_scope_only=False)
-        if array_symbol is None:
-            raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
+        if isinstance(node.target, ast.StructAccess):
+            array_attr = self.visit_struct_access(node.target)
+            if not isinstance(array_attr.type, ast.ArrayType):
+                raise SemanticError(f"'{array_attr}' is not an array.", node.line, node.position)
+            return ast.Type(type=array_attr.type, const=array_attr.const, address_qualifiers=array_attr.address_qualifiers, line=node.line, position=node.position)
 
-        index_type = self.visit_expression(node.index)
-        if index_type.type != ast.BaseType.int:
-            raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
-        return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
+        if isinstance(node.target, ast.IDENTIFIER):
+            array_symbol = self.symbol_table.lookup(node.target.name, current_scope_only=False)
+            if array_symbol is None:
+                raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
+
+            index_type = self.visit_expression(node.index)
+            if index_type.type != ast.BaseType.int:
+                raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
+
+            return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
 
     def visit_struct_access(self, node: ast.StructAccess):
         tgt_type: ast.Type = self.visit_expression(node.target)
