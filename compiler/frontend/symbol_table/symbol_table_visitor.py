@@ -226,7 +226,7 @@ class SymbolTableVisitor(AstVisitor):
                         if right_expression_hierarchy > left_expression_hierarchy:
                             WarningError(f"Implicit conversion from {initializer_type} to {node.var_type}", node.line, node.position).warn()
                     # Check if we have an array pointer
-                    elif node.var_type.address_qualifiers == [ast.AddressQualifier.pointer] and node.var_type.type == ast.BaseType.char:
+                    elif node.var_type.address_qualifiers == [ast.AddressQualifier.pointer] and node.var_type.type == ast.BaseType.char or node.var_type.type == ast.BaseType.int:
                         pass
                     else:
                         raise SemanticError(f"Incompatible types for variable '{identifier}': {str(node.var_type)} and {str(initializer_type)}.", node.line, node.position)
