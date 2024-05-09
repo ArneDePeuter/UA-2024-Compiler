@@ -22,6 +22,7 @@ error_dict = {
     "proj2_man_semanticErr_undeclaredVariable2.c": SemanticError("Undefined identifier 'x'.", 3, 0),
     "proj2_man_semanticErr_undeclaredVariable3.c": SemanticError("Undefined identifier 'z'.", 2, 12),
     "proj3_man_semanticErr_typedef.c": SemanticError("Typedef redefinition: int already defined", 4, 0),
+    "proj3_man_syntaxErr_typedef.c": SemanticError("Typedef with name: vector not defined", 4, 8),
     "proj4_man_semanticErr_switch_var_decl.c": SemanticError("Undefined identifier 'b'.", 8, 4),
     "proj_5_no_main.c": SemanticError("main function is undefined", 0, 0),
     "proj_5_faulty_main.c": SemanticError("Return type of main is invalid", 1, 0),

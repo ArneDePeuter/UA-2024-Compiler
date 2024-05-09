@@ -249,9 +249,23 @@ class SymbolTableVisitor(AstVisitor):
 
         if isinstance(left_type.type, ast.ArrayType):
             if left_type.type.element_type != right_type:
-                raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
-            if node.left.index > left_type.type.array_sizes:
-                raise SemanticError(f"Array index out of bounds", node.line, node.position)
+                if TypeCaster.get_heirarchy_of_base_type(left_type.type.element_type.type) > TypeCaster.get_heirarchy_of_base_type(right_type.type):
+                    WarningError(f"Implicit conversion from {right_type} to {left_type.type.element_type}", node.line, node.position).warn()
+                    node.right = TypeCaster.upcast(node.right)
+                else:
+                    raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
+
+            """dimensions = []
+            current_node = node.left.index
+            while current_node is not None:
+                if isinstance(current_node, ast.ArrayInitializer):
+                    dimensions.append(len(current_node.elements))
+                    current_node = current_node.elements[0]
+                else:
+                    current_node = None
+
+            if not SymbolTableVisitor.fits_dimensions(dimensions, node.right):
+                raise SemanticError(f"Array dimensions do not match.", node.line, node.position)"""
 
         elif left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
             if len(left_type.address_qualifiers) == 0 and len(right_type.address_qualifiers) == 0:
@@ -446,6 +460,18 @@ class SymbolTableVisitor(AstVisitor):
             fits = fits and SymbolTableVisitor.fits_dimensions(dimension[1:], newnode)
         return fits
 
+    def count_element_types(self, node, counter):
+        """
+        This count the amount of different element types in the array, usefull for implicit type casting
+        :param node:
+        :return:
+        """
+        if isinstance(node, ast.ArrayInitializer):
+            for element in node.elements:
+                self.count_element_types(element, counter)
+        else:
+            counter[self.visit_expression(node).type] = 1 + counter.get(self.visit_expression(node).type, 0)
+
     def element_type_in_set(self, set, node):
         """
         Check if the element type of the node is in the set
@@ -459,9 +485,34 @@ class SymbolTableVisitor(AstVisitor):
         else:
             set.add(self.visit_expression(node))
 
+    def process_array_elements_implicit_casting(self, node, most_common_type, org_array):
+        """
+        Process each element in the node to check type hierarchy and perform necessary upcasting.
+        :param node: The node containing elements to process.
+        :param most_common_type: The most common base type found in the node for potential upcasting.
+        """
+        if isinstance(node, ast.ArrayInitializer):
+            for i, element in enumerate(node.elements):
+                self.process_array_elements_implicit_casting(element, most_common_type, org_array)  # Recursive handling for multi-dimensional arrays
+        else:
+            element_eval = self.visit_expression(node)
+            element_type = element_eval.type
+            if TypeCaster.get_heirarchy_of_base_type(most_common_type) > TypeCaster.get_heirarchy_of_base_type(element_type):
+                WarningError(f"Implicit conversion from {element_type} to {most_common_type}", node.line, node.position).warn()
+                # Loop through the org_array to find the element and replace it with the upcasted version
+                for i, element in enumerate(org_array.elements):
+                    if element == node:
+                        org_array.elements[i] = TypeCaster.upcast(node)
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if node.struct_type:
             return self.visit_struct_initializer(node)
+
+        # Apply implicit type conversions
+        counter = {}
+        self.count_element_types(node, counter)
+        most_common_type = max(counter, key=counter.get)
+        self.process_array_elements_implicit_casting(node, most_common_type, node)
 
         element_types = set()
         self.element_type_in_set(element_types, node)
@@ -496,14 +547,22 @@ class SymbolTableVisitor(AstVisitor):
         return ast.Type(type=array_type, const=False, address_qualifiers=[], line=node.line, position=node.position)
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        array_symbol = self.symbol_table.lookup(node.array_name, current_scope_only=False)
-        if array_symbol is None:
-            raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
+        if isinstance(node.target, ast.StructAccess) or isinstance(node.target, ast.ArrayAccess):
+            array_attr = self.visit_expression(node.target)
+            if not isinstance(array_attr.type, ast.ArrayType):
+                raise SemanticError(f"'{array_attr}' is not an array.", node.line, node.position)
+            return ast.Type(type=array_attr.type, const=array_attr.const, address_qualifiers=array_attr.address_qualifiers, line=node.line, position=node.position)
 
-        index_type = self.visit_expression(node.index)
-        if index_type.type != ast.BaseType.int:
-            raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
-        return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
+        if isinstance(node.target, ast.IDENTIFIER):
+            array_symbol = self.symbol_table.lookup(node.target.name, current_scope_only=False)
+            if array_symbol is None:
+                raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
+
+            index_type = self.visit_expression(node.index)
+            if index_type.type != ast.BaseType.int:
+                raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
+
+            return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
 
     def visit_struct_access(self, node: ast.StructAccess):
         tgt_type: ast.Type = self.visit_expression(node.target)

@@ -371,19 +371,28 @@ class AstDotVisitor(AstVisitor):
 
     def visit_array_access(self, node: ast.ArrayAccess):
         node_id = id(node)
-        self.total += f"{node_id} [label=\"ArrayAccess: (name={node.array_name})\"];\n"
 
-        self.visit_expression(node.index)
-        index_id = id(node.index)
-        self.total += f"{node_id} -> {index_id} [label=\"index\"];\n"
-
-    def visit_struct_access(self, node: ast.StructAccess):
-        node_id = id(node)
-        self.total += f"{node_id} [label=\"Struct access to member {node.member_name}\"];\n"
+        # Add node label for ArrayAccess
+        self.total += f'"{node_id}" [label="ArrayAccess"];\n'
 
         self.visit_expression(node.target)
         target_id = id(node.target)
-        self.total += f"{node_id} -> {target_id} [label=\"target\"];\n"
+        self.total += f'"{node_id}" -> "{target_id}" [label="target"];\n'
+
+        # Process index and connect it
+        self.visit_expression(node.index)
+        index_id = id(node.index)
+        self.total += f'"{node_id}" -> "{index_id}" [label="index"];\n'
+
+    def visit_struct_access(self, node: ast.StructAccess):
+        node_id = id(node)
+        # Add node label for StructAccess
+        self.total += f'"{node_id}" [label="Struct access to member {node.member_name}"];\n'
+
+        # Visit target and connect it
+        self.visit_expression(node.target)
+        target_id = id(node.target)
+        self.total += f'"{node_id}" -> "{target_id}" [label="target"];\n'
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         node_id = id(node)
