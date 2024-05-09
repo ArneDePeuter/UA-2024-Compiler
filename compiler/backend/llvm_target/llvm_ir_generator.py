@@ -592,14 +592,11 @@ class LLVMIRGenerator(AstVisitor):
         # Visit the index expression and assume it returns an ExpressionEval
         index = self.visit_expression(node.index)
 
-        # Insert 0 as the first index for the array start if accessing an actual array
-        #if isinstance(base_address.type.pointee, ir.ArrayType) or (isinstance(base_address.type.pointee, ir.PointerType) and isinstance(base_address.type.pointee.pointee, ir.IntType)):
-            # Check if the array is of char* type
-         #   if isinstance(base_address.type.pointee, ir.PointerType):
-          #      if not base_address.type.pointee.pointee.width == 8:
-
-        # Get the element pointer
-        element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), index.r_value])
+        if base_address.type.pointee.is_pointer:
+            base_address = base_eval.r_value
+            element_ptr = self.builder.gep(base_address, [index.r_value])
+        else:
+            element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), index.r_value])
 
         # Load the value at the element pointer
         value_at_index = self.builder.load(element_ptr)
