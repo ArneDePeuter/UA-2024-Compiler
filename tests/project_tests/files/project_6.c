@@ -22,8 +22,6 @@ int main() {
 
     // Arrays: multi-dimensional arrays.
     int arr2[2][3] = {{1, 2, 3}, {4, 5, 6}};
-    // Assigning complete arrays
-    arr2[0] = arr;
 
     // Looping over multi-dimensional arrays
     for (int i = 0; i < 2; i++) {
@@ -39,24 +37,23 @@ int main() {
     }
 
     // Strings encoded as zero-terminated char-arrays. String literals. Passing strings around as char*. Support for IO: printf and scanf that support char* strings.
-    char *str = "Hello, World!";
-    printf("%s\n", str);
-    char str[20] = "Hello, World!";
-    printf("%s\n", str);
+    char *str_ptr = "Hello, World!";
+    printf("%s\n", str_ptr);
+    char str_arr[14] = "Hello, World!";
+    printf("%s\n", str_arr);
 
-    // Scanf and printf all formatters
-    char str[20];
-    scanf("%s", str);
-    printf("%s\n", str);
-    int x;
-    scanf("%d", &x);
-    printf("%d\n", x);
-    float f;
-    scanf("%f", &f);
-    printf("%f\n", f);
-    char c;
-    scanf("%c", &c);
-    printf("%c\n", c);
+    // printf with string literals
+    printf("%s", "This is a string\n");
+
+    char* str_arr[3] = {"Hello", "World", "!"};
+    for (int i = 0; i < 3; i++) {
+        printf("%s ", str_arr[i]);
+    }
+
+    str_arr[0] = "Goodbye";
+    for (int i = 0; i < 3; i++) {
+        printf("%s ", str_arr[i]);
+    }
 
     return 0;
 }
