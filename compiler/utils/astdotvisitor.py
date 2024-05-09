@@ -384,11 +384,6 @@ class AstDotVisitor(AstVisitor):
         index_id = id(node.index)
         self.total += f'"{node_id}" -> "{index_id}" [label="index"];\n'
 
-        # Connect target if it's an expression needing further breakdown
-        if not isinstance(node.target, ast.IDENTIFIER):
-            target_id = id(node.target)
-            self.total += f'"{node_id}" -> "{target_id}" [label="target"];\n'
-
     def visit_struct_access(self, node: ast.StructAccess):
         node_id = id(node)
         # Add node label for StructAccess
