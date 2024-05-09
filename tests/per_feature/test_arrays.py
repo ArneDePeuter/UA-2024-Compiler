@@ -41,8 +41,8 @@ def test_array_1():
         assert isinstance(array_access, ast.AssignmentStatement)
         assert array_access.c_syntax == f"a[{i}] = {i + 1};"
         assert isinstance(array_access.left, ast.ArrayAccess)
-        assert array_access.left.array_name == "a"
-        assert array_access.left.index.sizes[0].value == i
+        assert array_access.left.target.name == "a"
+        assert array_access.left.index.value == i
         assert array_access.right.value == i + 1
 
 
