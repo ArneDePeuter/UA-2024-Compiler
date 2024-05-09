@@ -64,21 +64,19 @@ int main() {
     // Pointer arithmetic (all of the following need to be implemented):
     // Assignment: p = 0,
     p = 0;
+    q = 0;
     // Addition and subtraction: p + q, p + 2, q - 5, etc. Take the size of the datatype into account!
     p = p + 1;
     p = p - 1;
     // Increment, decrement: p++, q--, etc.
     p++;
     q--;
-    // Comparison: p < end,p >= 0,p == 0,etc.
+    // Comparison: p < end,p >= 0,p == 0,etc. not printed because undefined behavior
     if (p < q) {
-        printf("p < q\n");
     }
     if (p >= q) {
-        printf("p >= q\n");
     }
     if (p == q) {
-        printf("p == q\n");
     }
     // Increment/Decrement Operations: i++, i--. Both suﬀix and prefix variants.
     int i4 = 5;

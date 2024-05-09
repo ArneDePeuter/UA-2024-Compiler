@@ -458,7 +458,7 @@ class LLVMIRGenerator(AstVisitor):
                 with then:
                     self.visit_body(node.body)
                 with otherwise:
-                    self.visit_else_statement(node.else_statement)
+                    self.visit_statement(node.else_statement)
         else:
             with self.builder.if_then(conditional):
                 self.visit_body(node.body)
