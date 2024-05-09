@@ -73,9 +73,9 @@ Int
 Float
     : [0-9]+ '.' [0-9]* | '.' [0-9]+
     ;
-fragment EscSeq : '\\' [nt\\] ;
+fragment EscSeq : '\\' [nt0\\] ;
 Char
-    : '\'' (EscSeq | ~[']) '\''
+    : '\'' (EscSeq? | ~[']) '\''
     ;
 
 StringLiteral
