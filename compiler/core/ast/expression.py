@@ -307,7 +307,7 @@ class ArrayInitializer(Expression):
 
 @dataclass
 class ArrayAccess(Expression):
-    array_name: str
+    target: Expression
     index: Expression
 
 

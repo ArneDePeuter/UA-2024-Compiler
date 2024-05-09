@@ -70,14 +70,13 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
     
-    def visitStatement(self, ctx:GrammarParser.StatementContext):
+    def visitStatement(self, ctx: GrammarParser.StatementContext):
         if ctx.getChild(0) == TerminalNodeImpl:
             return None
         ast = super().visitStatement(ctx)
         if ast is not None:
             ast.c_syntax = self.get_original_text(ctx)
         return ast
-
 
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
         return ast.ExpressionStatement(
@@ -88,16 +87,16 @@ class TreeVisitor(GrammarVisitor):
         )
 
     def visitType(self, ctx):
-        if ctx.baseType():
+        if ctx.BaseType():
             return ast.Type(
-                type=ast.BaseType((ctx.baseType().getText())),
-                const=ctx.const() is not None,
-                address_qualifiers=[self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()],
+                type=ast.BaseType((ctx.BaseType().getText())),
+                const=ctx.Const() is not None,
+                address_qualifiers=[ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()],
                 line=ctx.start.line,
                 position=ctx.start.column
             )
         elif ctx.enumType():
-            enum_type_name = ctx.enumType().ID().getText()
+            enum_type_name = ctx.enumType().Identifier().getText()
 
             # Check if the enum type is already declared
             if enum_type_name not in self.enum_scope:
@@ -107,8 +106,8 @@ class TreeVisitor(GrammarVisitor):
                     position=ctx.start.column
                 )
 
-            const_qualifier = ctx.const() is not None
-            address_qualifiers = [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+            const_qualifier = ctx.Const() is not None
+            address_qualifiers = [ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()]
             return ast.Type(
                 type=ast.BaseType.int,  # Enum types are treated as integers
                 const=const_qualifier,
@@ -117,8 +116,8 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
         if ctx.structType():
-            const_qualifier = ctx.const() is not None
-            address_qualifiers = [self.visitAddressQualifier(qualifier) for qualifier in ctx.addressQualifier()]
+            const_qualifier = ctx.Const() is not None
+            address_qualifiers = [ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()]
             return ast.Type(
                 type=self.visitStructType(ctx.structType()),
                 const=const_qualifier,
@@ -128,19 +127,18 @@ class TreeVisitor(GrammarVisitor):
             )
         else:
             # Handle typedef replacements
-            typedef_name = ctx.ID().getText()
+            typedef_name = self.visitTypedefName(ctx.typedefName())
             replace = copy.deepcopy(self.typedef_scope.get(typedef_name))
             if not replace:
                 raise SemanticError(f"Typedef with name: {typedef_name} not defined", ctx.start.line, ctx.start.column)
-            replace.const = replace.const or ctx.const() is not None
-            replace.address_qualifiers += [self.visitAddressQualifier(qualifier) for qualifier in
-                                           ctx.addressQualifier()]
+            replace.const = replace.const or ctx.Const() is not None
+            replace.address_qualifiers += [ast.AddressQualifier(addr.getText()) for addr in ctx.Multiply()]
             replace.line = ctx.start.line
             replace.position = ctx.start.column
             return replace
 
-    def visitStructType(self, ctx:GrammarParser.StructTypeContext):
-        name = ctx.ID().getText()
+    def visitStructType(self, ctx: GrammarParser.StructTypeContext):
+        name = ctx.Identifier().getText()
         definition = self.struct_defintions.get(name)
         if not definition:
             raise SemanticError(f"Struct with name: {name} is not defined", ctx.start.line, ctx.start.column)
@@ -148,13 +146,9 @@ class TreeVisitor(GrammarVisitor):
             definition=definition
         )
 
-    def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
-        text = ctx.getText()
-        return ast.AddressQualifier(text)
-
-    def visitTypedefStatement(self, ctx:GrammarParser.TypedefStatementContext):
+    def visitTypedefStatement(self, ctx: GrammarParser.TypedefStatementContext):
         my_type = self.visitType(ctx.type_())
-        name = ctx.ID().getText()
+        name = self.visitTypedefName(ctx.typedefName())
         if name in self.typedef_scope:
             raise SemanticError(
                 f"Typedef redefinition: {name} already defined",
@@ -163,11 +157,11 @@ class TreeVisitor(GrammarVisitor):
             )
         self.typedef_scope[name] = my_type
 
-    def visitExpression(self, ctx: GrammarParser.ExpressionContext):
-        ast = self.visitChildren(ctx)
-        ast.c_syntax = self.get_original_text(ctx)
-        return ast
-    
+    def visitTypedefName(self, ctx: GrammarParser.TypedefNameContext):
+        if ctx.Identifier():
+            return ctx.Identifier().getText()
+        return ctx.BaseType().getText()
+
     def visitVariableDeclaration(self, ctx):
         var_type = self.visit(ctx.type_())
         qualifiers = self.visit(ctx.variableDeclarationQualifiers())
@@ -175,13 +169,12 @@ class TreeVisitor(GrammarVisitor):
         # Check if the type needs to be changed to an array type
         for qualifier in qualifiers:
             if qualifier.array_specifier:
-                array_size = ast.INT(value=len(qualifier.initializer.elements)) if qualifier.initializer else ast.INT(value=0)
                 array_type = ast.ArrayType(
                     element_type=var_type,
-                    array_sizes=qualifier.array_specifier if qualifier.array_specifier.sizes else ast.ArraySpecifier(sizes=[array_size]),
+                    array_sizes=qualifier.array_specifier,
                     line=ctx.start.line, position=ctx.start.column
                 )
-                qualifier.array_specifier = None # We can remove the qualifier since we have it in the array type
+                qualifier.array_specifier = None  # We can remove the qualifier since we have it in the array type
                 var_type = ast.Type(
                     type=array_type,
                     const=var_type.const,
@@ -208,30 +201,27 @@ class TreeVisitor(GrammarVisitor):
         return [self.visit(qualifier) for qualifier in ctx.variableDeclarationQualifier()]
 
     def visitVariableDeclarationQualifier(self, ctx):
-        identifier = ctx.ID().getText()
+        identifier = ctx.Identifier().getText()
         array_specifier = self.visit(ctx.arraySpecifier()) if ctx.arraySpecifier() else None
         initializer = self.visit(ctx.expression()) if ctx.expression() else None
+
+        if array_specifier and initializer:
+            if len(array_specifier.sizes) < 1:
+                dimensions = []
+                current_node = initializer
+                while current_node is not None:
+                    if isinstance(current_node, ast.ArrayInitializer):
+                        dimensions.append(len(current_node.elements))
+                        current_node = current_node.elements[0]
+                    else:
+                        current_node = None
+                array_specifier.sizes = [ast.INT(value=size) for size in dimensions]
+
 
         return ast.VariableDeclarationQualifier(
             identifier=identifier,
             array_specifier=array_specifier,
             initializer=initializer,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitCastExpression(self, ctx):
-        cast_type = self.visit(ctx.type_())
-        expression = self.visit(ctx.unaryExpression())
-
-        # check if the cast is for explicit struct definition
-        if isinstance(cast_type.type, ast.StructType) and len(cast_type.address_qualifiers) == 0:
-            if isinstance(expression, ast.ArrayInitializer):
-                expression.set_struct_type(cast_type.type)
-
-        return ast.TypeCastExpression(
-            cast_type=cast_type,
-            expression=expression,
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -247,177 +237,6 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitLogicalExpression(self, ctx: GrammarParser.LogicalExpressionContext):
-        if ctx.getChildCount() == 1:
-            return self.visit(ctx.getChild(0))
-
-        left = self.visit(ctx.getChild(0))
-        right = self.visit(ctx.getChild(2))
-        op = ctx.getChild(1).getText()
-
-        return ast.BinaryLogicalOperation(
-            left=left,
-            operator=ast.BinaryLogicalOperation.Operator(op),
-            right=right,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitComparisonExpression(self, ctx: GrammarParser.ComparisonExpressionContext):
-        if ctx.getChildCount() == 1:
-            return self.visit(ctx.getChild(0))
-
-        left = self.visit(ctx.getChild(0))
-        right = self.visit(ctx.getChild(2))
-        op = ctx.getChild(1).getText()
-
-        return ast.ComparisonOperation(
-            left=left,
-            operator=ast.ComparisonOperation.Operator(op),
-            right=right,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitAdditiveExpression(self, ctx: GrammarParser.AdditiveExpressionContext):
-        if ctx.getChildCount() == 1:
-            return self.visit(ctx.getChild(0))
-
-        left = self.visit(ctx.getChild(0))
-        right = self.visit(ctx.getChild(2))
-        op = ctx.getChild(1).getText()
-
-        return ast.BinaryArithmetic(
-            left=left,
-            operator=ast.BinaryArithmetic.Operator(op),
-            right=right,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitMultiplicativeExpression(self, ctx: GrammarParser.MultiplicativeExpressionContext):
-        if ctx.getChildCount() == 1:
-            return self.visit(ctx.getChild(0))
-
-        left = self.visit(ctx.getChild(0))
-        right = self.visit(ctx.getChild(2))
-        op = ctx.getChild(1).getText()
-
-        return ast.BinaryArithmetic(
-            left=left,
-            operator=ast.BinaryArithmetic.Operator(op),
-            right=right,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitBitwiseExpression(self, ctx: GrammarParser.BitwiseExpressionContext):
-        if ctx.getChildCount() == 1:
-            return self.visit(ctx.getChild(0))
-
-        left = self.visit(ctx.getChild(0))
-        right = self.visit(ctx.getChild(2))
-        op = ctx.getChild(1).getText()
-
-        return ast.BinaryBitwiseArithmetic(
-            left=left,
-            operator=ast.BinaryBitwiseArithmetic.Operator(op),
-            right=right,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitShiftExpression(self, ctx: GrammarParser.ShiftExpressionContext):
-        if ctx.getChildCount() == 1:
-            return self.visit(ctx.unaryExpression())
-
-        value = self.visit(ctx.shiftExpression())
-        amount = self.visit(ctx.unaryExpression())
-        op = ctx.getChild(1).getText()
-
-        return ast.ShiftExpression(
-            value=value,
-            operator=ast.ShiftExpression.Operator(op),
-            amount=amount,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitUnaryExpression(self, ctx: GrammarParser.UnaryExpressionContext):
-        if ctx.primary():
-            if ctx.getChild(1):
-                op = ast.UnaryExpression.Operator(ctx.getChild(1).getText())
-                return ast.UnaryExpression(
-                    value=self.visit(ctx.primary()),
-                    operator=op,
-                    prefix=False,
-                    line=ctx.start.line,
-                    position=ctx.start.column
-                )
-            return self.visit(ctx.primary())
-        if ctx.unaryExpression():
-            expr = self.visit(ctx.unaryExpression())
-            op = ctx.getChild(0).getText()
-            operator = ast.UnaryExpression.Operator(op)
-
-            return ast.UnaryExpression(
-                value=expr,
-                operator=operator,
-                prefix=True,
-                line=ctx.start.line,
-                position=ctx.start.column
-            )
-        if ctx.structAccess():
-            return self.visitStructAccess(ctx.structAccess())
-
-    @staticmethod
-    def remove_dashes(input):
-        out = input[1:-1].replace("\\n", "\n").replace("\\t", "\t").replace("\\0", "\0")
-        return out
-
-    def visitPrimary(self, ctx: GrammarParser.PrimaryContext):
-        line = ctx.start.line
-        position = ctx.start.column
-        if ctx.NUMBER() is not None:
-            return ast.INT(int(ctx.NUMBER().getText()), line=line, position=position)
-        elif ctx.FLOAT() is not None:
-            return ast.FLOAT(float(ctx.FLOAT().getText()), line=line, position=position)
-        elif ctx.CHAR() is not None:
-            return ast.CHAR(ctx.CHAR().getText()[1:-1], line=line, position=position)  # Remove the surrounding single quotes
-        elif ctx.CHAR_ESC() is not None:
-            return ast.CHAR(self.remove_dashes(ctx.CHAR_ESC().getText()), line=line, position=position)
-        elif ctx.ID() is not None:
-            identifier = ctx.ID().getText()
-            if ctx.arraySpecifier():  # This checks for the optional array access
-                array_access = self.visitArraySpecifier(ctx.arraySpecifier())
-                return ast.ArrayAccess(array_name=identifier, index=array_access, line=line, position=position)
-            else:
-                return ast.IDENTIFIER(name=identifier, line=line, position=position)
-        elif ctx.expression() is not None:
-            return self.visit(ctx.expression())
-        elif ctx.arrayInitializer() is not None:
-            return self.visitArrayInitializer(ctx.arrayInitializer())
-        elif ctx.castExpression() is not None:
-            return self.visit(ctx.castExpression())
-        elif ctx.printfCall():
-            return self.visitPrintfCall(ctx.printfCall())
-        elif ctx.scanfCall():
-            return self.visitScanfCall(ctx.scanfCall())
-        elif ctx.functionCall():
-            return self.visitFunctionCall(ctx.functionCall())
-        elif ctx.STRING_LITERAL():
-            string = ctx.STRING_LITERAL().getText()
-            # Zero terminate the string
-            string = string[1:-1] + "\0"
-            return ast.ArrayInitializer(elements=[ast.CHAR(char, line=line, position=position) for char in string], line=line, position=position)
-
-    def visitComment(self, ctx:GrammarParser.CommentContext):
-        return ast.CommentStatement(
-            content=ctx.getText()[:-1],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
     def visitIfStatement(self, ctx: GrammarParser.IfStatementContext):
         condition = self.visit(ctx.expression())
         body = self.visit(ctx.body())
@@ -425,7 +244,6 @@ class TreeVisitor(GrammarVisitor):
 
         if ctx.elseStatement():
             else_statement = self.visitElseStatement(ctx.elseStatement())
-
 
         return ast.IfStatement(
             condition=condition,
@@ -454,7 +272,7 @@ class TreeVisitor(GrammarVisitor):
                 position=ctx.start.column
             )
 
-    def visitSwitchStatement(self, ctx:GrammarParser.SwitchStatementContext):
+    def visitSwitchStatement(self, ctx: GrammarParser.SwitchStatementContext):
         switch_expression = self.visit(ctx.expression())
         cases = ctx.caseStatement()
         default_case = ctx.defaultCaseStatement()
@@ -537,13 +355,13 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitIterationStatement(self, ctx:GrammarParser.IterationStatementContext):
-        if ctx.WHILE():
+    def visitIterationStatement(self, ctx: GrammarParser.IterationStatementContext):
+        if ctx.While():
             return self.visit_while_statement(ctx)
         else:
             return self.visit_for_statement(ctx)
 
-    def visit_while_statement(self, ctx:GrammarParser.IterationStatementContext):
+    def visit_while_statement(self, ctx: GrammarParser.IterationStatementContext):
         expression = self.visit(ctx.expression())
         to_execute = self.visit(ctx.statement())
         return ast.WhileStatement(
@@ -553,7 +371,7 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitForFirst(self, ctx:GrammarParser.ForFirstContext):
+    def visitForFirst(self, ctx: GrammarParser.ForFirstContext):
         if node := ctx.variableDeclaration():
             return self.visitVariableDeclaration(node)
         elif node := ctx.expressionStatement():
@@ -562,14 +380,14 @@ class TreeVisitor(GrammarVisitor):
             return self.visitAssignmentStatement(node)
         return None
 
-    def visitForSecond(self, ctx:GrammarParser.ForSecondContext):
+    def visitForSecond(self, ctx: GrammarParser.ForSecondContext):
         if node := ctx.expressionStatement():
             expression = self.visitExpressionStatement(node).expression
             expression.c_syntax = self.get_original_text(ctx)
             return expression
         return None
 
-    def visitForThird(self, ctx:GrammarParser.ForThirdContext):
+    def visitForThird(self, ctx: GrammarParser.ForThirdContext):
         if node := ctx.expression():
             expr = self.visitExpression(node)
             return ast.ExpressionStatement(
@@ -580,7 +398,7 @@ class TreeVisitor(GrammarVisitor):
             )
         return None
 
-    def visitForCondition(self, ctx:GrammarParser.ForConditionContext):
+    def visitForCondition(self, ctx: GrammarParser.ForConditionContext):
         return self.visitForFirst(ctx.forFirst()), self.visitForSecond(ctx.forSecond()), self.visitForThird(ctx.forThird())
 
     def visit_for_statement(self, ctx: GrammarParser.IterationStatementContext):
@@ -633,8 +451,8 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
-        identifier = ctx.ID().getText()
+    def visitTypedIdentifier(self, ctx: GrammarParser.TypedIdentifierContext):
+        identifier = ctx.Identifier().getText()
         type_ = self.visitType(ctx.type_())
         if ctx.arraySpecifier():
             array_specifier = self.visitArraySpecifier(ctx.arraySpecifier())
@@ -653,7 +471,7 @@ class TreeVisitor(GrammarVisitor):
             ), identifier
         return type_, identifier
 
-    def visitParamList(self, ctx:GrammarParser.ParamListContext):
+    def visitParamList(self, ctx: GrammarParser.ParamListContext):
         params = []
         for i in range(len(ctx.typedIdentifier())):  # This is done to match the type with the name
             param_type, param_name = self.visitTypedIdentifier(ctx.typedIdentifier(i))
@@ -664,25 +482,9 @@ class TreeVisitor(GrammarVisitor):
             ))
         return params
 
-    def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
-        return ast.PrintFCall(
-            format=ctx.STRING_LITERAL().getText(),
-            args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
-    def visitScanfCall(self, ctx:GrammarParser.ScanfCallContext):
-        return ast.ScanFCall(
-            format=ctx.STRING_LITERAL().getText(),
-            args=self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else [],
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
-
     def visitFunctionDeclaration(self, ctx: GrammarParser.FunctionDeclarationContext):
         return_type = self.visit(ctx.type_())
-        name = ctx.ID().getText()
+        name = ctx.Identifier().getText()
         parameters = self.visitParamList(ctx.paramList()) if ctx.paramList() else []
 
         func_declaration = ast.FunctionDeclaration(
@@ -713,18 +515,8 @@ class TreeVisitor(GrammarVisitor):
             position=ctx.start.column
         )
 
-    def visitArgumentList(self, ctx:GrammarParser.ArgumentListContext):
-        return [self.visitExpression(arg) for arg in ctx.expression()]
-
-    def visitFunctionCall(self, ctx: GrammarParser.FunctionCallContext):
-        name = ctx.ID().getText()
-        arguments = self.visitArgumentList(ctx.argumentList()) if ctx.argumentList() else []
-        return ast.FunctionCall(
-            name=name,
-            arguments=arguments,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+    def visitArgumentList(self, ctx: GrammarParser.ArgumentExpressionListContext):
+        return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()]
 
     def visitTypeList(self, ctx:GrammarParser.TypeListContext):
         return [self.visitType(type_) for type_ in ctx.type_()]
@@ -746,19 +538,9 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
-
-    def visitArrayInitializer(self, ctx: GrammarParser.ArrayInitializerContext):
-        elements = []
-        for child in ctx.children:
-            if isinstance(child, GrammarParser.ArrayInitializerContext):
-                elements.append(self.visitArrayInitializer(child))
-            elif isinstance(child, GrammarParser.ExpressionContext):
-                elements.append(self.visit(child))
-
-        return ast.ArrayInitializer(elements=elements, line=ctx.start.line, position=ctx.start.column)
     
     def visitEnumDeclaration(self, ctx):
-        name = ctx.ID().getText() if ctx.ID() else None
+        name = ctx.Identifier().getText() if ctx.Identifier() else None
         enumerators = self.visitEnumBody(ctx.enumBody())
         const_int_declarations = []
 
@@ -792,12 +574,12 @@ class TreeVisitor(GrammarVisitor):
 
     def visitEnumList(self, ctx):
         enumerators = []
-        for enumerator in ctx.ID():
+        for enumerator in ctx.Identifier():
             enumerators.append(enumerator.getText())
         return enumerators
 
-    def visitStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
-        name = ctx.ID().getText()
+    def visitStructDefinition(self, ctx: GrammarParser.StructDefinitionContext):
+        name = ctx.Identifier().getText()
         struct = ast.StructDefinition(
             name=name,
             members=[],
@@ -822,19 +604,316 @@ class TreeVisitor(GrammarVisitor):
             for type_, name in (self.visitTypedIdentifier(typed_id) for typed_id in ctx.typedIdentifier())
         ]
 
-    def visitStructAccess(self, ctx:GrammarParser.StructAccessContext):
-        access = ast.StructAccess(
-            target=self.visit(ctx.primary()) if ctx.primary() else self.visitStructAccess(ctx.structAccess()),
-            member_name=ctx.ID().getText(),
+    def visitExpression(self, ctx: GrammarParser.ExpressionContext):
+        ast = self.visitChildren(ctx)
+        ast.c_syntax = self.get_original_text(ctx)
+        return ast
+
+    def visitLogicalOrExpression(self, ctx: GrammarParser.LogicalOrExpressionContext):
+        current_expr = self.visitLogicalAndExpression(ctx.logicalAndExpression(0))
+
+        for i in range(1, len(ctx.logicalAndExpression())):
+            current_expr = ast.BinaryLogicalOperation(
+                left=current_expr,
+                operator=ast.BinaryLogicalOperation.Operator.OR,
+                right=self.visitLogicalAndExpression(ctx.logicalAndExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitLogicalAndExpression(self, ctx: GrammarParser.LogicalAndExpressionContext):
+        current_expr = self.visitInclusiveOrExpression(ctx.inclusiveOrExpression(0))
+
+        for i in range(1, len(ctx.inclusiveOrExpression())):
+            current_expr = ast.BinaryLogicalOperation(
+                left=current_expr,
+                operator=ast.BinaryLogicalOperation.Operator.AND,
+                right=self.visitInclusiveOrExpression(ctx.inclusiveOrExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitInclusiveOrExpression(self, ctx: GrammarParser.InclusiveOrExpressionContext):
+        current_expr = self.visitExclusiveOrExpression(ctx.exclusiveOrExpression(0))
+
+        for i in range(1, len(ctx.exclusiveOrExpression())):
+            current_expr = ast.BinaryBitwiseArithmetic(
+                left=current_expr,
+                operator=ast.BinaryBitwiseArithmetic.Operator.OR,
+                right=self.visitExclusiveOrExpression(ctx.exclusiveOrExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitExclusiveOrExpression(self, ctx: GrammarParser.ExclusiveOrExpressionContext):
+        current_expr = self.visitAndExpression(ctx.andExpression(0))
+
+        for i in range(1, len(ctx.andExpression())):
+            current_expr = ast.BinaryBitwiseArithmetic(
+                left=current_expr,
+                operator=ast.BinaryBitwiseArithmetic.Operator.XOR,
+                right=self.visitAndExpression(ctx.andExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitAndExpression(self, ctx: GrammarParser.AndExpressionContext):
+        current_expr = self.visitEqualityExpression(ctx.equalityExpression(0))
+
+        for i in range(1, len(ctx.equalityExpression())):
+            current_expr = ast.BinaryBitwiseArithmetic(
+                left=current_expr,
+                operator=ast.BinaryBitwiseArithmetic.Operator.AND,
+                right=self.visitEqualityExpression(ctx.equalityExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitEqualityExpression(self, ctx: GrammarParser.EqualityExpressionContext):
+        current_expr = self.visitRelationalExpression(ctx.relationalExpression(0))
+
+        for i in range(1, len(ctx.relationalExpression())):
+            current_expr = ast.ComparisonOperation(
+                left=current_expr,
+                operator=ast.ComparisonOperation.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitRelationalExpression(ctx.relationalExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitRelationalExpression(self, ctx: GrammarParser.RelationalExpressionContext):
+        current_expr = self.visitShiftExpression(ctx.shiftExpression(0))
+
+        for i in range(1, len(ctx.shiftExpression())):
+            current_expr = ast.ComparisonOperation(
+                left=current_expr,
+                operator=ast.ComparisonOperation.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitShiftExpression(ctx.shiftExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitShiftExpression(self, ctx: GrammarParser.ShiftExpressionContext):
+        current_expr = self.visitAdditiveExpression(ctx.additiveExpression(0))
+
+        for i in range(1, len(ctx.additiveExpression())):
+            current_expr = ast.ShiftExpression(
+                value=current_expr,
+                operator=ast.ShiftExpression.Operator(ctx.getChild(2*i-1).getText()),
+                amount=self.visitAdditiveExpression(ctx.additiveExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitAdditiveExpression(self, ctx: GrammarParser.AdditiveExpressionContext):
+        current_expr = self.visitMultiplicativeExpression(ctx.multiplicativeExpression(0))
+
+        for i in range(1, len(ctx.multiplicativeExpression())):
+            current_expr = ast.BinaryArithmetic(
+                left=current_expr,
+                operator=ast.BinaryArithmetic.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitMultiplicativeExpression(ctx.multiplicativeExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return current_expr
+
+    def visitMultiplicativeExpression(self, ctx: GrammarParser.MultiplicativeExpressionContext):
+        current_expr = self.visitCastExpression(ctx.castExpression(0))
+
+        for i in range(1, len(ctx.castExpression())):
+            current_expr = ast.BinaryArithmetic(
+                left=current_expr,
+                operator=ast.BinaryArithmetic.Operator(ctx.getChild(2*i-1).getText()),
+                right=self.visitCastExpression(ctx.castExpression(i)),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
+        return current_expr
+
+    def visitCastExpression(self, ctx: GrammarParser.CastExpressionContext):
+        if type_ := ctx.type_():
+            cast_type = self.visit(type_)
+            expression = self.visitCastExpression(ctx.castExpression())
+
+            # check if the cast is for explicit struct definition
+            if isinstance(cast_type.type, ast.StructType) and len(cast_type.address_qualifiers) == 0:
+                if isinstance(expression, ast.ArrayInitializer):
+                    expression.set_struct_type(cast_type.type)
+
+            return ast.TypeCastExpression(
+                cast_type=cast_type,
+                expression=expression,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        return self.visitUnaryExpression(ctx.unaryExpression())
+
+    def visitUnaryExpression(self, ctx: GrammarParser.UnaryExpressionContext):
+        if postfix_expression := ctx.postfixExpression():
+            return self.visitPostfixExpression(postfix_expression)
+
+        return ast.UnaryExpression(
+            value=self.visitCastExpression(ctx.castExpression()),
+            operator=ast.UnaryExpression.Operator(ctx.unaryOperator().getText()),
+            prefix=True,
             line=ctx.start.line,
             position=ctx.start.column
         )
-        if ctx.method.text == "->":
-            access.target = ast.UnaryExpression(
-                value=access.target,
-                operator=ast.UnaryExpression.Operator.DEREFERENCE,
-                prefix=True,
-                line=access.target.line,
-                position=access.target.position
+
+    def visitPostfixExpression(self, ctx: GrammarParser.PostfixExpressionContext):
+        current_expr = self.visitPrimaryExpression(ctx.primaryExpression())
+
+        i = 1
+        while i < len(ctx.children):
+            if ctx.getChild(i).getText() == "(":
+                if not isinstance(current_expr, ast.IDENTIFIER):
+                    raise NotImplementedError("Function calls on non-identifiers are not supported")
+
+                if ctx.getChild(i+1).getText() == ")":
+                    current_expr = ast.FunctionCall(
+                        name=current_expr.name,
+                        arguments=[],
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                    i += 2
+                    continue
+
+                if current_expr.name == "scanf":
+                    args = ctx.getChild(i+1)
+                    fmt = args.logicalOrExpression(0).getText()
+                    current_expr = ast.ScanFCall(
+                        format=fmt,
+                        args=self.visitArgumentExpressionList(args, skip_first=True),
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                elif current_expr.name == "printf":
+                    args = ctx.getChild(i+1)
+                    fmt = args.logicalOrExpression(0).getText()
+                    current_expr = ast.PrintFCall(
+                        format=fmt,
+                        args=self.visitArgumentExpressionList(args, skip_first=True),
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                else:
+                    current_expr = ast.FunctionCall(
+                        name=current_expr.name,
+                        arguments=self.visitArgumentList(ctx.getChild(i+1)),
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                i += 3
+            elif ctx.getChild(i).getText() == "[":
+                current_expr = ast.ArrayAccess(
+                    target=current_expr,
+                    index=self.visitLogicalOrExpression(ctx.getChild(i+1)),
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 3
+            elif ctx.getChild(i).getText() in [".", "->"]:
+                if ctx.getChild(i).getText() == "->":
+                    current_expr = ast.UnaryExpression(
+                        value=current_expr,
+                        operator=ast.UnaryExpression.Operator.DEREFERENCE,
+                        prefix=True,
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    )
+                current_expr = ast.StructAccess(
+                    target=current_expr,
+                    member_name=ctx.getChild(i+1).getText(),
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 2
+            elif ctx.getChild(i).getText() in ["++", "--"]:
+                current_expr = ast.UnaryExpression(
+                    value=current_expr,
+                    operator=ast.UnaryExpression.Operator(ctx.getChild(i).getText()),
+                    prefix=False,
+                    line=ctx.start.line,
+                    position=ctx.start.column
+                )
+                i += 1
+
+        return current_expr
+
+    def visitPrimaryExpression(self, ctx: GrammarParser.PrimaryExpressionContext):
+        if ctx.Identifier():
+            return ast.IDENTIFIER(
+                name=ctx.Identifier().getText(),
+                line=ctx.start.line,
+                position=ctx.start.column
             )
-        return access
+        elif constant := ctx.constant():
+            return self.visitConstant(constant)
+        elif str_lit := ctx.StringLiteral():
+            string = str_lit.getText()
+            # Zero terminate the string
+            string = string[1:-1] + "\0"
+            return ast.ArrayInitializer(
+                elements=[
+                    ast.CHAR(
+                        value=char,
+                        line=ctx.start.line,
+                        position=ctx.start.column
+                    ) for char in string],
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif expr := ctx.expression():
+            return self.visitExpression(expr)
+        elif init_list := ctx.initializerList():
+            return self.visitInitializerList(init_list)
+
+    def visitConstant(self, ctx: GrammarParser.ConstantContext):
+        if int_ := ctx.Int():
+            return ast.INT(
+                value=int(int_.getText()),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif float_ := ctx.Float():
+            return ast.FLOAT(
+                value=float(float_.getText()),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+        elif char := ctx.Char():
+            # remove single quotes
+            char = char.getText()[1:-1]
+            # decode escape sequences
+            char = char.encode().decode('unicode_escape')
+            return ast.CHAR(
+                value=char,
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
+    def visitArgumentExpressionList(self, ctx: GrammarParser.ArgumentExpressionListContext, skip_first: bool = False):
+        if skip_first:
+            return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()[1:]]
+        return [self.visitLogicalOrExpression(arg) for arg in ctx.logicalOrExpression()]
+
+    def visitInitializerList(self, ctx: GrammarParser.InitializerListContext):
+        return ast.ArrayInitializer(
+            elements=self.visitInitializerListBody(ctx.initializerListBody()),
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+
+    def visitInitializerListBody(self, ctx: GrammarParser.InitializerListBodyContext):
+        return [self.visitExpression(expression) for expression in ctx.expression()]

@@ -1,8 +1,8 @@
-#include <stdio.h>
+
+
+// type already exists
+typedef float int;
 
 int main() {
-    printf("%s\n", "Hello, World!");
-    printf("%s\n", "Hello, World!");
-    printf("%s\n", "Hello, World!");
-    return 0;
+    int x = 4;
 }

@@ -35,21 +35,21 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#structList.
-    def enterStructList(self, ctx:GrammarParser.StructListContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#structList.
-    def exitStructList(self, ctx:GrammarParser.StructListContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#typedIdentifier.
     def enterTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
         pass
 
     # Exit a parse tree produced by GrammarParser#typedIdentifier.
     def exitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#structList.
+    def enterStructList(self, ctx:GrammarParser.StructListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#structList.
+    def exitStructList(self, ctx:GrammarParser.StructListContext):
         pass
 
 
@@ -125,15 +125,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#functionCall.
-    def enterFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#functionCall.
-    def exitFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#argumentList.
     def enterArgumentList(self, ctx:GrammarParser.ArgumentListContext):
         pass
@@ -206,24 +197,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#printfCall.
-    def enterPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#printfCall.
-    def exitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#scanfCall.
-    def enterScanfCall(self, ctx:GrammarParser.ScanfCallContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#scanfCall.
-    def exitScanfCall(self, ctx:GrammarParser.ScanfCallContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#continueStatement.
     def enterContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
         pass
@@ -239,15 +212,6 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#variableDeclaration.
     def exitVariableDeclaration(self, ctx:GrammarParser.VariableDeclarationContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#enumType.
-    def enterEnumType(self, ctx:GrammarParser.EnumTypeContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#enumType.
-    def exitEnumType(self, ctx:GrammarParser.EnumTypeContext):
         pass
 
 
@@ -275,24 +239,6 @@ class GrammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by GrammarParser#arraySpecifier.
     def exitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#arrayInitializer.
-    def enterArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#arrayInitializer.
-    def exitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#castExpression.
-    def enterCastExpression(self, ctx:GrammarParser.CastExpressionContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#castExpression.
-    def exitCastExpression(self, ctx:GrammarParser.CastExpressionContext):
         pass
 
 
@@ -341,15 +287,6 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#expression.
-    def enterExpression(self, ctx:GrammarParser.ExpressionContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#expression.
-    def exitExpression(self, ctx:GrammarParser.ExpressionContext):
-        pass
-
-
     # Enter a parse tree produced by GrammarParser#assignmentStatement.
     def enterAssignmentStatement(self, ctx:GrammarParser.AssignmentStatementContext):
         pass
@@ -377,21 +314,120 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#logicalExpression.
-    def enterLogicalExpression(self, ctx:GrammarParser.LogicalExpressionContext):
+    # Enter a parse tree produced by GrammarParser#type.
+    def enterType(self, ctx:GrammarParser.TypeContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#logicalExpression.
-    def exitLogicalExpression(self, ctx:GrammarParser.LogicalExpressionContext):
+    # Exit a parse tree produced by GrammarParser#type.
+    def exitType(self, ctx:GrammarParser.TypeContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#comparisonExpression.
-    def enterComparisonExpression(self, ctx:GrammarParser.ComparisonExpressionContext):
+    # Enter a parse tree produced by GrammarParser#typedefName.
+    def enterTypedefName(self, ctx:GrammarParser.TypedefNameContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#comparisonExpression.
-    def exitComparisonExpression(self, ctx:GrammarParser.ComparisonExpressionContext):
+    # Exit a parse tree produced by GrammarParser#typedefName.
+    def exitTypedefName(self, ctx:GrammarParser.TypedefNameContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#enumType.
+    def enterEnumType(self, ctx:GrammarParser.EnumTypeContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#enumType.
+    def exitEnumType(self, ctx:GrammarParser.EnumTypeContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#structType.
+    def enterStructType(self, ctx:GrammarParser.StructTypeContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#structType.
+    def exitStructType(self, ctx:GrammarParser.StructTypeContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#expression.
+    def enterExpression(self, ctx:GrammarParser.ExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#expression.
+    def exitExpression(self, ctx:GrammarParser.ExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#logicalOrExpression.
+    def enterLogicalOrExpression(self, ctx:GrammarParser.LogicalOrExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#logicalOrExpression.
+    def exitLogicalOrExpression(self, ctx:GrammarParser.LogicalOrExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#logicalAndExpression.
+    def enterLogicalAndExpression(self, ctx:GrammarParser.LogicalAndExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#logicalAndExpression.
+    def exitLogicalAndExpression(self, ctx:GrammarParser.LogicalAndExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#inclusiveOrExpression.
+    def enterInclusiveOrExpression(self, ctx:GrammarParser.InclusiveOrExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#inclusiveOrExpression.
+    def exitInclusiveOrExpression(self, ctx:GrammarParser.InclusiveOrExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#exclusiveOrExpression.
+    def enterExclusiveOrExpression(self, ctx:GrammarParser.ExclusiveOrExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#exclusiveOrExpression.
+    def exitExclusiveOrExpression(self, ctx:GrammarParser.ExclusiveOrExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#andExpression.
+    def enterAndExpression(self, ctx:GrammarParser.AndExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#andExpression.
+    def exitAndExpression(self, ctx:GrammarParser.AndExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#equalityExpression.
+    def enterEqualityExpression(self, ctx:GrammarParser.EqualityExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#equalityExpression.
+    def exitEqualityExpression(self, ctx:GrammarParser.EqualityExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#relationalExpression.
+    def enterRelationalExpression(self, ctx:GrammarParser.RelationalExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#relationalExpression.
+    def exitRelationalExpression(self, ctx:GrammarParser.RelationalExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#shiftExpression.
+    def enterShiftExpression(self, ctx:GrammarParser.ShiftExpressionContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#shiftExpression.
+    def exitShiftExpression(self, ctx:GrammarParser.ShiftExpressionContext):
         pass
 
 
@@ -413,30 +449,12 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#bitwiseExpression.
-    def enterBitwiseExpression(self, ctx:GrammarParser.BitwiseExpressionContext):
+    # Enter a parse tree produced by GrammarParser#castExpression.
+    def enterCastExpression(self, ctx:GrammarParser.CastExpressionContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#bitwiseExpression.
-    def exitBitwiseExpression(self, ctx:GrammarParser.BitwiseExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#shiftExpression.
-    def enterShiftExpression(self, ctx:GrammarParser.ShiftExpressionContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#shiftExpression.
-    def exitShiftExpression(self, ctx:GrammarParser.ShiftExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#structAccess.
-    def enterStructAccess(self, ctx:GrammarParser.StructAccessContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#structAccess.
-    def exitStructAccess(self, ctx:GrammarParser.StructAccessContext):
+    # Exit a parse tree produced by GrammarParser#castExpression.
+    def exitCastExpression(self, ctx:GrammarParser.CastExpressionContext):
         pass
 
 
@@ -449,75 +467,66 @@ class GrammarListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#primary.
-    def enterPrimary(self, ctx:GrammarParser.PrimaryContext):
+    # Enter a parse tree produced by GrammarParser#unaryOperator.
+    def enterUnaryOperator(self, ctx:GrammarParser.UnaryOperatorContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#primary.
-    def exitPrimary(self, ctx:GrammarParser.PrimaryContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#structType.
-    def enterStructType(self, ctx:GrammarParser.StructTypeContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#structType.
-    def exitStructType(self, ctx:GrammarParser.StructTypeContext):
+    # Exit a parse tree produced by GrammarParser#unaryOperator.
+    def exitUnaryOperator(self, ctx:GrammarParser.UnaryOperatorContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#type.
-    def enterType(self, ctx:GrammarParser.TypeContext):
+    # Enter a parse tree produced by GrammarParser#postfixExpression.
+    def enterPostfixExpression(self, ctx:GrammarParser.PostfixExpressionContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#type.
-    def exitType(self, ctx:GrammarParser.TypeContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#baseType.
-    def enterBaseType(self, ctx:GrammarParser.BaseTypeContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#baseType.
-    def exitBaseType(self, ctx:GrammarParser.BaseTypeContext):
+    # Exit a parse tree produced by GrammarParser#postfixExpression.
+    def exitPostfixExpression(self, ctx:GrammarParser.PostfixExpressionContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#const.
-    def enterConst(self, ctx:GrammarParser.ConstContext):
+    # Enter a parse tree produced by GrammarParser#primaryExpression.
+    def enterPrimaryExpression(self, ctx:GrammarParser.PrimaryExpressionContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#const.
-    def exitConst(self, ctx:GrammarParser.ConstContext):
-        pass
-
-
-    # Enter a parse tree produced by GrammarParser#addressQualifier.
-    def enterAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
-        pass
-
-    # Exit a parse tree produced by GrammarParser#addressQualifier.
-    def exitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
+    # Exit a parse tree produced by GrammarParser#primaryExpression.
+    def exitPrimaryExpression(self, ctx:GrammarParser.PrimaryExpressionContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#assignmentOperator.
-    def enterAssignmentOperator(self, ctx:GrammarParser.AssignmentOperatorContext):
+    # Enter a parse tree produced by GrammarParser#constant.
+    def enterConstant(self, ctx:GrammarParser.ConstantContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#assignmentOperator.
-    def exitAssignmentOperator(self, ctx:GrammarParser.AssignmentOperatorContext):
+    # Exit a parse tree produced by GrammarParser#constant.
+    def exitConstant(self, ctx:GrammarParser.ConstantContext):
         pass
 
 
-    # Enter a parse tree produced by GrammarParser#comment.
-    def enterComment(self, ctx:GrammarParser.CommentContext):
+    # Enter a parse tree produced by GrammarParser#argumentExpressionList.
+    def enterArgumentExpressionList(self, ctx:GrammarParser.ArgumentExpressionListContext):
         pass
 
-    # Exit a parse tree produced by GrammarParser#comment.
-    def exitComment(self, ctx:GrammarParser.CommentContext):
+    # Exit a parse tree produced by GrammarParser#argumentExpressionList.
+    def exitArgumentExpressionList(self, ctx:GrammarParser.ArgumentExpressionListContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#initializerList.
+    def enterInitializerList(self, ctx:GrammarParser.InitializerListContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#initializerList.
+    def exitInitializerList(self, ctx:GrammarParser.InitializerListContext):
+        pass
+
+
+    # Enter a parse tree produced by GrammarParser#initializerListBody.
+    def enterInitializerListBody(self, ctx:GrammarParser.InitializerListBodyContext):
+        pass
+
+    # Exit a parse tree produced by GrammarParser#initializerListBody.
+    def exitInitializerListBody(self, ctx:GrammarParser.InitializerListBodyContext):
         pass
 
 
