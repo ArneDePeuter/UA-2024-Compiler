@@ -550,22 +550,20 @@ class SymbolTableVisitor(AstVisitor):
         return ast.Type(type=array_type, const=False, address_qualifiers=[], line=node.line, position=node.position)
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        if isinstance(node.target, ast.StructAccess) or isinstance(node.target, ast.ArrayAccess):
-            array_attr = self.visit_expression(node.target)
-            if not isinstance(array_attr.type, ast.ArrayType):
-                raise SemanticError(f"'{array_attr}' is not an array.", node.line, node.position)
-            return ast.Type(type=array_attr.type, const=array_attr.const, address_qualifiers=array_attr.address_qualifiers, line=node.line, position=node.position)
+        target_type = self.visit_expression(node.target)
 
-        if isinstance(node.target, ast.IDENTIFIER):
-            array_symbol = self.symbol_table.lookup(node.target.name, current_scope_only=False)
-            if array_symbol is None:
-                raise SemanticError(f"Undefined array '{node.array_name}'.", node.line, node.position)
+        if isinstance(target_type.type, ast.ArrayType):
+            if len(target_type.type.array_sizes.sizes) < 1:
+                raise SemanticError(f"Array access method to an object which isn't an array or a pointer", node.line, node.position)
+            cp = copy.deepcopy(target_type)
+            cp.type.array_sizes.sizes.pop(0)
+            return cp
+        if len(target_type.address_qualifiers) > 0:
+            cp = copy.deepcopy(target_type)
+            cp.address_qualifiers.pop()
+            return cp
 
-            index_type = self.visit_expression(node.index)
-            if index_type.type != ast.BaseType.int:
-                raise SemanticError(f"Array index must be of type int, not {index_type}.", node.line, node.position)
-
-            return ast.Type(type=array_symbol.type.type, const=array_symbol.type.const, address_qualifiers=array_symbol.type.address_qualifiers)
+        raise SemanticError(f"Array access method to an object which isn't an array or a pointer: {target_type} {type(target_type)}", node.line, node.position)
 
     def visit_struct_access(self, node: ast.StructAccess):
         tgt_type: ast.Type = self.visit_expression(node.target)

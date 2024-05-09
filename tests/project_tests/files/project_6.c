@@ -53,14 +53,14 @@ int main() {
     // printf with string literals
     printf("%s", "This is a string\n");
 
-    char* str_arr[3] = {"Hello", "World", "!"};
+    char* array_of_strings[3] = {"Hello", "World", "!"};
     for (int i = 0; i < 3; i++) {
-        printf("%s ", str_arr[i]);
+        printf("%s ", array_of_strings[i]);
     }
 
     str_arr[0] = "Goodbye";
     for (int i = 0; i < 3; i++) {
-        printf("%s ", str_arr[i]);
+        printf("%s ", array_of_strings[i]);
     }
 
     printf("Capitalise: %s\n", capitalise_string("hello", 5));
