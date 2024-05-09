@@ -1,16 +1,9 @@
 #include <stdio.h>
 
-
 int main() {
-    char* str_arr[3] = {"Hello", "World", "!"};
+    char* array_of_strings[3] = {"Hello", "World", "!"};
     for (int i = 0; i < 3; i++) {
-        printf("%s ", str_arr[i]);
+        printf("%s ", array_of_strings[i]);
     }
-
-    str_arr[0] = "Goodbye";
-    for (int i = 0; i < 3; i++) {
-        printf("%s ", str_arr[i]);
-    }
-
     return 0;
 }

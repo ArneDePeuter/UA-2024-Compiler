@@ -197,7 +197,10 @@ class SymbolTableVisitor(AstVisitor):
             # Check if the variable is undeclared, meaning it is not initialized (something like int x;)
             if initializer is not None:
                 # Get the type of the initializer, to make sure it is compatible with the variable declaration
-                initializer_type = self.visit_expression(initializer)
+                if isinstance(initializer, ast.ArrayInitializer):
+                    initializer_type = self.visit_array_initializer(initializer, context=node)
+                else:
+                    initializer_type = self.visit_expression(initializer)
 
                 if isinstance(node.var_type.type, ast.ArrayType):
                     if not isinstance(initializer, ast.ArrayInitializer):
@@ -507,7 +510,7 @@ class SymbolTableVisitor(AstVisitor):
                     if element == node:
                         org_array.elements[i] = TypeCaster.upcast(node)
 
-    def visit_array_initializer(self, node: ast.ArrayInitializer):
+    def visit_array_initializer(self, node: ast.ArrayInitializer, context=None):
         if node.struct_type:
             return self.visit_struct_initializer(node)
 
@@ -545,8 +548,8 @@ class SymbolTableVisitor(AstVisitor):
         array_specifier = ast.ArraySpecifier(sizes=[])
         for dimension in dimensions:
             array_specifier.sizes.append(ast.INT(value=dimension))
-        array_type = ast.ArrayType(element_type=array_element_type, array_sizes=array_specifier)
 
+        array_type = ast.ArrayType(element_type=array_element_type, array_sizes=array_specifier)
         return ast.Type(type=array_type, const=False, address_qualifiers=[], line=node.line, position=node.position)
 
     def visit_array_access(self, node: ast.ArrayAccess):
