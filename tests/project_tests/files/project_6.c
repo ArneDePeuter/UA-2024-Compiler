@@ -10,6 +10,14 @@
  The header stdio.h is treated as a special instruction that makes printf and scanf available. Including the actual stdio.h header is not necessary.
 */
 
+void capitalise_string(char *string, int size) {
+    for (int i = 0; i < size; i++) {
+        if (string[i] >= 'a' && string[i] <= 'z') {
+            string[i] = string[i] - 32;
+        }
+    }
+}
+
 int main() {
     // Arrays: simple one dimensional arrays
     // Array initialisation
@@ -54,6 +62,8 @@ int main() {
     for (int i = 0; i < 3; i++) {
         printf("%s ", str_arr[i]);
     }
+
+    printf("Capitalise: %s\n", capitalise_string("hello", 5));
 
     return 0;
 }

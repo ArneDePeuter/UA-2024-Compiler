@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+
 int main() {
     char* str_arr[3] = {"Hello", "World", "!"};
     for (int i = 0; i < 3; i++) {
