@@ -371,18 +371,13 @@ class AstDotVisitor(AstVisitor):
 
     def visit_array_access(self, node: ast.ArrayAccess):
         node_id = id(node)
-        # Handle different types of target expressions
-        if isinstance(node.target, ast.IDENTIFIER):
-            target_label = node.target.name
-        elif isinstance(node.target, ast.StructAccess):
-            self.visit_struct_access(node.target)
-            target_label = node.target.member_name
-        else:
-            self.visit_expression(node.target)
-            target_label = str(node.target)  # Generic fallback
 
         # Add node label for ArrayAccess
-        self.total += f'"{node_id}" [label="ArrayAccess: (name={target_label})"];\n'
+        self.total += f'"{node_id}" [label="ArrayAccess"];\n'
+
+        self.visit_expression(node.target)
+        target_id = id(node.target)
+        self.total += f'"{node_id}" -> "{target_id}" [label="target"];\n'
 
         # Process index and connect it
         self.visit_expression(node.index)
