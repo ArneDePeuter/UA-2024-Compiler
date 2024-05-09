@@ -109,12 +109,6 @@ class LLVMIRGenerator(AstVisitor):
 
     def visit_identifier(self, node: ast.IDENTIFIER) -> ExpressionEval:
         alloc = self.var_addresses.get(node.name)
-        alloc_type = alloc.type.pointee
-        if isinstance(alloc_type, ir.ArrayType) and isinstance(alloc_type.element, ir.IntType) and alloc_type.element.width == 8:
-            return ExpressionEval(
-                l_value=alloc,
-                r_value=self.builder.gep(alloc, [ir.Constant(IrIntType, 0), ir.Constant(IrIntType, 0)])
-            )
         return ExpressionEval(
             l_value=alloc,
             r_value=self.builder.load(alloc)
@@ -353,8 +347,19 @@ class LLVMIRGenerator(AstVisitor):
 
             # Evaluate the expression for initializer
             expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
+
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
+
+            # Decay array to pointer
+            if isinstance(decl_type, ir.PointerType) and isinstance(expr_eval.r_value.type, ir.ArrayType):
+                if not expr_eval.l_value:
+                    # allocate immediate strings
+                    expr_eval.l_value = self.builder.alloca(expr_eval.r_value.type, name=qualifier.identifier + "_array")
+                    self.builder.store(expr_eval.r_value, expr_eval.l_value)
+                first_element_ptr = self.builder.gep(expr_eval.l_value, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                self.builder.store(first_element_ptr, alloc)
+                return
 
             value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
             self.builder.store(value, alloc)
@@ -367,6 +372,7 @@ class LLVMIRGenerator(AstVisitor):
         if not right_eval.r_value:
             raise NotImplementedError("Cannot assign value to variable, r_value is None")
         left_type = left_eval.l_value.type.pointee
+
         if isinstance(left_type, ir.PointerType) and not isinstance(right_eval.r_value.type, ir.PointerType):
             # Handle assignments to char* specifically
             if isinstance(left_type.pointee, ir.IntType) and left_type.pointee.width == 8:
@@ -381,6 +387,7 @@ class LLVMIRGenerator(AstVisitor):
                 null_ptr = ir.Constant(left_type, None)
                 self.builder.store(null_ptr, left_eval.l_value)
             return
+
         value = TypeTranslator.match_llvm_type(self.builder, left_type, right_eval.r_value)
         self.builder.store(value, left_eval.l_value)
 
