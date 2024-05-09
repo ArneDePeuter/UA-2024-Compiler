@@ -205,6 +205,19 @@ class TreeVisitor(GrammarVisitor):
         array_specifier = self.visit(ctx.arraySpecifier()) if ctx.arraySpecifier() else None
         initializer = self.visit(ctx.expression()) if ctx.expression() else None
 
+        if array_specifier and initializer:
+            if len(array_specifier.sizes) < 1:
+                dimensions = []
+                current_node = initializer
+                while current_node is not None:
+                    if isinstance(current_node, ast.ArrayInitializer):
+                        dimensions.append(len(current_node.elements))
+                        current_node = current_node.elements[0]
+                    else:
+                        current_node = None
+                array_specifier.sizes = [ast.INT(value=size) for size in dimensions]
+
+
         return ast.VariableDeclarationQualifier(
             identifier=identifier,
             array_specifier=array_specifier,
