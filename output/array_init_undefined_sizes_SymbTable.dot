@@ -1,0 +1,17 @@
+digraph SymbolTable {
+  node1 [label="Scope Level 0", style=filled, fillcolor=lightblue];
+  node1 -> node1_main [color=black];
+  node1_main [label="int main", shape=box, style=filled, fillcolor=white];
+  node2 [label="Scope Level 1", style=filled, fillcolor=lightblue];
+  node1 -> node2;
+  node3 [label="Scope Level 2", style=filled, fillcolor=lightblue];
+  node1 -> node3;
+  node3 -> node3_a [color=black];
+  node3_a [label="array of int[5] a", shape=box, style=filled, fillcolor=white];
+  node4 [label="Scope Level 3", style=filled, fillcolor=lightblue];
+  node1 -> node4;
+  node4 -> node4_i [color=black];
+  node4_i [label="int i", shape=box, style=filled, fillcolor=white];
+  node5 [label="Scope Level 4", style=filled, fillcolor=lightblue];
+  node1 -> node5;
+}

@@ -1,9 +1,19 @@
 #include <stdio.h>
 #include "mul.c"
 
+// #include "boogiewoogie.h
+/*
+#include dookie_pointer.h
+*/
+
 #define bool int
 #define true 1
 #define false 0
+
+//#define true false
+/*
+#define false true
+*/
 
 /** My program */
 int main() {

@@ -69,14 +69,21 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
-    
+
     def visitStatement(self, ctx: GrammarParser.StatementContext):
+        if ctx.Comment():
+            return ast.CommentStatement(
+                content=ctx.Comment().getText(),
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
+
         if ctx.getChild(0) == TerminalNodeImpl:
             return None
-        ast = super().visitStatement(ctx)
-        if ast is not None:
-            ast.c_syntax = self.get_original_text(ctx)
-        return ast
+        new_ast = super().visitStatement(ctx)
+        if new_ast is not None:
+            new_ast.c_syntax = self.get_original_text(ctx)
+        return new_ast
 
     def visitExpressionStatement(self, ctx: GrammarParser.ExpressionStatementContext):
         return ast.ExpressionStatement(
