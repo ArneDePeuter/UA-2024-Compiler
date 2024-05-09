@@ -75,7 +75,7 @@ Float
     ;
 fragment EscSeq : '\\' [nt0\\] ;
 Char
-    : '\'' (EscSeq? | ~[']) '\''
+    : '\'' (EscSeq | ~[']) '\''
     ;
 
 StringLiteral
