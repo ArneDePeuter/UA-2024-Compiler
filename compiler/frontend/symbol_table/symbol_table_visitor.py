@@ -547,8 +547,8 @@ class SymbolTableVisitor(AstVisitor):
         return ast.Type(type=array_type, const=False, address_qualifiers=[], line=node.line, position=node.position)
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        if isinstance(node.target, ast.StructAccess):
-            array_attr = self.visit_struct_access(node.target)
+        if isinstance(node.target, ast.StructAccess) or isinstance(node.target, ast.ArrayAccess):
+            array_attr = self.visit_expression(node.target)
             if not isinstance(array_attr.type, ast.ArrayType):
                 raise SemanticError(f"'{array_attr}' is not an array.", node.line, node.position)
             return ast.Type(type=array_attr.type, const=array_attr.const, address_qualifiers=array_attr.address_qualifiers, line=node.line, position=node.position)
