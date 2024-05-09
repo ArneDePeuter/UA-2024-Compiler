@@ -268,6 +268,9 @@ class SymbolTableVisitor(AstVisitor):
                 raise SemanticError(f"Array dimensions do not match.", node.line, node.position)"""
 
         elif left_type.type != right_type.type or len(left_type.address_qualifiers) != len(right_type.address_qualifiers):
+            if isinstance(node.right, ast.INT) and node.right.value == 0 and len(
+                    left_type.address_qualifiers) > 0:
+                return
             if len(left_type.address_qualifiers) == 0 and len(right_type.address_qualifiers) == 0:
                 # Determine the type of the expression based on the hierarchy  float, int, char
                 left_expression_hierarchy = TypeCaster.get_heirarchy_of_base_type(left_type.type)

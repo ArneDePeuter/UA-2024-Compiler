@@ -213,7 +213,7 @@ class AstDotVisitor(AstVisitor):
         if hasattr(node, 'else_statement') and node.else_statement:
             else_node_name = str(id(node.else_statement))
             self.total += f'{node_name} -> {else_node_name} [label="else"];\n'
-            self.visit(node.else_statement)
+            self.visit_statement(node.else_statement)
 
     def visit_else_statement(self, node):
         node_name = str(id(node))

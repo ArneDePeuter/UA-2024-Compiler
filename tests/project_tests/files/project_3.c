@@ -19,12 +19,12 @@ int main() {
     // scoped typedef
     {
         typedef int type;
-        type x = 5;
+        type y = 5;
         printf("%d\n", x);
     }
     {
         typedef float type;
-        type x = 5;
+        type y = 5;
         printf("%d\n", x);
     }
 
@@ -34,12 +34,12 @@ int main() {
     nestedType y = 5;
 
     // typedef with pointer
-    typedef int *type;
-    type z = &x;
+    typedef int *intPtr;
+    intPtr z = &x;
 
     // typedef with const
-    typedef const int type;
-    type a = 5;
+    typedef const int constInt;
+    constInt a = 5;
 
     printf("Hello, World!\n");
     return 0;

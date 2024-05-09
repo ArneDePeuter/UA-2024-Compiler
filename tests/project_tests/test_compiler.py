@@ -32,7 +32,7 @@ def run_clang(input_file, include_paths):
     return result.stdout
 
 
-@pytest.mark.parametrize("input_file", os.listdir("./tests/compiler_tests/files"))
+@pytest.mark.parametrize("input_file", os.listdir("./tests/project_tests/files"))
 def test_compiler(input_file):
     include_paths = ["./includes"]  # Add the include paths here
     relative = os.path.join("./files", input_file)

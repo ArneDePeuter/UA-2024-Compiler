@@ -1,6 +1,7 @@
 #include <stdio.h> // #include.
 
-#define FOO 5 // #define.
+// define
+#define FOO 5
 
 /*
  Function scopes.
