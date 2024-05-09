@@ -1,9 +1,10 @@
 from enum import Enum
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Optional
 
-from .type import Type
+from .type import Type, StructType
 from .ast import AST
+from compiler.core.errors.semantic_error import SemanticError
 
 
 @dataclass
@@ -280,21 +281,37 @@ class FunctionCall(Expression):
 
 @dataclass
 class PrintFCall(Expression):
-    class Replacer(Enum):
-        s = "%s"
-        d = "%d"
-        x = "%x"
-        f = "%f"
-        c = "%c"
+    format: str
+    args: list[Expression]
 
-    replacer: Replacer
-    expression: Expression
+
+@dataclass
+class ScanFCall(Expression):
+    format: str
+    args: list[Expression]
+
 
 @dataclass
 class ArrayInitializer(Expression):
     elements: Tuple[Expression]
+    struct_type: Optional[StructType] = None
+
+    def set_struct_type(self, struct_type: StructType):
+        if len(self.elements) < len(struct_type.definition.members):
+            raise SemanticError(f"Too few elements in struct initializer, default params for struct not implemented.", self.line, self.position)
+        self.struct_type = struct_type
+        for i, member in enumerate(self.struct_type.definition.members):
+            if isinstance(member.type.type, StructType) and len(member.type.address_qualifiers) == 0 and isinstance(self.elements[i], ArrayInitializer):
+                self.elements[i].set_struct_type(member.type.type)
+
 
 @dataclass
 class ArrayAccess(Expression):
-    array_name: str
+    target: Expression
     index: Expression
+
+
+@dataclass
+class StructAccess(Expression):
+    target: Expression
+    member_name: str

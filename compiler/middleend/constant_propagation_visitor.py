@@ -114,7 +114,7 @@ class ConstantPropagationVisitor(AstVisitor):
             node.qualifiers[i] = self.visit_variable_declaration_qualifier(qualifier)
 
         for qual in node.qualifiers:
-            if qual.initializer:
+            if qual.initializer is not None:
                 # value is known at compile time so add to scope
                 if type(qual.initializer) in [ast.INT, ast.FLOAT, ast.CHAR]:
                     self.const_scope[qual.identifier] = (qual.initializer, node.var_type.const)
@@ -170,7 +170,13 @@ class ConstantPropagationVisitor(AstVisitor):
         return node
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        node.expression = self.visit_expression(node.expression)
+        for i, arg in enumerate(node.args):
+            node.args[i] = self.visit_expression(arg)
+        return node
+
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        for i, arg in enumerate(node.args):
+            node.args[i] = self.visit_expression(arg)
         return node
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
@@ -194,4 +200,11 @@ class ConstantPropagationVisitor(AstVisitor):
 
     def visit_array_access(self, node: ast.ArrayAccess):
         node.index = self.visit_expression(node.index)
+        return node
+
+    def visit_struct_access(self, node: ast.StructAccess):
+        node.target = self.visit_expression(node.target)
+        return node
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
         return node

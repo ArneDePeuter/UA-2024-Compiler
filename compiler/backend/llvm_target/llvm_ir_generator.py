@@ -8,6 +8,7 @@ from typing import Optional
 
 from .type_translator import TypeTranslator
 from .ir_types import IrIntType, IrFloatType, IrCharType
+import uuid
 
 
 @dataclass
@@ -18,19 +19,26 @@ class ExpressionEval:
 
 class LLVMIRGenerator(AstVisitor):
     def __init__(self):
-        self.module = ir.Module()
+        self.context = ir.Context()
+        self.module = ir.Module(context=self.context)
         self.builder = None
         self.var_addresses: dict[str, ir.AllocaInstr] = {}
         self.while_fd = {}
         self.functions = {}
+        self.defined_structs = {}
+        self.defined_structs_members = {}
+
 
         printf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
-        self.printf_func = ir.Function(self.module, printf_type, name="printf")
+        self.printf = ir.Function(self.module, printf_type, name="printf")
+
+        scanf_type = ir.FunctionType(ir.IntType(32), [ir.PointerType(ir.IntType(8))], var_arg=True)
+        self.scanf = ir.Function(self.module, scanf_type, name="scanf")
 
         super().__init__()
 
     def generate_llvm_ir(self, node):
-        self.visit(node)
+        self.visit_statement(node)
         result = str(self.module)
         lines = result.split("\n")
         lines.remove(lines[1])
@@ -44,7 +52,12 @@ class LLVMIRGenerator(AstVisitor):
         return super().visit_expression(node)
 
     def visit_statement(self, node: ast.Statement):
-        if self.builder is None and (isinstance(node, ast.FunctionDeclaration) or isinstance(node, ast.Program) or isinstance(node, ast.ForwardDeclaration)):
+        if self.builder is None and (
+                isinstance(node, ast.FunctionDeclaration)
+                or isinstance(node, ast.Program)
+                or isinstance(node, ast.ForwardDeclaration)
+                or isinstance(node, ast.StructDefinition)
+        ):
             super().visit_statement(node)
             return
 
@@ -62,7 +75,21 @@ class LLVMIRGenerator(AstVisitor):
                 pass
         super().visit_statement(node)
 
+    def get_struct_type(self, name: str):
+        if name in self.defined_structs:
+            return self.defined_structs[name]
+        new = self.context.get_identified_type(f"struct.{name}")
+        self.defined_structs[name] = new
+        return new
+
     def visit_type(self, node: ast.Type) -> ir.types.Type:
+        if isinstance(node.type, ast.StructType):
+            struct_type = self.get_struct_type(node.type.definition.name)
+            if node.address_qualifiers:
+                for qualifier in node.address_qualifiers:
+                    if qualifier == ast.AddressQualifier.pointer:
+                        struct_type = ir.PointerType(struct_type)
+            return struct_type
         return TypeTranslator.translate_ast_type(node)
 
     def visit_int(self, node: ast.INT) -> ExpressionEval:
@@ -81,9 +108,10 @@ class LLVMIRGenerator(AstVisitor):
         )
 
     def visit_identifier(self, node: ast.IDENTIFIER) -> ExpressionEval:
+        alloc = self.var_addresses.get(node.name)
         return ExpressionEval(
-            l_value=self.var_addresses[node.name],
-            r_value=self.builder.load(self.var_addresses[node.name])
+            l_value=alloc,
+            r_value=self.builder.load(alloc)
         )
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression) -> ExpressionEval:
@@ -319,16 +347,22 @@ class LLVMIRGenerator(AstVisitor):
 
             # Evaluate the expression for initializer
             expr_eval: ExpressionEval = self.visit_expression(qualifier.initializer)
+
             if not expr_eval.r_value:
                 raise NotImplementedError("Cannot assign value to variable, r_value is None")
 
-            # Store the value to the allocated variable
-            if isinstance(decl_type, ir.PointerType) and not isinstance(expr_eval.r_value.type, ir.PointerType):
-                null_ptr = ir.Constant(decl_type, None)
-                self.builder.store(null_ptr, alloc)
-            else:
-                value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
-                self.builder.store(value, alloc)
+            # Decay array to pointer
+            if isinstance(decl_type, ir.PointerType) and isinstance(expr_eval.r_value.type, ir.ArrayType):
+                if not expr_eval.l_value:
+                    # allocate immediate strings
+                    expr_eval.l_value = self.builder.alloca(expr_eval.r_value.type, name=qualifier.identifier + "_array")
+                    self.builder.store(expr_eval.r_value, expr_eval.l_value)
+                first_element_ptr = self.builder.gep(expr_eval.l_value, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+                self.builder.store(first_element_ptr, alloc)
+                return
+
+            value = TypeTranslator.match_llvm_type(self.builder, decl_type, expr_eval.r_value)
+            self.builder.store(value, alloc)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement) -> None:
         left_eval = self.visit_expression(node.left)
@@ -338,10 +372,22 @@ class LLVMIRGenerator(AstVisitor):
         if not right_eval.r_value:
             raise NotImplementedError("Cannot assign value to variable, r_value is None")
         left_type = left_eval.l_value.type.pointee
+
         if isinstance(left_type, ir.PointerType) and not isinstance(right_eval.r_value.type, ir.PointerType):
-            null_ptr = ir.Constant(left_type, None)
-            self.builder.store(null_ptr, left_eval.l_value)
+            # Handle assignments to char* specifically
+            if isinstance(left_type.pointee, ir.IntType) and left_type.pointee.width == 8:
+                # This branch handles assigning a single character to a location pointed by a char pointer
+                # Ensure the right-hand value is an integer (char)
+                if isinstance(right_eval.r_value.type, ir.IntType) and right_eval.r_value.type.width == 8:
+                    # Use the builder to store the right-hand value at the location specified by the left-hand pointer
+                    self.builder.store(right_eval.r_value, left_eval.r_value)
+                else:
+                    raise TypeError("Type mismatch: Expected a character (8-bit int) for assignment to char*")
+            else:
+                null_ptr = ir.Constant(left_type, None)
+                self.builder.store(null_ptr, left_eval.l_value)
             return
+
         value = TypeTranslator.match_llvm_type(self.builder, left_type, right_eval.r_value)
         self.builder.store(value, left_eval.l_value)
 
@@ -374,6 +420,8 @@ class LLVMIRGenerator(AstVisitor):
             self.builder.branch(w_condition_block)
 
         # After block
+        if self.builder.block is not None and not self.builder.block.is_terminated:
+            self.builder.branch(w_condition_block)
         self.builder.position_at_start(w_after_block)
 
     def to_bool_expr(self, node: ast.Expression):
@@ -418,29 +466,37 @@ class LLVMIRGenerator(AstVisitor):
     def visit_else_statement(self, node: ast.ElseStatement):
         self.visit_statement(node.body)
 
-    def visit_printf_call(self, node: ast.PrintFCall) -> None:
-        format_string = node.replacer.value
+    def create_format_string(self, format_string: str):
+        # remove string dashes
+        format_string = format_string[:-1]
+        format_string = format_string[1:]
+        format_string = format_string.replace("\\n", "\n")
+        fmt = ir.ArrayType(ir.IntType(8), len(format_string) + 1)
+        fmt_global = ir.GlobalVariable(self.module, fmt, name=str(uuid.uuid4()))
+        fmt_global.global_constant = True
+        fmt_global.initializer = ir.Constant(fmt, bytearray(format_string.encode("utf8")) + b"\00")
+        return fmt_global
 
-        # Create the format string constant
-        format_string_constant = ir.Constant(ir.ArrayType(ir.IntType(8), len(format_string) + 1),
-                                             bytearray(format_string.encode('utf-8') + b'\00'))
+    def visit_printf_call(self, node: ast.PrintFCall):
+        fmt_global = self.create_format_string(node.format)
+        fmt_ptr = self.builder.bitcast(fmt_global, ir.PointerType(ir.IntType(8)))
+        args = [self.visit_expression(arg).r_value for arg in node.args]
+        for i, arg in enumerate(args):
+            if isinstance(arg.type, ir.FloatType):
+                args[i] = self.builder.fpext(arg, ir.DoubleType())
+            if isinstance(arg.type, ir.ArrayType) and isinstance(arg.type.element, ir.IntType) and arg.type.element.width == 8:
+                temp_alloc = self.builder.alloca(arg.type, name="temp_str")
+                self.builder.store(arg, temp_alloc)
+                args[i] = self.builder.gep(temp_alloc, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+        self.builder.call(self.printf, [fmt_ptr] + args)
+        return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
-        # Create the format string global variable
-        format_string_global = ir.GlobalVariable(
-            self.module, format_string_constant.type, name=f"printf_format_{node.line}_{node.position}"
-        )
-        format_string_global.linkage = "internal"
-        format_string_global.global_constant = True
-        format_string_global.initializer = format_string_constant
-
-        expression_value = self.visit_expression(node.expression).r_value
-        if isinstance(expression_value.type, ir.FloatType):
-            expression_value = self.builder.fpext(expression_value, ir.DoubleType())
-
-        self.builder.call(self.printf_func, [
-            format_string_global.bitcast(ir.PointerType(ir.IntType(8))),
-            expression_value
-        ])
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        fmt_global = self.create_format_string(node.format)
+        fmt_ptr = self.builder.bitcast(fmt_global, ir.PointerType(ir.IntType(8)))
+        args = [self.visit_expression(arg).r_value for arg in node.args]
+        self.builder.call(self.scanf, [fmt_ptr] + args)
+        return ExpressionEval(l_value=None, r_value=ir.Constant(ir.IntType(32), 0))
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration) -> None:
         func = self.functions.get(node.name) # Check if the function is already declared
@@ -496,7 +552,7 @@ class LLVMIRGenerator(AstVisitor):
         if not func:
             raise NotImplementedError(f"Function {node.name} not found")
 
-        args = [self.visit_expression(arg).r_value for arg in node.arguments]
+        args = [TypeTranslator.match_llvm_type(self.builder, func.args[i].type, self.visit_expression(arg).r_value) for i, arg in enumerate(node.arguments)]
         return ExpressionEval(r_value=self.builder.call(func, args))
 
     def visit_variable_declaration_global(self, node: ast.VariableDeclaration):
@@ -521,27 +577,68 @@ class LLVMIRGenerator(AstVisitor):
         if any(dim is None for dim in dimensions):
             raise ValueError("All dimensions must have a resolvable size")
         return ExpressionEval(l_value=None, r_value=dimensions)
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
+        if node.struct_type:
+            return self.visit_struct_initializer(node)
         array = ir.Constant.literal_array([self.visit_expression(element).r_value for element in node.elements])
         return ExpressionEval(r_value=array)
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        base_address = self.var_addresses.get(node.array_name)
-        if base_address is None:
-            raise ValueError(f"Variable '{node.array_name}' not found")
+        # Determine the base address from the type of target
+        base_eval = self.visit_expression(node.target)
+        base_address = base_eval.l_value
 
-        indices = self.visit_expression(node.index)  # Assuming this returns an ExpressionEval
-        for index in indices.r_value:
-            if not isinstance(index.type, ir.IntType):
-                raise ValueError("Index must be an integer")
+        # Visit the index expression and assume it returns an ExpressionEval
+        index = self.visit_expression(node.index)
 
-        # Insert 0 as the first index for the array start
-        indices.r_value.insert(0, ir.Constant(ir.IntType(32), 0))
-        # Get the element pointer using GEP, note that the first index in GEP is for array start, usually 0
-        element_ptr = self.builder.gep(base_address, indices.r_value)
+        if base_address.type.pointee.is_pointer:
+            base_address = base_eval.r_value
+            element_ptr = self.builder.gep(base_address, [index.r_value])
+        else:
+            element_ptr = self.builder.gep(base_address, [ir.Constant(ir.IntType(32), 0), index.r_value])
 
         # Load the value at the element pointer
         value_at_index = self.builder.load(element_ptr)
 
         return ExpressionEval(l_value=element_ptr, r_value=value_at_index)
 
+    def visit_struct_access(self, node: ast.StructAccess):
+        eval = self.visit_expression(node.target)
+        if not eval.l_value:
+            raise RuntimeError("No lvalue found for struct access method")
+
+        members = self.defined_structs_members[eval.l_value.type.pointee]
+        member_index = members.index(node.member_name)
+
+        member_address = self.builder.gep(
+            eval.l_value,
+            [IrIntType(0), IrIntType(member_index)]
+        )
+
+        value = self.builder.load(member_address)
+
+        return ExpressionEval(l_value=member_address, r_value=value)
+
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        struct = self.get_struct_type(node.name)
+        struct_members = []
+        member_names = []
+        for member in node.members:
+            struct_members.append(self.visit_type(member.type))
+            member_names.append(member.name)
+        self.defined_structs_members[struct] = member_names
+        struct.set_body(*struct_members)
+
+    def visit_struct_initializer(self, node: ast.ArrayInitializer):
+        struct_type = self.get_struct_type(node.struct_type.definition.name)
+        struct_initializer = ir.Constant(struct_type, None)
+        counter = 0
+        for target, el in zip(struct_type.elements, node.elements):
+            value = TypeTranslator.match_llvm_type(self.builder, target, self.visit_expression(el).r_value)
+            struct_initializer = self.builder.insert_value(struct_initializer, value, [counter])
+            counter += 1
+
+        return ExpressionEval(
+            r_value=struct_initializer
+        )

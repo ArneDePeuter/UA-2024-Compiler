@@ -172,4 +172,4 @@ def test_no_conv():
             ),
             expression=no_conv_ast
         )
-        assert no_conv_ast is ConstantFoldingVisitor().visit(no_conv_ast)
+        assert no_conv_ast is ConstantFoldingVisitor().visit_expression(no_conv_ast)

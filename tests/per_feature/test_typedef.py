@@ -5,7 +5,7 @@ from compiler.core import ast
 def test_1() -> None:
     input = """
         typedef int a;
-        
+
         int main() {
             a b = 5;
         }
@@ -43,4 +43,3 @@ def test_2() -> None:
     declaration = main_func.body.statements[0]
     assert isinstance(declaration, ast.VariableDeclaration)
     assert declaration.var_type.type == ast.BaseType.int
-

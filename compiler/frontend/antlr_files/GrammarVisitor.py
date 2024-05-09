@@ -19,8 +19,33 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by GrammarParser#structDefinition.
+    def visitStructDefinition(self, ctx:GrammarParser.StructDefinitionContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by GrammarParser#typedIdentifier.
     def visitTypedIdentifier(self, ctx:GrammarParser.TypedIdentifierContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#structList.
+    def visitStructList(self, ctx:GrammarParser.StructListContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumDeclaration.
+    def visitEnumDeclaration(self, ctx:GrammarParser.EnumDeclarationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumBody.
+    def visitEnumBody(self, ctx:GrammarParser.EnumBodyContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumList.
+    def visitEnumList(self, ctx:GrammarParser.EnumListContext):
         return self.visitChildren(ctx)
 
 
@@ -46,11 +71,6 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#paramList.
     def visitParamList(self, ctx:GrammarParser.ParamListContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#functionCall.
-    def visitFunctionCall(self, ctx:GrammarParser.FunctionCallContext):
         return self.visitChildren(ctx)
 
 
@@ -94,11 +114,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#printfCall.
-    def visitPrintfCall(self, ctx:GrammarParser.PrintfCallContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#continueStatement.
     def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
         return self.visitChildren(ctx)
@@ -121,16 +136,6 @@ class GrammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by GrammarParser#arraySpecifier.
     def visitArraySpecifier(self, ctx:GrammarParser.ArraySpecifierContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#arrayInitializer.
-    def visitArrayInitializer(self, ctx:GrammarParser.ArrayInitializerContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#castExpression.
-    def visitCastExpression(self, ctx:GrammarParser.CastExpressionContext):
         return self.visitChildren(ctx)
 
 
@@ -159,11 +164,6 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#expression.
-    def visitExpression(self, ctx:GrammarParser.ExpressionContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by GrammarParser#assignmentStatement.
     def visitAssignmentStatement(self, ctx:GrammarParser.AssignmentStatementContext):
         return self.visitChildren(ctx)
@@ -179,13 +179,68 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#logicalExpression.
-    def visitLogicalExpression(self, ctx:GrammarParser.LogicalExpressionContext):
+    # Visit a parse tree produced by GrammarParser#type.
+    def visitType(self, ctx:GrammarParser.TypeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#comparisonExpression.
-    def visitComparisonExpression(self, ctx:GrammarParser.ComparisonExpressionContext):
+    # Visit a parse tree produced by GrammarParser#typedefName.
+    def visitTypedefName(self, ctx:GrammarParser.TypedefNameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#enumType.
+    def visitEnumType(self, ctx:GrammarParser.EnumTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#structType.
+    def visitStructType(self, ctx:GrammarParser.StructTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#expression.
+    def visitExpression(self, ctx:GrammarParser.ExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#logicalOrExpression.
+    def visitLogicalOrExpression(self, ctx:GrammarParser.LogicalOrExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#logicalAndExpression.
+    def visitLogicalAndExpression(self, ctx:GrammarParser.LogicalAndExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#inclusiveOrExpression.
+    def visitInclusiveOrExpression(self, ctx:GrammarParser.InclusiveOrExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#exclusiveOrExpression.
+    def visitExclusiveOrExpression(self, ctx:GrammarParser.ExclusiveOrExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#andExpression.
+    def visitAndExpression(self, ctx:GrammarParser.AndExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#equalityExpression.
+    def visitEqualityExpression(self, ctx:GrammarParser.EqualityExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#relationalExpression.
+    def visitRelationalExpression(self, ctx:GrammarParser.RelationalExpressionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by GrammarParser#shiftExpression.
+    def visitShiftExpression(self, ctx:GrammarParser.ShiftExpressionContext):
         return self.visitChildren(ctx)
 
 
@@ -199,13 +254,8 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#bitwiseExpression.
-    def visitBitwiseExpression(self, ctx:GrammarParser.BitwiseExpressionContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by GrammarParser#shiftExpression.
-    def visitShiftExpression(self, ctx:GrammarParser.ShiftExpressionContext):
+    # Visit a parse tree produced by GrammarParser#castExpression.
+    def visitCastExpression(self, ctx:GrammarParser.CastExpressionContext):
         return self.visitChildren(ctx)
 
 
@@ -214,38 +264,38 @@ class GrammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#primary.
-    def visitPrimary(self, ctx:GrammarParser.PrimaryContext):
+    # Visit a parse tree produced by GrammarParser#unaryOperator.
+    def visitUnaryOperator(self, ctx:GrammarParser.UnaryOperatorContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#type.
-    def visitType(self, ctx:GrammarParser.TypeContext):
+    # Visit a parse tree produced by GrammarParser#postfixExpression.
+    def visitPostfixExpression(self, ctx:GrammarParser.PostfixExpressionContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#baseType.
-    def visitBaseType(self, ctx:GrammarParser.BaseTypeContext):
+    # Visit a parse tree produced by GrammarParser#primaryExpression.
+    def visitPrimaryExpression(self, ctx:GrammarParser.PrimaryExpressionContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#const.
-    def visitConst(self, ctx:GrammarParser.ConstContext):
+    # Visit a parse tree produced by GrammarParser#constant.
+    def visitConstant(self, ctx:GrammarParser.ConstantContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#addressQualifier.
-    def visitAddressQualifier(self, ctx:GrammarParser.AddressQualifierContext):
+    # Visit a parse tree produced by GrammarParser#argumentExpressionList.
+    def visitArgumentExpressionList(self, ctx:GrammarParser.ArgumentExpressionListContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#assignmentOperator.
-    def visitAssignmentOperator(self, ctx:GrammarParser.AssignmentOperatorContext):
+    # Visit a parse tree produced by GrammarParser#initializerList.
+    def visitInitializerList(self, ctx:GrammarParser.InitializerListContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by GrammarParser#comment.
-    def visitComment(self, ctx:GrammarParser.CommentContext):
+    # Visit a parse tree produced by GrammarParser#initializerListBody.
+    def visitInitializerListBody(self, ctx:GrammarParser.InitializerListBodyContext):
         return self.visitChildren(ctx)
 
 
