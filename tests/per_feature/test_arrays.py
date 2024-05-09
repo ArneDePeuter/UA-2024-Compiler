@@ -160,9 +160,8 @@ def test_multidimensional_array_access():
     array_assignment = for_loop_j.to_execute.statements[0]
     assert isinstance(array_assignment, ast.AssignmentStatement)
     assert array_assignment.c_syntax == "f[i][j] = i + j;"
-    assert array_assignment.left.array_name == "f"
-    for s in array_assignment.left.index.sizes:
-        assert s.name == "i" or "j"
+    assert array_assignment.left.target.target.name == "f"
+    assert array_assignment.left.index.name == "j"
     assert array_assignment.right.left.name == "i"
     assert array_assignment.right.right.name == "j"
 
