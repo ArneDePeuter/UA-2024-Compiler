@@ -1,8 +1,10 @@
+#include <stdio.h>
 
-
-// type already exists
-typedef float int;
 
 int main() {
-    int x = 4;
+    char str[] = "This is a string\n";
+    printf("%s", str);
+    printf("%s", "This is a string\n");
+
+    return 0;
 }

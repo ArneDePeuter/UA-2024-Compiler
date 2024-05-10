@@ -45,7 +45,7 @@ class ArraySpecifier(AST):
 @dataclass
 class ArrayType(AST):
     element_type: 'Type'
-    array_sizes: List[ArraySpecifier]
+    array_sizes: ArraySpecifier
 
     def __eq__(self, other):
         if isinstance(other, ArrayType):

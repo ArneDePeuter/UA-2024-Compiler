@@ -7,35 +7,29 @@ declare i32 @"scanf"(i8* %".1", ...)
 define i32 @"main"()
 {
 entry:
-  ; C Syntax: printf("%s\n", "Hello, World!");
-  ; C Syntax: printf("%s\n", "Hello, World!")
-  %".4" = bitcast [4 x i8]* @"39b52278-a470-48a0-bf3a-3496042f6294" to i8*
-  ; C Syntax: "Hello, World!"
-  %"temp_str" = alloca [14 x i8]
-  store [14 x i8] [i8 72, i8 101, i8 108, i8 108, i8 111, i8 44, i8 32, i8 87, i8 111, i8 114, i8 108, i8 100, i8 33, i8 0], [14 x i8]* %"temp_str"
-  %".7" = getelementptr [14 x i8], [14 x i8]* %"temp_str", i32 0, i32 0
-  %".8" = call i32 (i8*, ...) @"printf"(i8* %".4", i8* %".7")
-  ; C Syntax: printf("%s\n", "Hello, World!");
-  ; C Syntax: printf("%s\n", "Hello, World!")
-  %".11" = bitcast [4 x i8]* @"dab47243-0a0f-4368-956f-72fd48c763ba" to i8*
-  ; C Syntax: "Hello, World!"
-  %"temp_str.1" = alloca [14 x i8]
-  store [14 x i8] [i8 72, i8 101, i8 108, i8 108, i8 111, i8 44, i8 32, i8 87, i8 111, i8 114, i8 108, i8 100, i8 33, i8 0], [14 x i8]* %"temp_str.1"
-  %".14" = getelementptr [14 x i8], [14 x i8]* %"temp_str.1", i32 0, i32 0
-  %".15" = call i32 (i8*, ...) @"printf"(i8* %".11", i8* %".14")
-  ; C Syntax: printf("%s\n", "Hello, World!");
-  ; C Syntax: printf("%s\n", "Hello, World!")
-  %".18" = bitcast [4 x i8]* @"5a34170a-e866-46fc-8685-6ac1c228bb16" to i8*
-  ; C Syntax: "Hello, World!"
-  %"temp_str.2" = alloca [14 x i8]
-  store [14 x i8] [i8 72, i8 101, i8 108, i8 108, i8 111, i8 44, i8 32, i8 87, i8 111, i8 114, i8 108, i8 100, i8 33, i8 0], [14 x i8]* %"temp_str.2"
-  %".21" = getelementptr [14 x i8], [14 x i8]* %"temp_str.2", i32 0, i32 0
-  %".22" = call i32 (i8*, ...) @"printf"(i8* %".18", i8* %".21")
+  ; C Syntax: char str[] = "This is a string\n";
+  %"str" = alloca [18 x i8]
+  ; C Syntax: "This is a string\n"
+  store [18 x i8] [i8 84, i8 104, i8 105, i8 115, i8 32, i8 105, i8 115, i8 32, i8 97, i8 32, i8 115, i8 116, i8 114, i8 105, i8 110, i8 103, i8 10, i8 0], [18 x i8]* %"str"
+  ; C Syntax: printf("%s", str);
+  ; C Syntax: printf("%s", str)
+  %".7" = bitcast [3 x i8]* @"cf8f1f62-aa8b-4700-b8fc-ddba529b09ab" to i8*
+  %".8" = load [18 x i8], [18 x i8]* %"str"
+  %"temp_str" = alloca [18 x i8]
+  store [18 x i8] %".8", [18 x i8]* %"temp_str"
+  %".10" = getelementptr [18 x i8], [18 x i8]* %"temp_str", i32 0, i32 0
+  %".11" = call i32 (i8*, ...) @"printf"(i8* %".7", i8* %".10")
+  ; C Syntax: printf("%s", "This is a string\n");
+  ; C Syntax: printf("%s", "This is a string\n")
+  %".14" = bitcast [3 x i8]* @"36285d33-8240-40bb-83ad-3a8e202c61b5" to i8*
+  %"temp_str.1" = alloca [18 x i8]
+  store [18 x i8] [i8 84, i8 104, i8 105, i8 115, i8 32, i8 105, i8 115, i8 32, i8 97, i8 32, i8 115, i8 116, i8 114, i8 105, i8 110, i8 103, i8 10, i8 0], [18 x i8]* %"temp_str.1"
+  %".16" = getelementptr [18 x i8], [18 x i8]* %"temp_str.1", i32 0, i32 0
+  %".17" = call i32 (i8*, ...) @"printf"(i8* %".14", i8* %".16")
   ; C Syntax: return 0;
   ; C Syntax: 0
   ret i32 0
 }
 
-@"39b52278-a470-48a0-bf3a-3496042f6294" = constant [4 x i8] c"%s\0a\00"
-@"dab47243-0a0f-4368-956f-72fd48c763ba" = constant [4 x i8] c"%s\0a\00"
-@"5a34170a-e866-46fc-8685-6ac1c228bb16" = constant [4 x i8] c"%s\0a\00"
+@"cf8f1f62-aa8b-4700-b8fc-ddba529b09ab" = constant [3 x i8] c"%s\00"
+@"36285d33-8240-40bb-83ad-3a8e202c61b5" = constant [3 x i8] c"%s\00"

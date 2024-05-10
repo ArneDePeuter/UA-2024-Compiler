@@ -136,10 +136,8 @@ class LLVMIRGenerator(AstVisitor):
 
         if node.operator == ast.BinaryArithmetic.Operator.PLUS:
             if isinstance(left_value.type, ir.PointerType):
-                element_size = left_value.type.pointee.width
                 right_value = TypeTranslator.match_llvm_type(self.builder, IrIntType, right_value)
-                offset = self.builder.mul(right_value, ir.Constant(IrIntType, element_size))
-                result = self.builder.gep(left_value, [offset])
+                result = self.builder.gep(left_value, [right_value])
             else:
                 left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
                 if isinstance(left_value.type, ir.FloatType):
@@ -148,10 +146,8 @@ class LLVMIRGenerator(AstVisitor):
                     result = self.builder.add(left_value, right_value)
         elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
             if isinstance(left_value.type, ir.PointerType):
-                element_size = left_value.type.pointee.width
                 right_value = TypeTranslator.match_llvm_type(self.builder, IrIntType, right_value)
-                offset = self.builder.mul(right_value, ir.Constant(IrIntType, element_size))
-                result = self.builder.gep(left_value, [self.builder.neg(offset)])
+                result = self.builder.gep(left_value, [self.builder.neg(right_value)])
             else:
                 left_value, right_value = TypeTranslator.cast_to_common_type(self.builder, left_value, right_value)
                 if isinstance(left_value.type, ir.FloatType):
@@ -458,7 +454,7 @@ class LLVMIRGenerator(AstVisitor):
                 with then:
                     self.visit_body(node.body)
                 with otherwise:
-                    self.visit_else_statement(node.else_statement)
+                    self.visit_statement(node.else_statement)
         else:
             with self.builder.if_then(conditional):
                 self.visit_body(node.body)
