@@ -9,7 +9,15 @@
 ## How to Run the Program
 **!You must have poetry env enabled!**
 - To run the program, execute the following command: `python3 -m compiler`
-- To run all the files in **./input** and output to **./output**: `python3 scripts/create_all_pass.py`
+
+## Script
+- To run files in a folder and output to another folder: `python3 -m run_folder --input_folder <input_folder> --output_folder <output_folder>`
+  - Optionally you can add the flag `--include_paths` to specify the include paths to the compiler
+- This script will
+  - optimise
+  - generate AST
+  - generate Symbol Table
+  - generate LLVM code
 
 ## How to run tests
 **!You must have poetry env enabled!**
@@ -25,6 +33,7 @@
 | `--render_symb` | Renders the Symbol Table of the input file. Specify the output folder.               |
 | `--no-optimise` | Disables AST optimization.                                                           |
 | `--target_llvm` | Outputs LLVM target code to the specified folder.                                    |
+| `--include_paths`| (Multiple) include paths for the compiler                                            |
 | `--throw`       | Throw errors with python traceback.                                                  |
 
 
