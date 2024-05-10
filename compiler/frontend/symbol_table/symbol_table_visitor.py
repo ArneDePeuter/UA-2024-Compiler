@@ -391,7 +391,7 @@ class SymbolTableVisitor(AstVisitor):
 
         self.visit_statement(node.body)
 
-        node.body = node.body[len(node.parameters):]
+        node.body.statements = node.body.statements[len(node.parameters):]
 
         self.inside_declaration = False
 
