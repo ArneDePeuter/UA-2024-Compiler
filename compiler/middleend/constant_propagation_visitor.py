@@ -135,8 +135,9 @@ class ConstantPropagationVisitor(AstVisitor):
         return node
 
     def visit_while_statement(self, node: ast.WhileStatement):
-        node.expression = self.visit_expression(node.expression)
-        node.to_execute = self.visit_statement(node.to_execute)
+        # dont constant propagate while loop because referenced variables can change
+        # node.expression = self.visit_expression(node.expression)
+        # node.to_execute = self.visit_statement(node.to_execute)
         return node
 
     def visit_break_statement(self, node: ast.BreakStatement):

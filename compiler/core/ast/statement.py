@@ -84,39 +84,21 @@ class IfStatement(Statement):
     body: Body
     else_statement: ElseStatement or None
 
-    def __post_init__(self):
-        for stmt in self.body.statements:
-            if isinstance(stmt, BreakStatement):
-                stmt.if_statement = self
-            elif isinstance(stmt, ContinueStatement):
-                stmt.if_statement = self
-
 
 @dataclass
 class WhileStatement(Statement):
     expression: Expression
-    to_execute: Statement
-
-    def __post_init__(self):
-        if not isinstance(self.to_execute, Body):
-            stmts = [self.to_execute]
-        else:
-            stmts = self.to_execute.statements
-        for stmt in stmts:
-            if isinstance(stmt, BreakStatement):
-                stmt.while_statement = self
-            elif isinstance(stmt, ContinueStatement):
-                stmt.while_statement = self
+    to_execute: Optional[Statement] = None
 
 
 @dataclass
 class BreakStatement(Statement):
-    while_statement: Optional[WhileStatement] = None
+    while_statement: WhileStatement
 
 
 @dataclass
 class ContinueStatement(Statement):
-    while_statement: Optional[WhileStatement] = None
+    while_statement: WhileStatement
 
 
 @dataclass

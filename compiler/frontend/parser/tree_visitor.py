@@ -1,8 +1,8 @@
 from antlr4 import *
 import copy
+import re
 
 from antlr4.tree.Tree import TerminalNodeImpl
-
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.frontend.antlr_files.GrammarParser import GrammarParser
 from compiler.frontend.antlr_files.GrammarVisitor import GrammarVisitor
@@ -19,6 +19,8 @@ class TreeVisitor(GrammarVisitor):
         self.enum_scope: dict[str, dict[str, int]] = {}
         self.input_stream = input_stream
         self.function_decl = None
+        self.while_statement = None
+        self.inside_switch = False
         self.current_scope = None
         self.struct_defintions: dict[str, ast.StructDefinition] = {}
 
@@ -280,6 +282,9 @@ class TreeVisitor(GrammarVisitor):
             )
 
     def visitSwitchStatement(self, ctx: GrammarParser.SwitchStatementContext):
+        prev_inside_switch = copy.deepcopy(self.inside_switch)
+        self.inside_switch = True
+
         switch_expression = self.visit(ctx.expression())
         cases = ctx.caseStatement()
         default_case = ctx.defaultCaseStatement()
@@ -356,6 +361,8 @@ class TreeVisitor(GrammarVisitor):
                 # If no if statements, the default statement is the body
                 switch_if_statements.append(default_statement)
 
+        self.inside_switch = prev_inside_switch
+
         return ast.Body(
             statements=switch_if_statements,
             line=ctx.start.line,
@@ -370,13 +377,21 @@ class TreeVisitor(GrammarVisitor):
 
     def visit_while_statement(self, ctx: GrammarParser.IterationStatementContext):
         expression = self.visit(ctx.expression())
-        to_execute = self.visit(ctx.statement())
-        return ast.WhileStatement(
+
+        prev_while = copy.deepcopy(self.while_statement)
+        current_while = ast.WhileStatement(
             expression=expression,
-            to_execute=to_execute,
+            to_execute=None,
             line=ctx.start.line,
             position=ctx.start.column
         )
+        self.while_statement = current_while
+
+        to_execute = self.visit(ctx.statement())
+
+        current_while.to_execute = to_execute
+        self.while_statement = prev_while
+        return current_while
 
     def visitForFirst(self, ctx: GrammarParser.ForFirstContext):
         if node := ctx.variableDeclaration():
@@ -408,10 +423,46 @@ class TreeVisitor(GrammarVisitor):
     def visitForCondition(self, ctx: GrammarParser.ForConditionContext):
         return self.visitForFirst(ctx.forFirst()), self.visitForSecond(ctx.forSecond()), self.visitForThird(ctx.forThird())
 
+    def replace_continues(self, statement, third) -> ast.Statement:
+        """
+        Make sure that all continue statements are replaced with third and then continue
+        :param statement:
+        :param third:
+        :return:
+        """
+        if isinstance(statement, ast.ContinueStatement):
+            return ast.Body(
+                statements=[
+                    copy.deepcopy(third),
+                    statement
+                ],
+                line=statement.line,
+                position=statement.position
+            )
+        if isinstance(statement, ast.Body):
+            for i, stmt in enumerate(statement.statements):
+                statement.statements[i] = self.replace_continues(stmt, third)
+            return statement
+        if isinstance(statement, ast.IfStatement):
+            statement.body = self.replace_continues(statement.body, third)
+            if statement.else_statement:
+                statement.else_statement = self.replace_continues(statement.else_statement, third)
+            return statement
+        return statement
+
     def visit_for_statement(self, ctx: GrammarParser.IterationStatementContext):
         first, second, third = self.visitForCondition(ctx.forCondition())
-        statement = self.visitStatement(ctx.statement())
 
+        prev_while = copy.deepcopy(self.while_statement)
+        current_while = ast.WhileStatement(
+            expression=second if second else ast.INT(1),
+            to_execute=None,
+            line=ctx.start.line,
+            position=ctx.start.column
+        )
+        self.while_statement = current_while
+
+        statement = self.visitStatement(ctx.statement())
         if third:
             if isinstance(statement, ast.Body):
                 statement.statements.append(third)
@@ -425,35 +476,46 @@ class TreeVisitor(GrammarVisitor):
                     line=ctx.start.line,
                     position=ctx.start.column
                 )
+            to_execute = self.replace_continues(to_execute, third)
         else:
             to_execute = statement
 
-        while_statement = ast.WhileStatement(
-            expression=second if second else ast.INT(1),
-            to_execute=to_execute,
-            line=ctx.start.line,
-            position=ctx.start.column
-        )
+        current_while.to_execute = to_execute
+        self.while_statement = prev_while
 
         if not first:
-            return while_statement
+            return current_while
         return ast.Body(
             statements=[
                 first,
-                while_statement
+                current_while
             ],
             line=ctx.start.line,
             position=ctx.start.column
         )
 
     def visitBreakStatement(self, ctx:GrammarParser.BreakStatementContext):
+        if self.while_statement is None and not self.inside_switch:
+            raise SemanticError(
+                "Break statement outside of loop",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
         return ast.BreakStatement(
+            while_statement=self.while_statement,
             line=ctx.start.line,
             position=ctx.start.column
         )
 
     def visitContinueStatement(self, ctx:GrammarParser.ContinueStatementContext):
+        if self.while_statement is None:
+            raise SemanticError(
+                "Continue statement outside of loop",
+                line=ctx.start.line,
+                position=ctx.start.column
+            )
         return ast.ContinueStatement(
+            while_statement=self.while_statement,
             line=ctx.start.line,
             position=ctx.start.column
         )
@@ -869,15 +931,23 @@ class TreeVisitor(GrammarVisitor):
             return self.visitConstant(constant)
         elif str_lit := ctx.StringLiteral():
             string = str_lit.getText()
-            # Zero terminate the string
-            string = string[1:-1] + "\0"
+            string = string[1:-1] + "\0"  # Adding \0 for testing
+            elements = []
+            for char in re.findall(r'(\\[nrt]|[^\\])', string):
+                if char.startswith('\\'):
+                    if char == '\\n':
+                        elements.append('\n')
+                    elif char == '\\r':
+                        elements.append('\r')
+                    elif char == '\\t':
+                        elements.append('\t')
+                else:
+                    elements.append(char)
+
+            elements = [ast.CHAR(value=char) for char in elements]
+
             return ast.ArrayInitializer(
-                elements=[
-                    ast.CHAR(
-                        value=char,
-                        line=ctx.start.line,
-                        position=ctx.start.column
-                    ) for char in string],
+                elements=elements,
                 line=ctx.start.line,
                 position=ctx.start.column
             )
