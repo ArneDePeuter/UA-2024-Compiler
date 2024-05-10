@@ -33,7 +33,7 @@ class SymbolTable:
     def enter_scope(self):
         new_scope_level = self.current_scope.level + 1
         new_scope = Scope(level=new_scope_level, parent=self.current_scope)
-        self.global_scope.children[new_scope_level] = new_scope
+        self.current_scope.children[id(new_scope)] = new_scope
         self.current_scope = new_scope
 
     def exit_scope(self):

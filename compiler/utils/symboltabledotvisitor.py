@@ -10,29 +10,20 @@ class SymbolTableDotVisitor():
             file.write("}\n")
 
     def generate_dot(self, symbol_table):
-        dot_output = self.traverse_scope(symbol_table)
-        self.total = dot_output
+        self.traverse_scope(symbol_table)
 
-    def traverse_scope(self, scope, parent_id=None):
-        # Ensuring unique node IDs
-        self.node_counter += 1
-        node_id = f"node{self.node_counter}"
+    def traverse_scope(self, scope):
+        current_id = id(scope)
 
-        # Scope nodes have a different style
         scope_style = 'style=filled, fillcolor=lightblue'
         node_label = f"Scope Level {scope.level}"
-        output = f'  {node_id} [label="{node_label}", {scope_style}];\n'
 
-        if parent_id:
-            # Draw an edge from the parent scope to this scope
-            output += f"  {parent_id} -> {node_id};\n"
-
+        symbols = ""
         for symbol in scope.symbols.values():
-            # Symbol nodes are plain text
-            symbol_node_id = f"{node_id}_{symbol.name}"
-            output += f'  {node_id} -> {symbol_node_id} [color=black];\n'
-            output += f'  {symbol_node_id} [label="{symbol.type} {symbol.name}", shape=box, style=filled, fillcolor=white];\n'
+            symbols += f'{symbol.name} : {symbol.type}\n'
+
+        self.total += f'{current_id} [label="{node_label}\n {symbols}"{scope_style}];\n'
 
         for child in scope.children.values():
-            output += self.traverse_scope(child, node_id)
-        return output
+            self.total += f'{current_id} -> {id(child)};\n'
+            self.traverse_scope(child)

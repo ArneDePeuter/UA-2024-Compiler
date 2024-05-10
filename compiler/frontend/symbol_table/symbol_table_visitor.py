@@ -382,19 +382,18 @@ class SymbolTableVisitor(AstVisitor):
         else:
             self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
 
-        self.symbol_table.enter_scope()
-
         # Visit each parameter and add it to the symbol table as a variable with the function's scope level
+        cp = copy.deepcopy(node.body)
+
         for param in node.parameters:
-            self.visit_variable_declaration(ast.VariableDeclaration(
+            cp.statements.insert(0, ast.VariableDeclaration(
                 var_type=param.type,
                 qualifiers=[ast.VariableDeclarationQualifier(identifier=param.name, array_specifier=None, initializer=None)]
             ))
 
         # Visit the function body
-        self.visit_statement(node.body)
+        self.visit_statement(cp)
 
-        self.symbol_table.exit_scope()
         self.inside_declaration = False
 
     def visit_function_call(self, node: ast.FunctionCall):

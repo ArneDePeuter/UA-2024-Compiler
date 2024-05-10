@@ -1,0 +1,27 @@
+digraph SymbolTable {
+3058759394448 [label="Scope Level 0
+ globalVar : int
+add : int
+main : int
+"style=filled, fillcolor=lightblue];
+3058759394448 -> 3058759484368;
+3058759484368 [label="Scope Level 1
+ b : int
+a : int
+sum : int
+localVar : int
+"style=filled, fillcolor=lightblue];
+3058759484368 -> 3058759484496;
+3058759484496 [label="Scope Level 2
+ scopeVar : int
+"style=filled, fillcolor=lightblue];
+3058759394448 -> 3058759489552;
+3058759489552 [label="Scope Level 1
+ scope1Var : int
+localVar : int
+"style=filled, fillcolor=lightblue];
+3058759489552 -> 3058759489616;
+3058759489616 [label="Scope Level 2
+ scope2Var : int
+"style=filled, fillcolor=lightblue];
+}
