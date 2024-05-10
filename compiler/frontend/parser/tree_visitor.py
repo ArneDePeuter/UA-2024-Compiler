@@ -71,7 +71,7 @@ class TreeVisitor(GrammarVisitor):
             line=ctx.start.line,
             position=ctx.start.column
         )
-    
+
     def visitStatement(self, ctx: GrammarParser.StatementContext):
         if ctx.Comment():
             return ast.CommentStatement(

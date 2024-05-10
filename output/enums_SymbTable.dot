@@ -1,0 +1,27 @@
+digraph SymbolTable {
+  node1 [label="Scope Level 0", style=filled, fillcolor=lightblue];
+  node1 -> node1_printf [color=black];
+  node1_printf [label="void printf", shape=box, style=filled, fillcolor=white];
+  node1 -> node1_mul [color=black];
+  node1_mul [label="int mul", shape=box, style=filled, fillcolor=white];
+  node1 -> node1_main [color=black];
+  node1_main [label="int main", shape=box, style=filled, fillcolor=white];
+  node2 [label="Scope Level 1", style=filled, fillcolor=lightblue];
+  node1 -> node2;
+  node3 [label="Scope Level 2", style=filled, fillcolor=lightblue];
+  node1 -> node3;
+  node3 -> node3_val [color=black];
+  node3_val [label="int val", shape=box, style=filled, fillcolor=white];
+  node3 -> node3_some_value [color=black];
+  node3_some_value [label="int some_value", shape=box, style=filled, fillcolor=white];
+  node3 -> node3_another_value [color=black];
+  node3_another_value [label="int another_value", shape=box, style=filled, fillcolor=white];
+  node3 -> node3_x [color=black];
+  node3_x [label="int x", shape=box, style=filled, fillcolor=white];
+  node4 [label="Scope Level 3", style=filled, fillcolor=lightblue];
+  node1 -> node4;
+  node4 -> node4_result [color=black];
+  node4_result [label="int result", shape=box, style=filled, fillcolor=white];
+  node5 [label="Scope Level 4", style=filled, fillcolor=lightblue];
+  node1 -> node5;
+}
