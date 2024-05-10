@@ -115,9 +115,7 @@ class ConstantPropagationVisitor(AstVisitor):
 
         for qual in node.qualifiers:
             if qual.initializer is not None:
-                # value is known at compile time so add to scope
-                if type(qual.initializer) in [ast.INT, ast.FLOAT, ast.CHAR]:
-                    self.const_scope[qual.identifier] = (qual.initializer, node.var_type.const)
+                self.const_scope[qual.identifier] = (qual.initializer, node.var_type.const)
         return node
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
