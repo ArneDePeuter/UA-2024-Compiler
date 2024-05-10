@@ -14,7 +14,7 @@
 ## How to run tests
 **!You must have poetry env enabled!**
 - Run command `pytest`
-- Generate a report of the test coverage `pytest --cov-report html --cov=.`
+- Generate a report of the test coverage `pytest --cov-report html --cov=./compiler`
 
 ## Command Line Flags
 
