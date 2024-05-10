@@ -1,9 +1,10 @@
 #include <stdio.h>
 
+
 int main() {
-    char* array_of_strings[3] = {"Hello", "World", "!"};
-    for (int i = 0; i < 3; i++) {
-        printf("%s ", array_of_strings[i]);
-    }
+    char str[] = "This is a string\n";
+    printf("%s", str);
+    printf("%s", "This is a string\n");
+
     return 0;
 }

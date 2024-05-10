@@ -53,17 +53,6 @@ int main() {
     // printf with string literals
     printf("%s", "This is a string\n");
 
-    /*char* array_of_strings[3] = {"Hello", "World", "!"};
-    same = arraytype[3][6]
-    for (int i = 0; i < 3; i++) {
-        printf("%s ", array_of_strings[i]);
-    }
-
-    str_arr[0] = "Goodbye";
-    for (int i = 0; i < 3; i++) {
-        printf("%s ", array_of_strings[i]);
-    }*/
-
     char str[] = "hello"; // Mutable array
     char* hello = str; // Decay array to pointer
     capitalise_string(hello, 5);
