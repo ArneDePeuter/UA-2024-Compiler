@@ -25,6 +25,8 @@
 | `--render_symb` | Renders the Symbol Table of the input file. Specify the output folder.               |
 | `--no-optimise` | Disables AST optimization.                                                           |
 | `--target_llvm` | Outputs LLVM target code to the specified folder.                                    |
+| `--throw`       | Throw errors with python traceback.                                                  |
+
 
 ### Examples:
 
