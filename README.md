@@ -35,23 +35,24 @@
 ## Compiler features
 
 ### Project 1
-- [X] **Binary operations**: +, -, *, and /.
-- [X] **Binary operations**: >, <, and ==.
-- [X] **Unary operators**: + and -.
-- [X] **Order of operations**: Parenthesis to overwrite the order of operations. Logical operators &&, ||, and !.
-- [X] **Comparison operators**: >=, <=, and !=.
-- [X] **Binary operator**: %.
-- [X] **Shift operators**: <<, >>.
-- [X] **Bitwise operators**: &, |, ~, and ^.
-- [X] **Abstract syntax tree and visualisation**
-- [X] **Constant folding**: (e.g., a sub-tree of the AST “3+4” gets replaced by a single node “7”)
+- [X] Binary operations: +, -, *, and /.
+- [X] Binary operations: >, <, and ==.
+- [X] Unary operators: + and -.
+- [X] Order of operations: Parenthesis to overwrite the order of operations. Logical operators &&, ||, and !.
+- [X] Comparison operators: >=, <=, and !=.
+- [X] Binary operator: %.
+- [X] Shift operators: <<, >>.
+- [X] Bitwise operators: &, |, ~, and ^.
+- [X] Abstract syntax tree and visualisation
+- [X] Constant folding: (e.g., a sub-tree of the AST “3+4” gets replaced by a single node “7”)
 
 ### Project 2
-- [X] **Main function**: Add an `int main() { ... }` function.
-- [X] **Reserved keywords**: const, char, int, and float.
-- [X] **Literals**: float, integer, character (scientific notation not necessary).
-- [X] **Variable handling**: declarations, definitions, assignments, identifiers in expressions.
-- [X] **Pointers**: declaration, definition, operators * (dereference) and & (address).- [X] Const variables. For pointers, only “pointer to const” needs to be supported. The type is const int*. This means the value pointed to is const. The variable itself can be re-assigned with a different address.
+- [X] Main function: Add an `int main() { ... }` function.
+- [X] Reserved keywords: const, char, int, and float.
+- [X] Literals: float, integer, character (scientific notation not necessary).
+- [X] Variable handling: declarations, definitions, assignments, identifiers in expressions.
+- [X] Pointers: declaration, definition, operators * (dereference) and & (address).
+- [X] Const variables. For pointers, only “pointer to const” needs to be supported. The type is const int*. This means the value pointed to is const. The variable itself can be re-assigned with a different address.
 - [X] Implicit conversions. We consider the order float isRicherThan int isRicherThan char. Pay attention to warnings.
 - [X] Explicit conversions (i.e., the cast operator). Any conversion done this way should not cause a warning.
 - [X] Pointer arithmetic (all of the following need to be implemented):
@@ -85,7 +86,7 @@ should not be present in the final version of the compiler.
 - [X] Loops. You have to implement while, for, break, and continue.
 - [X] Scopes: anonymous, if-else, for, while.
 - [X] Switch statements: switch, break, case.
-- [ ] Your compiler should support enumerations.
+- [X] Your compiler should support enumerations.
 - [X] Support scopes in symbol table, semantic analysis, constant propagation
 - Optional
   - [X] else if statements.
@@ -94,13 +95,13 @@ should not be present in the final version of the compiler.
 - [X] Function scopes.
 - [X] Local and global variables.
 - [X] Functions: definitions; declarations; calling, recursive calls; parameters (const, float, int, pointers); returns; void functions;
-- [ ] Pre-processor: #define. Parameters do not need to be supported.
-- [ ] Pre-processor: #include.
+- [X] Pre-processor: #define. Parameters do not need to be supported.
+- [X] Pre-processor: #include.
 - [X] Semantic analysis: Functions and their scopes in the symbol table
 - [X] Semantic analysis: Consistency of return type.
 - [X] Semantic analysis: Parameter types passed to call should be consistent with the function signature.
 - [X] Semantic analysis: Consistency between forward declarations and function definitions. Functions must be declared/defined before calling them. Functions should not be re-defined. 
-- [ ] Optimisations (1pt): no code after break, continue, or return.
+- [X] Optimisations (1pt): no code after break, continue, or return. (llvm wise)
 - Optional
   - [ ] Overloading of functions on the amount and types of the parameters.
   - [ ] Prevent headers from being included twice by implementing include guards.
@@ -114,18 +115,20 @@ should not be present in the final version of the compiler.
 - [X] Arrays: assignment of complete arrays or array rows in case of multi-dimensional arrays. 
 - [X] Arrays: array initialisation: int arr[3] = {1,2,3}.
 - [X] Arrays: Operations on array elements.
-- [ ] Strings encoded as zero-terminated char-arrays. String literals. Passing strings around as char*. Support for IO: printf and scanf that support char* strings. The header stdio.h is treated as a special instruction that makes printf and scanf available. Including the actual stdio.h header is not necessary.
-- [X] Semantic analysis: Type checking for array types (parameter passing, assignment, indexing). Semantic analysis: Checking the length of array initialisers ({ ... }) during assignment.
+- [X] Strings encoded as zero-terminated char-arrays. String literals. Passing strings around as char*. Support for IO: printf and scanf that support char* strings. 
+- [X] The header stdio.h is treated as a special instruction that makes printf and scanf available. Including the actual stdio.h header is not necessary.
+- [X] Semantic analysis: Type checking for array types (parameter passing, assignment, indexing). 
+- [X] Semantic analysis: Checking the length of array initialisers ({ ... }) during assignment.
 - Optional
   - [ ] Dynamic arrays (stored on the heap).
 
 ### Project 7
-- [ ] User-defined structs. The structs should support members with primitive fields, arrays, enum types, as well as pointer types. You do not have to support default values for the struct members. 
-- [ ] Semantic analysis: Type checking for accessing and assigning struct members.
+- [X] User-defined structs. The structs should support members with primitive fields, arrays, enum types, as well as pointer types. You do not have to support default values for the struct members. 
+- [X] Semantic analysis: Type checking for accessing and assigning struct members.
 - [ ] Semantic analysis: Type checking for accessing and assigning union members (if implemented). 
 - [ ] Semantic analysis: Type checking for function pointers: assigning function pointers, calling functions, etc. (if implemented)
 - Optional
-  - [ ] Structs that contain other structs as a value.
+  - [X] Structs that contain other structs as a value.
   - [ ] Dynamic allocation of structs (stored on the heap). 
   - [ ] Unions.
   - [ ] Function pointers. All the checks and errors that apply to ordinary pointers should also be implemented for function pointers.
