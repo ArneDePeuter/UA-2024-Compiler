@@ -383,16 +383,15 @@ class SymbolTableVisitor(AstVisitor):
             self.symbol_table.define_symbol(Symbol(node.name, node.return_type, scope_level=self.symbol_table.current_scope.level, ast_ref=node))
 
         # Visit each parameter and add it to the symbol table as a variable with the function's scope level
-        cp = copy.deepcopy(node.body)
-
         for param in node.parameters:
-            cp.statements.insert(0, ast.VariableDeclaration(
+            node.body.statements.insert(0, ast.VariableDeclaration(
                 var_type=param.type,
                 qualifiers=[ast.VariableDeclarationQualifier(identifier=param.name, array_specifier=None, initializer=None)]
             ))
 
-        # Visit the function body
-        self.visit_statement(cp)
+        self.visit_statement(node.body)
+
+        node.body = node.body[len(node.parameters):]
 
         self.inside_declaration = False
 
