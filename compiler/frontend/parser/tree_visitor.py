@@ -1,8 +1,8 @@
 from antlr4 import *
 import copy
+import re
 
 from antlr4.tree.Tree import TerminalNodeImpl
-
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.frontend.antlr_files.GrammarParser import GrammarParser
 from compiler.frontend.antlr_files.GrammarVisitor import GrammarVisitor
@@ -931,15 +931,23 @@ class TreeVisitor(GrammarVisitor):
             return self.visitConstant(constant)
         elif str_lit := ctx.StringLiteral():
             string = str_lit.getText()
-            # Zero terminate the string
-            string = string[1:-1] + "\0"
+            string = string[1:-1] + "\0"  # Adding \0 for testing
+            elements = []
+            for char in re.findall(r'(\\[nrt]|[^\\])', string):
+                if char.startswith('\\'):
+                    if char == '\\n':
+                        elements.append('\n')
+                    elif char == '\\r':
+                        elements.append('\r')
+                    elif char == '\\t':
+                        elements.append('\t')
+                else:
+                    elements.append(char)
+
+            elements = [ast.CHAR(value=char) for char in elements]
+
             return ast.ArrayInitializer(
-                elements=[
-                    ast.CHAR(
-                        value=char,
-                        line=ctx.start.line,
-                        position=ctx.start.column
-                    ) for char in string],
+                elements=elements,
                 line=ctx.start.line,
                 position=ctx.start.column
             )
