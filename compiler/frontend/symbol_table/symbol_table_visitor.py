@@ -592,7 +592,7 @@ class SymbolTableVisitor(AstVisitor):
         return target_member.type
 
     def visit_struct_definition(self, node: ast.StructDefinition):
-        ...
+        self.symbol_table.define_symbol(Symbol(node.name, ast.StructType(node), scope_level=self.symbol_table.current_scope.level))
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
         struct_type = node.struct_type
