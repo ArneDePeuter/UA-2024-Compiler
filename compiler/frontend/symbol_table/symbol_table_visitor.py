@@ -252,9 +252,10 @@ class SymbolTableVisitor(AstVisitor):
 
         if isinstance(left_type.type, ast.ArrayType):
             if left_type.type.element_type != right_type:
-                if TypeCaster.get_heirarchy_of_base_type(left_type.type.element_type.type) > TypeCaster.get_heirarchy_of_base_type(right_type.type):
-                    WarningError(f"Implicit conversion from {right_type} to {left_type.type.element_type}", node.line, node.position).warn()
-                    node.right = TypeCaster.upcast(node.right)
+                if isinstance(left_type.type.element_type.type, ast.BaseType) and isinstance(right_type.type, ast.BaseType):
+                    if TypeCaster.get_heirarchy_of_base_type(left_type.type.element_type.type) > TypeCaster.get_heirarchy_of_base_type(right_type.type):
+                        WarningError(f"Implicit conversion from {right_type} to {left_type.type.element_type}", node.line, node.position).warn()
+                        node.right = TypeCaster.upcast(node.right)
                 else:
                     raise SemanticError(f"Type mismatch in assignment: {left_type} and {right_type}.", node.line, node.position)
 
