@@ -1,0 +1,116 @@
+from abc import ABC, abstractmethod
+
+from compiler.core import ast
+from compiler.core.ast_visitor import AstVisitor
+
+
+class MipsGenerator(AstVisitor):
+    def __init__(self):
+        self.mips_code = ""
+
+        super().__init__()
+
+    def visit_type(self, node: ast.Type):
+        ...
+
+    def visit_int(self, node: ast.INT):
+        ...
+
+    def visit_float(self, node: ast.FLOAT):
+        ...
+
+    def visit_char(self, node: ast.CHAR):
+        ...
+    
+    def visit_identifier(self, node: ast.IDENTIFIER):
+        ...
+    
+    def visit_type_cast_expression(self, node: ast.TypeCastExpression):
+        ...
+    
+    def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
+        ...
+    
+    def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
+        ...
+    
+    def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
+        ...
+    
+    def visit_comparison_operation(self, node: ast.ComparisonOperation):
+        ...
+    
+    def visit_unary_expression(self, node: ast.UnaryExpression):
+        ...
+    
+    def visit_shift_expression(self, node: ast.ShiftExpression):
+        ...
+    
+    def visit_program(self, node: ast.Program):
+        ...
+    
+    def visit_body(self, node: ast.Body):
+        ...
+    
+    def visit_function_declaration(self, node: ast.FunctionDeclaration):
+        ...
+    
+    def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
+        ...
+
+    def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        ...
+
+    def visit_assignment_statement(self, node: ast.AssignmentStatement):
+        ...
+    
+    def visit_expression_statement(self, node: ast.ExpressionStatement):
+        ...
+    
+    def visit_function_call(self, node: ast.FunctionCall):
+        ...
+    
+    def visit_comment_statement(self, node: ast.CommentStatement):
+        ...
+    
+    def visit_if_statement(self, node: ast.IfStatement):
+        ...
+
+    def visit_else_statement(self, node: ast.ElseStatement):
+        ...
+
+    def visit_while_statement(self, node: ast.WhileStatement):
+        ...
+    
+    def visit_break_statement(self, node: ast.BreakStatement):
+        ...
+    
+    def visit_continue_statement(self, node: ast.ContinueStatement):
+        ...
+    
+    def visit_return_statement(self, node: ast.ReturnStatement):
+        ...
+
+    def visit_forward_declaration(self, node: ast.ForwardDeclaration):
+        ...
+    
+    def visit_printf_call(self, node: ast.PrintFCall):
+        ...
+    
+    def visit_array_specifier(self, node: ast.ArraySpecifier):
+        ...
+    
+    def visit_array_initializer(self, node: ast.ArrayInitializer):
+        ...
+    
+    def visit_array_access(self, node: ast.ArrayAccess):
+        ...
+    
+    def visit_scanf_call(self, node: ast.ScanFCall):
+        ...
+    
+    def visit_struct_definition(self, node: ast.StructDefinition):
+        ...
+    
+    def visit_struct_access(self, node: ast.StructAccess):
+        ...
