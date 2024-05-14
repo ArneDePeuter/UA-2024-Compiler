@@ -34,6 +34,8 @@ class Function(Block):
 
         total += "\t" + "\n\t".join(self.lines)
 
+        for child in self.children:
+            total += f"\n{child}"
         return total
 
     def allocate(self, size: int) -> str:

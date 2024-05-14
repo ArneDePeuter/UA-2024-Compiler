@@ -10,7 +10,10 @@ class Block:
         self.cursor = 0
 
     def __repr__(self):
-        return f"{self.label}:\n\t" + "\n\t".join(self.instructions)
+        total = f"{self.label}:\n\t" + "\n\t".join(self.instructions)
+        for child in self.children:
+            total += f"\n{child}"
+        return total
 
     def add_instruction(self, instruction: str) -> None:
         self.instructions.insert(self.cursor, instruction)
