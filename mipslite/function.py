@@ -1,16 +1,16 @@
 from .block import Block
+from .allocator import Allocator
 
 
 class Function(Block):
     def __init__(self, label: str, parent: "Block" = None):
-        super().__init__(label, parent)
-        self.allocation_ptr = 0
+        super().__init__(label, Allocator(), parent)
 
     def __repr__(self):
         total = f"{self.label}:\n"
 
         # add stack frame enter
-        total_stack_size = self.allocation_ptr + 16
+        total_stack_size = self.allocator.allocation_ptr + 16
         frame_enter = [
             f"addiu   $sp, $sp, -{total_stack_size}",
             f"sw      $ra, {total_stack_size-4}($sp)",
@@ -37,12 +37,3 @@ class Function(Block):
         for child in self.children:
             total += f"\n{child}"
         return total
-
-    def allocate(self, size: int) -> str:
-        start = self.allocation_ptr
-        self.allocation_ptr += size
-        return f"{start}($fp)"
-
-
-
-

@@ -4,7 +4,7 @@ module = Module()
 main = module.function("main")
 addr = main.allocate(4)
 if_block = main.spawn("if")
-if_block.load("$t0", addr)
+if_block.allocate(4)
 main = if_block.kill()
 
 test = module.function("test")
