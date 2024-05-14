@@ -1,14 +1,13 @@
-from .module import Module
+from .block import Block
 
 
-class Function:
-    def __init__(self, name: str):
-        self.name = name
+class Function(Block):
+    def __init__(self, label: str, parent: "Block" = None):
+        super().__init__(label, parent)
         self.allocation_ptr = 0
-        self.lines: list[str] = []
 
     def __repr__(self):
-        total = f"{self.name}:\n"
+        total = f"{self.label}:\n"
 
         # add stack frame enter
         total_stack_size = self.allocation_ptr + 16
@@ -18,7 +17,7 @@ class Function:
             f"sw      $fp, {total_stack_size-8}($sp)",
             f"move    $fp, $sp"
         ]
-        frame_enter.extend(self.lines)
+        frame_enter.extend(self.instructions)
         self.lines = frame_enter
 
         # add stack frame exit
@@ -42,11 +41,6 @@ class Function:
         self.allocation_ptr += size
         return f"{start}($fp)"
 
-    def load(self, dest: str, src: str) -> None:
-        self.lines.append(f"lw {dest}, {src}")
-
-    def store(self, dest: str, src: str) -> None:
-        self.lines.append(f"sw {dest}, {src}")
 
 
 

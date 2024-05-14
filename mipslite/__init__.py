@@ -1,2 +1,2 @@
-from .builder import Function
+from .function import Function
 from .module import Module
