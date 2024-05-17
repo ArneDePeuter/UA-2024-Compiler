@@ -9,6 +9,7 @@ from compiler.middleend import optimise_ast
 from compiler.utils import AstDotVisitor
 from compiler.utils.symboltabledotvisitor import SymbolTableDotVisitor
 from compiler.backend.llvm_target.llvm_ir_generator import LLVMIRGenerator
+from compiler.backend.mips_target.mips_generator import MIPSGenerator
 from compiler.core.errors.semantic_error import SemanticError
 from compiler.core.errors.compiler_syntaxerror import CompilerSyntaxError
 from compiler.preprocessor.preprocessor import Preprocessor
@@ -19,6 +20,7 @@ def compile_file(input_file: str,
                  render_symb: str = None,
                  no_optimise: bool = False,
                  target_llvm: str = None,
+                 target_mips: str = None,
                  include_paths=None,):
 
     # preprocessor
@@ -50,6 +52,17 @@ def compile_file(input_file: str,
         output_file = f"{target_llvm}/{filename}.ll"
         with open(output_file, "w") as file:
             file.write(llvm_ir)
+
+    if target_mips:
+        # Generate MIPS code
+        mips_generator = MIPSGenerator()
+        mips_code = mips_generator.generate_mips(ast)
+
+        # Write MIPS code to a file
+        filename = str(input_file).split("/")[-1][:-2]
+        output_file = f"{target_mips}/{filename}.s"
+        with open(output_file, "w") as file:
+            file.write(mips_code)
 
     # Perform actions based on the command line arguments
     if render_ast:
@@ -92,13 +105,14 @@ def main():
     parser.add_argument('--render_symb', help='Render the symbol table of the input file. Specify output folder.')
     parser.add_argument('--no-optimise', action='store_true', help='Dont optimise the ast if this flag is provided.')
     parser.add_argument('--target_llvm', help='LLvm Target. Specify output folder.')
+    parser.add_argument('--target_mips', help='MIPS Target. Specify output folder.')
     parser.add_argument('--throw', action='store_true', help='Raise python exception.')
     parser.add_argument('--include_paths', nargs='*', help='Include paths for the pre-processor')
 
     args = parser.parse_args()
     try:
         include_paths = args.include_paths or []
-        compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm, include_paths)
+        compile_file(args.input, args.render_ast, args.render_symb, args.no_optimise, args.target_llvm, args.target_mips, include_paths)
     except SemanticError as e:
         if args.throw:
             raise e

@@ -26,15 +26,16 @@
 
 ## Command Line Flags
 
-| Flag            | Description                                                                          |
-|-----------------|--------------------------------------------------------------------------------------|
-| `--input`       | **Required.** Specifies the input file to compile.                                   |
-| `--render_ast`  | Renders the Abstract Syntax Tree (AST) of the input file. Specify the output folder. |
-| `--render_symb` | Renders the Symbol Table of the input file. Specify the output folder.               |
-| `--no-optimise` | Disables AST optimization.                                                           |
-| `--target_llvm` | Outputs LLVM target code to the specified folder.                                    |
-| `--include_paths`| (Multiple) include paths for the compiler                                            |
-| `--throw`       | Throw errors with python traceback.                                                  |
+| Flag            | Description                                                                        |
+|-----------------|------------------------------------------------------------------------------------|
+| `--input`       | **Required.** Specifies the input file to compile.                                 |
+| `--render_ast`  | Renders the Abstract Syntax Tree (AST) of the input file. Specify the output file. |
+| `--render_symb` | Renders the Symbol Table of the input file. Specify the output file.               |
+| `--no-optimise` | Disables AST optimization.                                                         |
+| `--target_llvm` | Outputs LLVM target code to the specified file.                                    |
+| `--target_mips` | Outputs MIPS target code to the specified file.                                    |
+| `--include_paths`| (Multiple) include paths for the compiler                                          |
+| `--throw`       | Throw errors with python traceback.                                                |
 
 
 ### Examples:
@@ -42,6 +43,9 @@
 1. Compiling a file and rendering its AST: `python3 -m compiler --input <input_file> --render_ast <output_file>`
 2. Compiling a file without optimizing its AST: `python3 -m compiler --input <input_file> --no-optimise`
 3. Compiling a file and not rendering its AST: `python3 -m compiler --input <input_file>`
+4. Compiling a file and rendering its Symbol Table: `python3 -m compiler --input <input_file> --render_symb <output_file>`
+5. Compiling a file and outputting the LLVM target code: `python3 -m compiler --input <input_file> --target_llvm <output_file>`
+6. Compiling a file and outputting the MIPS target code: `python3 -m compiler --input <input_file> --target_mips <output_file>`
 
 ## Compiler features
 
