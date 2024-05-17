@@ -60,7 +60,7 @@ def compile_file(input_file: str,
 
         # Write MIPS code to a file
         filename = str(input_file).split("/")[-1][:-2]
-        output_file = f"{target_mips}/{filename}.mips"
+        output_file = f"{target_mips}/{filename}.s"
         with open(output_file, "w") as file:
             file.write(mips_code)
 
