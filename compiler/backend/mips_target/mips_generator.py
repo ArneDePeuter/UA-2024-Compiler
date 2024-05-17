@@ -40,7 +40,7 @@ class MIPSGenerator(AstVisitor):
         initializer = self.visit_expression(node.initializer)
         addr = self.variable_addresses[node.identifier]
         self.builder.store(addr, initializer)
-        self.register_allocator.free(initializer)
+        self.module.register_manager.free(initializer)
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
         addr = self.builder.allocate(4)  # Assuming 4 bytes for simplicity
@@ -53,28 +53,28 @@ class MIPSGenerator(AstVisitor):
         left = self.visit_expression(node.left)
         addr = self.variable_addresses[node.left.name]
         self.builder.store(right, addr)
-        self.register_allocator.free(right)
+        self.module.register_manager.free(right)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         self.visit_expression(node.expression)
 
     def visit_int(self, node: ast.INT):
-        reg = self.register_allocator.allocate()
+        reg = self.module.register_manager.allocate()
         self.builder.add_instruction(f"li {reg}, {node.value}")
         return reg
 
     def visit_float(self, node: ast.FLOAT):
-        reg = self.register_allocator.allocate()
+        reg = self.module.register_manager.allocate()
         self.builder.add_instruction(f"li.s {reg}, {node.value}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
-        reg = self.register_allocator.allocate()
+        reg = self.module.register_manager.allocate()
         self.builder.add_instruction(f"li {reg}, {ord(node.value)}")
         return reg
 
     def visit_identifier(self, node: ast.IDENTIFIER):
-        reg = self.register_allocator.allocate()
+        reg = self.module.register_manager.allocate()
         addr = self.variable_addresses[node.name]
         self.builder.load(reg, addr)
         return reg
@@ -90,7 +90,7 @@ class MIPSGenerator(AstVisitor):
         left_value = left
         right_value = right
 
-        result_reg = self.register_allocator.allocate()
+        result_reg = self.module.register_manager.allocate()
 
         if node.operator == ast.BinaryArithmetic.Operator.PLUS:
             self.builder.fadd(result_reg, left, right)
@@ -98,8 +98,8 @@ class MIPSGenerator(AstVisitor):
             self.builder.fsub(result_reg, left, right)
         # Add more operators as needed
 
-        self.register_allocator.free(left)
-        self.register_allocator.free(right)
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
         return result_reg
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
