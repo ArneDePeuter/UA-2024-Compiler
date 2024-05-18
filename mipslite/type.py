@@ -1,11 +1,12 @@
 from collections import OrderedDict
+from functools import cached_property
 
 
 class Type:
     def __init__(self):
         pass
 
-    @property
+    @cached_property
     def width(self):
         """
         The size of the type in bytes
@@ -18,7 +19,7 @@ class Int(Type):
     def __init__(self):
         super().__init__()
 
-    @property
+    @cached_property
     def width(self):
         return 4
 
@@ -27,7 +28,7 @@ class Float(Type):
     def __init__(self):
         super().__init__()
 
-    @property
+    @cached_property
     def width(self):
         return 4
 
@@ -36,7 +37,7 @@ class Char(Type):
     def __init__(self):
         super().__init__()
 
-    @property
+    @cached_property
     def width(self):
         return 1
 
@@ -47,7 +48,7 @@ class Array(Type):
         self.target = target
         self.length = length
 
-    @property
+    @cached_property
     def width(self):
         return self.target.width * self.length
 
@@ -57,7 +58,7 @@ class Pointer(Type):
         super().__init__()
         self.target = target
 
-    @property
+    @cached_property
     def width(self):
         return 4
 
@@ -67,6 +68,6 @@ class Struct(Type):
         super().__init__()
         self.fields = fields
 
-    @property
+    @cached_property
     def width(self):
         return sum([field.width for field in self.fields.values()])
