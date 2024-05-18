@@ -18,8 +18,6 @@ class MIPSGenerator(AstVisitor):
         self.visit_program(node)
         result = str(self.module)
         lines = result.split("\n")
-        lines.remove(lines[1])
-        lines.remove(lines[1])
         return "\n".join(lines)
 
     def visit_program(self, node: ast.Program):
@@ -59,17 +57,17 @@ class MIPSGenerator(AstVisitor):
         self.visit_expression(node.expression)
 
     def visit_int(self, node: ast.INT):
-        reg = self.module.register_manager.allocate()
+        reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"li {reg}, {node.value}")
         return reg
 
     def visit_float(self, node: ast.FLOAT):
-        reg = self.module.register_manager.allocate()
+        reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"li.s {reg}, {node.value}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
-        reg = self.module.register_manager.allocate()
+        reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"li {reg}, {ord(node.value)}")
         return reg
 
@@ -127,8 +125,13 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        # Implement printf call logic
-        pass
+        # Link the printf block
+        self.builder.add_instruction("jal printf")
+        self.builder.add_instruction("nop")
+
+        # Call the printf function to handle data and instruction generation
+        self.module.printf(node.format, node.args)
+
 
     def visit_scanf_call(self, node: ast.ScanFCall):
         # Implement scanf call logic

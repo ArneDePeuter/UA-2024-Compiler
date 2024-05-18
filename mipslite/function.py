@@ -7,7 +7,11 @@ class Function(Block):
         super().__init__(label, Allocator(), parent)
 
     def __repr__(self):
-        total = f"{self.label}:\n"
+        # add global main
+        total = ""
+        if self.label == "main":
+            total += ".global main\n"
+        total += f"{self.label}:\n"
 
         # add stack frame enter
         total_stack_size = self.allocator.allocation_ptr + 16
@@ -30,6 +34,13 @@ class Function(Block):
             f"jr      $ra",
             f"nop"
         ]
+        # add exit syscall
+        if self.label == "main":
+            frame_exit.extend([
+                "# Exit syscall",
+                f"li      $v0, 10",
+                f"syscall"
+            ])
         self.lines.extend(frame_exit)
 
         total += "\t" + "\n\t".join(self.lines)
