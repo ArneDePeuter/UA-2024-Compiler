@@ -35,15 +35,21 @@ class MIPSGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
-        if node.initializer:
-            initializer_reg = self.visit_expression(node.initializer)
-        # TODO: If no initializer is provided, we should allocate a register and store the default value
-        else:
-            initializer_reg = self.module.register_manager.allocate('saved') # Default value
+        initializer_reg = self.visit_expression(node.initializer)
         self.variable_addresses[node.identifier] = initializer_reg
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
         for qualifier in node.qualifiers:
+            if qualifier.initializer is None:
+                # Add a default initializer
+                if node.var_type.type == ast.BaseType.int:
+                    qualifier.initializer = ast.INT(0)
+                elif node.var_type.type == ast.BaseType.float:
+                    qualifier.initializer = ast.FLOAT(0.0)
+                elif node.var_type.type == ast.BaseType.char:
+                    qualifier.initializer = ast.CHAR('')
+                else:
+                    raise NotImplementedError("Only int, float and char are supported for default initializers")
             self.visit_variable_declaration_qualifier(qualifier)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
