@@ -35,15 +35,14 @@ class MIPSGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
-        initializer = self.visit_expression(node.initializer)
-        addr = self.variable_addresses[node.identifier]
-        self.builder.store(addr, initializer)
-        self.module.register_manager.free(initializer)
+        if node.initializer:
+            initializer = self.visit_expression(node.initializer)
+        else:
+            initializer = self.module.register_manager.allocate('temp') # Default value
+        self.variable_addresses[node.identifier] = initializer
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
-        addr = self.builder.allocate(4)  # Assuming 4 bytes for simplicity
         for qualifier in node.qualifiers:
-            self.variable_addresses[qualifier.identifier] = addr
             self.visit_variable_declaration_qualifier(qualifier)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
@@ -131,12 +130,18 @@ class MIPSGenerator(AstVisitor):
         self.builder.add_instruction("nop")
 
         # Call the printf function to handle data and instruction generation
-        self.module.printf(label, node.format, node.args)
-
+        args_eval = [self.visit_expression(arg) for arg in node.args]
+        self.module.printf(label, node.format, args_eval)
 
     def visit_scanf_call(self, node: ast.ScanFCall):
-        # Implement scanf call logic
-        pass
+        # Link the scanf block
+        label = f"scanf_{id(node)}"
+        self.builder.add_instruction(f"jal {label}")
+        self.builder.add_instruction("nop")
+
+        # Call the scanf function to handle data and instruction generation
+        args_eval = [self.visit_expression(arg) for arg in node.args]
+        self.module.scanf(label, node.format, args_eval)
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         # Implement array specifier logic

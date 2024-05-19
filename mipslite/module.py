@@ -35,6 +35,7 @@ class Module:
     def printf(self, label: str, format_string: str, args: list):
         """
         Generates the MIPS assembly code for the printf function
+        :param label: The label of the function
         :param format_string: The format string for the printf call
         :param args: The list of arguments to be printed
         :return:
@@ -53,23 +54,23 @@ class Module:
                 if isinstance(args[arg_index], ast.INT):
                     # Check if the argument is hex
                     if part.count('x') > 0:
-                        hex_str = format(args[arg_index].value, 'x')
+                        hex_str = format(args[arg_index], 'x')
                         for char in hex_str:
                             printf_block.add_instruction(f"li $a0, '{char}'")
                             printf_block.add_instruction("li $v0, 11")
                             printf_block.add_instruction("syscall")
                     else:
-                        printf_block.add_instruction(f"li $a0, {args[arg_index].value}")
+                        printf_block.add_instruction(f"li $a0, {args[arg_index]}")
                         printf_block.add_instruction("li $v0, 1")
                         printf_block.add_instruction("syscall")
                 elif isinstance(args[arg_index], ast.FLOAT):
-                    float_str = f"{args[arg_index].value:.6f}"
+                    float_str = f"{args[arg_index]:.6f}"
                     for char in float_str:
                         printf_block.add_instruction(f"li $a0, '{char}'")
                         printf_block.add_instruction("li $v0, 11")
                         printf_block.add_instruction("syscall")
                 elif isinstance(args[arg_index], ast.CHAR):
-                    printf_block.add_instruction(f"li $a0, \'{args[arg_index].value}\'")
+                    printf_block.add_instruction(f"li $a0, \'{args[arg_index]}\'")
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
                 elif isinstance(args[arg_index], ast.ArrayInitializer):
@@ -88,3 +89,49 @@ class Module:
                 printf_block.add_instruction(f"la $a0, {printf_data_block.label}")
                 printf_block.add_instruction("li $v0, 4")
                 printf_block.add_instruction("syscall")
+
+    def scanf(self, label: str, format_string: str, args: list):
+        """
+        Generates the MIPS assembly code for the scanf function
+        :param label: The label of the function
+        :param format_string: The format string for the scanf call
+        :param args: The list of arguments to be read
+        :return:
+        """
+        scanf_block = self.function(label)
+        parts = re.split(r'(%[dxfsc])', format_string.strip("\""))
+        while parts.count("") > 0:
+            parts.remove("")
+
+        arg_index = 0
+        for part in parts:
+            # Print the arg
+            if isinstance(args[arg_index], ast.INT):
+                # Check if the argument is hex
+                if part.count('x') > 0:
+                    # Read integer in hex format
+                    scanf_block.add_instruction("li $v0, 5")
+                    scanf_block.add_instruction("syscall")
+                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}($gp)")
+                else:
+                    # Read integer in decimal format
+                    scanf_block.add_instruction("li $v0, 5")
+                    scanf_block.add_instruction("syscall")
+                    scanf_block.add_instruction(f"sw $v0, {args[arg_index].address}($gp)")
+            elif isinstance(args[arg_index], ast.FLOAT):
+                # Read float
+                scanf_block.add_instruction("li $v0, 6")
+                scanf_block.add_instruction("syscall")
+                scanf_block.add_instruction(f"swc1 $f0, {args[arg_index].address}($gp)")
+            elif isinstance(args[arg_index], ast.CHAR):
+                # Read character
+                scanf_block.add_instruction("li $v0, 12")
+                scanf_block.add_instruction("syscall")
+                scanf_block.add_instruction(f"sb $v0, {args[arg_index].address}($gp)")
+            elif isinstance(args[arg_index], ast.ArrayInitializer):
+                # Read string
+                scanf_block.add_instruction(f"la $a0, {args[arg_index].address}($gp)")
+                scanf_block.add_instruction("li $v0, 8")
+                scanf_block.add_instruction("syscall")
+            arg_index += 1
+
