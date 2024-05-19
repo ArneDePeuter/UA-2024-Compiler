@@ -51,33 +51,32 @@ class Module:
         for part in parts:
             if part.startswith('%'):
                 # Print the arg
-                if isinstance(args[arg_index], ast.INT):
-                    # Check if the argument is hex
-                    if part.count('x') > 0:
-                        hex_str = format(args[arg_index], 'x')
-                        for char in hex_str:
-                            printf_block.add_instruction(f"li $a0, '{char}'")
-                            printf_block.add_instruction("li $v0, 11")
-                            printf_block.add_instruction("syscall")
-                    else:
-                        printf_block.add_instruction(f"li $a0, {args[arg_index]}")
-                        printf_block.add_instruction("li $v0, 1")
-                        printf_block.add_instruction("syscall")
-                elif isinstance(args[arg_index], ast.FLOAT):
-                    float_str = f"{args[arg_index]:.6f}"
-                    for char in float_str:
-                        printf_block.add_instruction(f"li $a0, '{char}'")
+                if part.count('d') > 0:
+                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction("li $v0, 1")
+                    printf_block.add_instruction("syscall")
+                # Check if the argument is hex
+                if part.count('x') > 0:
+                    hex_str = format(args[arg_index], 'x')
+                    for char in hex_str:
+                        printf_block.add_instruction(f"move $a0, '{char}'")
                         printf_block.add_instruction("li $v0, 11")
                         printf_block.add_instruction("syscall")
-                elif isinstance(args[arg_index], ast.CHAR):
-                    printf_block.add_instruction(f"li $a0, \'{args[arg_index]}\'")
+                elif part.count('f') > 0:
+                    float_str = f"{args[arg_index]:.6f}"
+                    for char in float_str:
+                        printf_block.add_instruction(f"move $a0, '{char}'")
+                        printf_block.add_instruction("li $v0, 11")
+                        printf_block.add_instruction("syscall")
+                elif part.count('c') > 0:
+                    printf_block.add_instruction(f"move $a0, \'{args[arg_index]}\'")
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
-                elif isinstance(args[arg_index], ast.ArrayInitializer):
+                elif part.count('s') > 0:
                     str = ""
                     for char in args[arg_index]:
                         str += char.value
-                    printf_block.add_instruction(f"li $a0, {str}")
+                    printf_block.add_instruction(f"move $a0, {str}")
                     printf_block.add_instruction("li $v0, 4")
                     printf_block.add_instruction("syscall")
                 arg_index += 1
