@@ -37,6 +37,7 @@ class MIPSGenerator(AstVisitor):
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
         if node.initializer:
             initializer_reg = self.visit_expression(node.initializer)
+        # TODO: If no initializer is provided, we should allocate a register and store the default value
         else:
             initializer_reg = self.module.register_manager.allocate('saved') # Default value
         self.variable_addresses[node.identifier] = initializer_reg
