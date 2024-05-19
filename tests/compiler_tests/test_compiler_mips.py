@@ -15,9 +15,16 @@ def run_my_compiler(input_file, include_paths):
     return my_output
 
 def run_spim(file: str):
-    command = ["spim", "-file", file]  # Adjust the command if using a different MIPS emulator
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
-    return result.stdout
+    result = subprocess.run(['spim', '-file', file], capture_output=True, text=True)
+    output = result.stdout
+
+    # Filter out lines related to loading exceptions.s and other SPIM startup messages
+    program_output = []
+    for line in output.splitlines():
+        if "Loaded: " in line:
+            continue
+        program_output.append(line)
+    return "\n".join(program_output)
 
 def run_clang(input_file, include_paths):
     output_file = "temp.out"
@@ -38,6 +45,8 @@ def test_compiler(input_file):
     relative = os.path.join("./files", input_file)
 
     my_output = run_my_compiler(relative, include_paths)
+    print("My output: \n" + repr(my_output))
     clang_output = run_clang(relative, include_paths)
+    print("Clang output: \n" + repr(clang_output))
 
     assert my_output == clang_output

@@ -126,11 +126,12 @@ class MIPSGenerator(AstVisitor):
 
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
-        self.builder.add_instruction("jal printf")
+        label = f"printf_{id(node)}"
+        self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
 
         # Call the printf function to handle data and instruction generation
-        self.module.printf(node.format, node.args)
+        self.module.printf(label, node.format, node.args)
 
 
     def visit_scanf_call(self, node: ast.ScanFCall):

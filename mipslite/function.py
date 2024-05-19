@@ -8,9 +8,9 @@ class Function(Block):
 
     def __repr__(self):
         # add global main
-        total = ""
+        total = "\n"
         if self.label == "main":
-            total += ".global main\n"
+            total += ".globl main\n"
         total += f"{self.label}:\n"
 
         # add stack frame enter
