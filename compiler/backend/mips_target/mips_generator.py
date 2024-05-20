@@ -47,7 +47,7 @@ class MIPSGenerator(AstVisitor):
                 elif node.var_type.type == ast.BaseType.float:
                     qualifier.initializer = ast.FLOAT(0.0)
                 elif node.var_type.type == ast.BaseType.char:
-                    qualifier.initializer = ast.CHAR('')
+                    qualifier.initializer = ast.CHAR('\0')
                 else:
                     raise NotImplementedError("Only int, float and char are supported for default initializers")
             self.visit_variable_declaration_qualifier(qualifier)
