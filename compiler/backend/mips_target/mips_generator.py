@@ -59,9 +59,10 @@ class MIPSGenerator(AstVisitor):
             # visit the initializer and get register for the value
             reg = self.visit_expression(qualifier.initializer)
             # store the value in the memory
-            if type == Float():
+            if isinstance(type, Float):
                 self.builder.store_double(reg, allocation_address)
-            self.builder.store(reg, allocation_address)
+            else:
+                self.builder.store(reg, allocation_address)
             # free the register
             self.module.register_manager.free(reg)
 
