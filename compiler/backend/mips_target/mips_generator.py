@@ -150,16 +150,58 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
-        # Implement comparison operation logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.ComparisonOperation.Operator.GT:
+            self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+        elif node.operator == ast.ComparisonOperation.Operator.LT:
+            self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+        elif node.operator == ast.ComparisonOperation.Operator.GTE:
+            self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+            self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+        elif node.operator == ast.ComparisonOperation.Operator.LTE:
+            self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+            self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+        elif node.operator == ast.ComparisonOperation.Operator.EQ:
+            self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
+        elif node.operator == ast.ComparisonOperation.Operator.NEQ:
+            self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
-        # Implement unary expression logic
-        pass
+        value = self.visit_expression(node.value)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.UnaryExpression.Operator.POSITIVE:
+            self.builder.add_instruction(f"move {result_reg}, {value}")
+        elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
+            self.builder.add_instruction(f"neg {result_reg}, {value}")
+        elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
+            self.builder.add_instruction(f"not {result_reg}, {value}")
+        elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
+            self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
+
+        self.module.register_manager.free(value)
+        return result_reg
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        # Implement shift expression logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.ShiftExpression.Operator.LEFT:
+            self.builder.add_instruction(f"sll {result_reg}, {left}, {right}")
+        elif node.operator == ast.ShiftExpression.Operator.RIGHT:
+            self.builder.add_instruction(f"srl {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
         self.builder.add_instruction(f"jal {node.name}")
