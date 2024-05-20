@@ -69,11 +69,7 @@ class Module:
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
                 elif part.count('s') > 0:
-                    # Currently arrayinitializers are not supported
-                    str = ""
-                    for char in args[arg_index]:
-                        str += char.value
-                    printf_block.add_instruction(f"move $a0, {str}")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
                     printf_block.add_instruction("li $v0, 4")
                     printf_block.add_instruction("syscall")
                 arg_index += 1
