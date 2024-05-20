@@ -120,12 +120,22 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        # Implement bitwise arithmetic logic
+        #stub
         pass
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        # Implement logical operation logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.BinaryLogicalOperation.Operator.AND:
+            self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+        elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
+            self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         # Implement comparison operation logic
@@ -226,3 +236,4 @@ class MIPSGenerator(AstVisitor):
             return Char()
         else:
             raise NotImplementedError("Only int, float and char are supported for default initializers")
+
