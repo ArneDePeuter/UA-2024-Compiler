@@ -57,22 +57,19 @@ class Module:
                     printf_block.add_instruction("syscall")
                 # Check if the argument is hex
                 if part.count('x') > 0:
-                    hex_str = format(args[arg_index], 'x')
-                    for char in hex_str:
-                        printf_block.add_instruction(f"move $a0, '{char}'")
-                        printf_block.add_instruction("li $v0, 11")
-                        printf_block.add_instruction("syscall")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction("li $v0, 34")
+                    printf_block.add_instruction("syscall")
                 elif part.count('f') > 0:
-                    float_str = f"{args[arg_index]:.6f}"
-                    for char in float_str:
-                        printf_block.add_instruction(f"move $a0, '{char}'")
-                        printf_block.add_instruction("li $v0, 11")
-                        printf_block.add_instruction("syscall")
+                    printf_block.add_instruction(f"mov.d $f12, {args[arg_index]}")
+                    printf_block.add_instruction("li $v0, 3")
+                    printf_block.add_instruction("syscall")
                 elif part.count('c') > 0:
-                    printf_block.add_instruction(f"move $a0, \'{args[arg_index]}\'")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
                 elif part.count('s') > 0:
+                    # Currently arrayinitializers are not supported
                     str = ""
                     for char in args[arg_index]:
                         str += char.value
