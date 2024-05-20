@@ -57,22 +57,19 @@ class Module:
                     printf_block.add_instruction("syscall")
                 # Check if the argument is hex
                 if part.count('x') > 0:
-                    hex_str = format(args[arg_index], 'x')
-                    for char in hex_str:
-                        printf_block.add_instruction(f"move $a0, '{char}'")
-                        printf_block.add_instruction("li $v0, 11")
-                        printf_block.add_instruction("syscall")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction("li $v0, 34")
+                    printf_block.add_instruction("syscall")
                 elif part.count('f') > 0:
-                    float_str = f"{args[arg_index]:.6f}"
-                    for char in float_str:
-                        printf_block.add_instruction(f"move $a0, '{char}'")
-                        printf_block.add_instruction("li $v0, 11")
-                        printf_block.add_instruction("syscall")
+                    printf_block.add_instruction(f"mov.d $f12, {args[arg_index]}")
+                    printf_block.add_instruction("li $v0, 3")
+                    printf_block.add_instruction("syscall")
                 elif part.count('c') > 0:
-                    printf_block.add_instruction(f"move $a0, \'{args[arg_index]}\'")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
                 elif part.count('s') > 0:
+                    # Currently arrayinitializers are not supported
                     str = ""
                     for char in args[arg_index]:
                         str += char.value
@@ -98,39 +95,36 @@ class Module:
         :return:
         """
         scanf_block = self.function(label)
+        # Split the format string into parts using re.
+        # When the part starts with %, it is a format specifier. For an argument, generate code to read the argument.
+        # When the part doesn't start with %, it is a string (ignored in scanf).
         parts = re.split(r'(%[dxfsc])', format_string.strip("\""))
         while parts.count("") > 0:
             parts.remove("")
-
         arg_index = 0
         for part in parts:
-            # Print the arg
-            if isinstance(args[arg_index], ast.INT):
-                # Check if the argument is hex
-                if part.count('x') > 0:
-                    # Read integer in hex format
+            if part.startswith('%'):
+                # Read the input into the arg
+                if part.count('d') > 0:
                     scanf_block.add_instruction("li $v0, 5")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}($gp)")
-                else:
-                    # Read integer in decimal format
-                    scanf_block.add_instruction("li $v0, 5")
+                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}")
+                elif part.count('x') > 0:
+                    scanf_block.add_instruction("li $v0, 34")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, {args[arg_index].address}($gp)")
-            elif isinstance(args[arg_index], ast.FLOAT):
-                # Read float
-                scanf_block.add_instruction("li $v0, 6")
-                scanf_block.add_instruction("syscall")
-                scanf_block.add_instruction(f"swc1 $f0, {args[arg_index].address}($gp)")
-            elif isinstance(args[arg_index], ast.CHAR):
-                # Read character
-                scanf_block.add_instruction("li $v0, 12")
-                scanf_block.add_instruction("syscall")
-                scanf_block.add_instruction(f"sb $v0, {args[arg_index].address}($gp)")
-            elif isinstance(args[arg_index], ast.ArrayInitializer):
-                # Read string
-                scanf_block.add_instruction(f"la $a0, {args[arg_index].address}($gp)")
-                scanf_block.add_instruction("li $v0, 8")
-                scanf_block.add_instruction("syscall")
-            arg_index += 1
-
+                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}")
+                elif part.count('f') > 0:
+                    scanf_block.add_instruction("li $v0, 6")
+                    scanf_block.add_instruction("syscall")
+                    scanf_block.add_instruction(f"s.d $f0, {args[arg_index]}")
+                elif part.count('c') > 0:
+                    scanf_block.add_instruction("li $v0, 12")
+                    scanf_block.add_instruction("syscall")
+                    scanf_block.add_instruction(f"sb $v0, {args[arg_index]}")
+                elif part.count('s') > 0:
+                    # Assume the argument is an address for storing the string
+                    scanf_block.add_instruction("li $v0, 8")
+                    scanf_block.add_instruction(f"la $a0, {args[arg_index]}")
+                    scanf_block.add_instruction("li $a1, 256")  # Maximum number of characters to read
+                    scanf_block.add_instruction("syscall")
+                arg_index += 1

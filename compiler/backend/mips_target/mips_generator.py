@@ -35,15 +35,33 @@ class MIPSGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
-        if node.initializer:
-            initializer_reg = self.visit_expression(node.initializer)
-        else:
-            initializer_reg = self.module.register_manager.allocate('saved') # Default value
-        self.variable_addresses[node.identifier] = initializer_reg
+        # unused
+        ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        # retrieve type of every qualifier
+        type = self.visit_type(node.var_type)
         for qualifier in node.qualifiers:
-            self.visit_variable_declaration_qualifier(qualifier)
+            if qualifier.initializer is None:
+                # Add a default initializer
+                if node.var_type.type == ast.BaseType.int:
+                    qualifier.initializer = ast.INT(0)
+                elif node.var_type.type == ast.BaseType.float:
+                    qualifier.initializer = ast.FLOAT(0.0)
+                elif node.var_type.type == ast.BaseType.char:
+                    qualifier.initializer = ast.CHAR('\0')
+                else:
+                    raise NotImplementedError("Only int, float and char are supported for default initializers")
+            # allocate memory for the variable
+            allocation_address = self.builder.allocate(type)
+            # store in the variable addresses
+            self.variable_addresses[qualifier.identifier] = allocation_address
+            # visit the initializer and get register for the value
+            reg = self.visit_expression(qualifier.initializer)
+            # store the value in the memory
+            self.builder.store(reg, allocation_address)
+            # free the register
+            self.module.register_manager.free(reg)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         right = self.visit_expression(node.right)
@@ -60,8 +78,11 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_float(self, node: ast.FLOAT):
-        reg = self.module.register_manager.allocate('temp')
-        self.builder.add_instruction(f"li.s {reg}, {node.value}")
+        reg = self.module.register_manager.allocate('float')
+        label = f"float_{id(node)}"
+        float_data_block = self.module.data_block(label)
+        float_data_block.add_instruction(f".double {node.value}")
+        self.builder.add_instruction(f"l.d {reg}, {float_data_block.label}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
@@ -72,7 +93,7 @@ class MIPSGenerator(AstVisitor):
     def visit_identifier(self, node: ast.IDENTIFIER):
         reg = self.module.register_manager.allocate('temp')
         addr = self.variable_addresses[node.name]
-        self.builder.add_instruction(f"move {reg}, {addr}")
+        self.builder.load(reg, addr)
         return reg
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
@@ -102,24 +123,88 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        # Implement bitwise arithmetic logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.BinaryBitwiseArithmetic.Operator.AND:
+            self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.OR:
+            self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
+            self.builder.add_instruction(f"xor {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        # Implement logical operation logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.BinaryLogicalOperation.Operator.AND:
+            self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+        elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
+            self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
-        # Implement comparison operation logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.ComparisonOperation.Operator.GT:
+            self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+        elif node.operator == ast.ComparisonOperation.Operator.LT:
+            self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+        elif node.operator == ast.ComparisonOperation.Operator.GTE:
+            self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+            self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+        elif node.operator == ast.ComparisonOperation.Operator.LTE:
+            self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+            self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+        elif node.operator == ast.ComparisonOperation.Operator.EQ:
+            self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
+        elif node.operator == ast.ComparisonOperation.Operator.NEQ:
+            self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
-        # Implement unary expression logic
-        pass
+        value = self.visit_expression(node.value)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.UnaryExpression.Operator.POSITIVE:
+            self.builder.add_instruction(f"move {result_reg}, {value}")
+        elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
+            self.builder.add_instruction(f"neg {result_reg}, {value}")
+        elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
+            self.builder.add_instruction(f"not {result_reg}, {value}")
+        elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
+            self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
+
+        self.module.register_manager.free(value)
+        return result_reg
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        # Implement shift expression logic
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.ShiftExpression.Operator.LEFT:
+            self.builder.add_instruction(f"sll {result_reg}, {left}, {right}")
+        elif node.operator == ast.ShiftExpression.Operator.RIGHT:
+            self.builder.add_instruction(f"srl {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
         self.builder.add_instruction(f"jal {node.name}")
@@ -202,5 +287,12 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_type(self, node: ast.Type):
-        # Implement type logic
-        pass
+        if node.type == ast.BaseType.int:
+            return Int()
+        elif node.type == ast.BaseType.float:
+            return Float()
+        elif node.type == ast.BaseType.char:
+            return Char()
+        else:
+            raise NotImplementedError("Only int, float and char are supported for default initializers")
+
