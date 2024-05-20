@@ -260,12 +260,22 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        # Implement if statement logic
-        pass
+        condition = self.visit_expression(node.condition) # This will contain the register with the result of the condition
+        if_block = self.module.text_block(f"if_{id(node)}")
+        funct_block = self.builder
+        self.builder = if_block
+        self.visit_body(node.body)
+        if_block.add_instruction(f"j {funct_block.label}")
+        if node.else_statement:
+            self.visit_else_statement(node.else_statement)
+        self.builder = funct_block
+
+        # Add the branch instruction
+        self.builder.add_instruction(f"bne {condition}, $zero, {if_block.label}")
+        self.module.register_manager.free(condition)
 
     def visit_else_statement(self, node: ast.ElseStatement):
-        # Implement else statement logic
-        pass
+        ...
 
     def visit_while_statement(self, node: ast.WhileStatement):
         # Implement while statement logic
