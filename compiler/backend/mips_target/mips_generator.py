@@ -218,11 +218,15 @@ class MIPSGenerator(AstVisitor):
         label = f"printf_{id(node)}"
 
         # Call the printf function to handle data and instruction generation
-        args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
+        args_eval = [self.visit_expression(arg) for arg in node.args]  # This is a list of registers
         self.module.printf(label, node.format, args_eval)
 
         self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
+
+        # Free the registers used for the arguments
+        for reg in args_eval:
+            self.module.register_manager.free(reg)
 
     def visit_scanf_call(self, node: ast.ScanFCall):
         # Link the scanf block
