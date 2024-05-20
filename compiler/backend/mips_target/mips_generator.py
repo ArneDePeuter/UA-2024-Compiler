@@ -196,17 +196,19 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        left = self.visit_expression(node.left)
-        right = self.visit_expression(node.right)
+        value = self.visit_expression(node.amount)
+        amount = self.visit_expression(node.value)
+
         result_reg = self.module.register_manager.allocate('temp')
 
         if node.operator == ast.ShiftExpression.Operator.LEFT:
-            self.builder.add_instruction(f"sll {result_reg}, {left}, {right}")
+            self.builder.add_instruction(f"sll {result_reg}, {value}, {amount}")
         elif node.operator == ast.ShiftExpression.Operator.RIGHT:
-            self.builder.add_instruction(f"srl {result_reg}, {left}, {right}")
+            self.builder.add_instruction(f"srl {result_reg}, {value}, {amount}")
 
-        self.module.register_manager.free(left)
-        self.module.register_manager.free(right)
+        self.module.register_manager.free(value)
+        self.module.register_manager.free(amount)
+
         return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
