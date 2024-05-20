@@ -78,8 +78,11 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_float(self, node: ast.FLOAT):
-        reg = self.module.register_manager.allocate('temp')
-        self.builder.add_instruction(f"li.s {reg}, {node.value}")
+        reg = self.module.register_manager.allocate('float')
+        label = f"float_{id(node)}"
+        float_data_block = self.module.data_block(label)
+        float_data_block.add_instruction(f".double {node.value}")
+        self.builder.add_instruction(f"l.d {reg}, {float_data_block.label}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
