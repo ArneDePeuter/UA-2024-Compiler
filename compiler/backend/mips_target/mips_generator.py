@@ -78,11 +78,8 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_float(self, node: ast.FLOAT):
-        reg = self.module.register_manager.allocate('float')
-        label = f"float_{id(node)}"
-        float_data_block = self.module.data_block(label)
-        float_data_block.add_instruction(f".double {node.value}")
-        self.builder.add_instruction(f"l.d {reg}, {float_data_block.label}")
+        reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"li.s {reg}, {node.value}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
@@ -123,8 +120,20 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        #stub
-        pass
+        left = self.visit_expression(node.left)
+        right = self.visit_expression(node.right)
+        result_reg = self.module.register_manager.allocate('temp')
+
+        if node.operator == ast.BinaryBitwiseArithmetic.Operator.AND:
+            self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.OR:
+            self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
+            self.builder.add_instruction(f"xor {result_reg}, {left}, {right}")
+
+        self.module.register_manager.free(left)
+        self.module.register_manager.free(right)
+        return result_reg
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
         left = self.visit_expression(node.left)
