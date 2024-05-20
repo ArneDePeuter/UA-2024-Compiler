@@ -35,10 +35,12 @@ class MIPSGenerator(AstVisitor):
         self.builder = None
 
     def visit_variable_declaration_qualifier(self, node: ast.VariableDeclarationQualifier):
-        initializer_reg = self.visit_expression(node.initializer)
-        self.variable_addresses[node.identifier] = initializer_reg
+        # unused
+        ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
+        # retrieve type of every qualifier
+        type = self.visit_type(node.var_type)
         for qualifier in node.qualifiers:
             if qualifier.initializer is None:
                 # Add a default initializer
@@ -50,7 +52,16 @@ class MIPSGenerator(AstVisitor):
                     qualifier.initializer = ast.CHAR('\0')
                 else:
                     raise NotImplementedError("Only int, float and char are supported for default initializers")
-            self.visit_variable_declaration_qualifier(qualifier)
+            # allocate memory for the variable
+            allocation_address = self.builder.allocate(type)
+            # store in the variable addresses
+            self.variable_addresses[qualifier.identifier] = allocation_address
+            # visit the initializer and get register for the value
+            reg = self.visit_expression(qualifier.initializer)
+            # store the value in the memory
+            self.builder.store(reg, allocation_address)
+            # free the register
+            self.module.register_manager.free(reg)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         right = self.visit_expression(node.right)
@@ -79,7 +90,7 @@ class MIPSGenerator(AstVisitor):
     def visit_identifier(self, node: ast.IDENTIFIER):
         reg = self.module.register_manager.allocate('temp')
         addr = self.variable_addresses[node.name]
-        self.builder.add_instruction(f"move {reg}, {addr}")
+        self.builder.load(reg, addr)
         return reg
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
@@ -207,5 +218,11 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_type(self, node: ast.Type):
-        # Implement type logic
-        pass
+        if node.type == ast.BaseType.int:
+            return Int()
+        elif node.type == ast.BaseType.float:
+            return Float()
+        elif node.type == ast.BaseType.char:
+            return Char()
+        else:
+            raise NotImplementedError("Only int, float and char are supported for default initializers")
