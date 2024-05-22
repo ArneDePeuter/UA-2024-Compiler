@@ -228,8 +228,8 @@ class MIPSGenerator(AstVisitor):
                 if block.label == node.name:
                     # Store the argument in the memory
                     block.instructions.insert(0, f"sw {arg_reg}, {self.variable_addresses[arg.name]}")
-                    # Move the result register to the value register
-                    self.builder.add_instruction(f"move $v0, {???}")
+                    # TODO: Move the result register to the value register
+                    #self.builder.add_instruction(f"move $v0, {???}")
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
 
