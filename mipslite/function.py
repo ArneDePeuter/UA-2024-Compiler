@@ -5,6 +5,7 @@ from .allocator import Allocator
 class Function(Block):
     def __init__(self, label: str, parent: "Block" = None):
         super().__init__(label, Allocator(), parent)
+        self.is_terminated = False
 
     def __repr__(self):
         # add global main

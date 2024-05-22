@@ -45,8 +45,6 @@ def test_compiler(input_file):
     relative = os.path.join("./files", input_file)
 
     my_output = run_my_compiler(relative, include_paths)
-    print("My output: \n" + repr(my_output))
     clang_output = run_clang(relative, include_paths)
-    print("Clang output: \n" + repr(clang_output))
 
     assert my_output == clang_output

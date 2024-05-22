@@ -32,7 +32,6 @@ class MIPSGenerator(AstVisitor):
         func = self.module.function(node.name)
         self.builder = func
         for parameter in node.parameters:
-            # TODO: Store the value in the memory they are stored in the argument registers
             # Allocate memory for the parameter and Store the address in the variable addresses
             self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
         self.visit_body(node.body)
@@ -216,20 +215,34 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
+        # Evaluate the arguments only if the function never has been called
+        funct_decl_block = None
+        for block in self.module.text_blocks:
+            if block.label == node.name:
+                funct_decl_block = block
+                break
         for arg in node.arguments:
-            reg = self.visit_expression(arg)
+            arg_eval = self.visit_expression(arg)
             # Store the argument in the argument registers
-            arg_reg = self.module.register_manager.allocate('arg')
-            self.builder.add_instruction(f"move {arg_reg}, {reg}")
-            self.module.register_manager.free(reg)
+            if not funct_decl_block.is_terminated:
+                arg_reg = self.module.register_manager.allocate('arg')
+            else:
+                # get the arg from the first
+                arg_reg = f"$a{node.arguments.index(arg)}"
+                self.module.register_manager.used_registers['arg'].append(arg_reg)
+            self.builder.add_instruction(f"move {arg_reg}, {arg_eval}")
             # In the function block, the arguments will be stored in the memory
-            all_blocks = self.module.text_blocks
-            for block in all_blocks:
-                if block.label == node.name:
-                    # Store the argument in the memory
-                    block.instructions.insert(0, f"sw {arg_reg}, {self.variable_addresses[arg.name]}")
-                    # TODO: Move the result register to the value register
-                    #self.builder.add_instruction(f"move $v0, {???}")
+            if not funct_decl_block.is_terminated:
+                all_blocks = self.module.text_blocks
+                for block in all_blocks:
+                    if block.label == node.name:
+                        # Store the argument in the memory
+                        block.instructions.insert(0, f"sw {arg_reg}, {node.arguments.index(arg)*4}($fp)")
+            self.module.register_manager.free(arg_reg)
+
+        funct_decl_block.is_terminated = True
+
+        # Call the function
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
 
@@ -337,8 +350,9 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_return_statement(self, node: ast.ReturnStatement):
-        self.visit_expression(node.expression)
-        # The rest gets handled in the function block
+        result_eval = self.visit_expression(node.expression)
+        self.builder.add_instruction(f"move $v0, {result_eval}")
+        self.module.register_manager.free(result_eval)
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         # Forward declaration is n/a for MIPS
