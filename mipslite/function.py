@@ -26,7 +26,6 @@ class Function(Block):
 
         # add stack frame exit
         frame_exit = [
-            f"lw      $2, 4($fp)",
             f"move    $sp, $fp",
             f"lw      $fp, {total_stack_size-8}($sp)",
             f"lw      $ra, {total_stack_size-4}($sp)",

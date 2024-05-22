@@ -31,6 +31,10 @@ class MIPSGenerator(AstVisitor):
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         func = self.module.function(node.name)
         self.builder = func
+        for parameter in node.parameters:
+            # TODO: Store the value in the memory they are stored in the argument registers
+            # Allocate memory for the parameter and Store the address in the variable addresses
+            self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
         self.visit_body(node.body)
         self.builder = None
 
@@ -212,8 +216,26 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
+        for arg in node.arguments:
+            reg = self.visit_expression(arg)
+            # Store the argument in the argument registers
+            arg_reg = self.module.register_manager.allocate('arg')
+            self.builder.add_instruction(f"move {arg_reg}, {reg}")
+            self.module.register_manager.free(reg)
+            # In the function block, the arguments will be stored in the memory
+            all_blocks = self.module.text_blocks
+            for block in all_blocks:
+                if block.label == node.name:
+                    # Store the argument in the memory
+                    block.instructions.insert(0, f"sw {arg_reg}, {self.variable_addresses[arg.name]}")
+                    # Move the result register to the value register
+                    self.builder.add_instruction(f"move $v0, {???}")
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
+
+        reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"move {reg}, $v0")
+        return reg
 
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
@@ -260,22 +282,47 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        condition = self.visit_expression(node.condition) # This will contain the register with the result of the condition
-        if_block = self.module.text_block(f"if_{id(node)}")
-        funct_block = self.builder
+        # 1. Evaluate the condition
+        condition = self.visit_expression(node.condition)
+
+        # 2. Spawn the blocks for if, else, and end
+        if_block = self.builder.spawn(f"if_{id(node)}")
+        else_block = None
+        if node.else_statement:
+            else_block = self.builder.spawn(f"else_{id(node)}")
+        end_block = self.builder.spawn(f"end_{id(node)}")
+
+        # 3. Add instruction to branch to else or end based on condition
+        self.builder.add_instruction(f"beq {condition}, $zero, {else_block.label if else_block else end_block.label}")
+
+        # 4. Evaluate the if block
+        func = self.builder
         self.builder = if_block
         self.visit_body(node.body)
-        if_block.add_instruction(f"j {funct_block.label}")
-        if node.else_statement:
+        self.builder.add_instruction(f"j {end_block.label}")
+        self.builder.add_instruction("nop")
+        self.builder = func
+
+        # 5. Evaluate the else block if it exists
+        if else_block:
+            func = self.builder
+            self.builder = else_block
             self.visit_else_statement(node.else_statement)
-        self.builder = funct_block
+            self.builder.add_instruction(f"j {end_block.label}")
+            self.builder.add_instruction("nop")
+            self.builder = func
 
-        # Add the branch instruction
-        self.builder.add_instruction(f"bne {condition}, $zero, {if_block.label}")
+        # 6. Transfer control to the end block and add remaining instructions
+        self.builder = end_block
+        # TODO: self.visit_remaining_instructions(node)
+
+        # 7. Free the condition register
         self.module.register_manager.free(condition)
-
     def visit_else_statement(self, node: ast.ElseStatement):
-        ...
+        if isinstance(node, ast.IfStatement):
+            self.visit_if_statement(node)
+        else:
+            self.visit_body(node.body)
 
     def visit_while_statement(self, node: ast.WhileStatement):
         # Implement while statement logic
