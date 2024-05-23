@@ -23,6 +23,9 @@ class Block:
     def load(self, dest: str, src: str) -> None:
         self.add_instruction(f"lw {dest}, {src}")
 
+    def load_double(self, dest: str, src: str) -> None:
+        self.add_instruction(f"l.d {dest}, {src}")
+
     def store(self, src: str, dest: str) -> None:
         self.add_instruction(f"sw {src}, {dest}")
 

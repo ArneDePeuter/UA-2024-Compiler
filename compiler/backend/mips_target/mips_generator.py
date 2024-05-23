@@ -110,7 +110,10 @@ class MIPSGenerator(AstVisitor):
     def visit_identifier(self, node: ast.IDENTIFIER):
         reg = self.module.register_manager.allocate('temp')
         addr = self.variable_addresses[node.name]
-        self.builder.load(reg, addr)
+        if isinstance(type, Float):
+            self.builder.load_double(reg, addr)
+        else:
+            self.builder.load(reg, addr)
         return reg
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
