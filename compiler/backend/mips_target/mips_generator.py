@@ -3,9 +3,11 @@ from mipslite.function import Function
 from mipslite.block import Block
 from mipslite.allocator import Allocator
 from mipslite.type import Int, Float, Char, Array, Pointer, Struct
+from contextlib import contextmanager
 
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
+
 
 class MIPSGenerator(AstVisitor):
     def __init__(self):
@@ -13,6 +15,12 @@ class MIPSGenerator(AstVisitor):
         self.module = Module()
         self.builder = None
         self.variable_addresses = {}
+
+    @contextmanager
+    def get_expression_reg(self, expression: ast.Expression, module: Module):
+        reg = self.visit_expression(expression)
+        yield reg
+        module.register_manager.free(reg)
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -31,9 +39,10 @@ class MIPSGenerator(AstVisitor):
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         func = self.module.function(node.name)
         self.builder = func
-        for parameter in node.parameters:
+        for i, parameter in enumerate(node.parameters):
             # Allocate memory for the parameter and Store the address in the variable addresses
             self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
+            self.builder.store(f"$a{len(node.parameters)-i-1}", self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
@@ -216,35 +225,20 @@ class MIPSGenerator(AstVisitor):
 
     def visit_function_call(self, node: ast.FunctionCall):
         # Evaluate the arguments only if the function never has been called
-        funct_decl_block = None
-        for block in self.module.text_blocks:
-            if block.label == node.name:
-                funct_decl_block = block
-                break
+        regs = []
         for arg in node.arguments:
-            arg_eval = self.visit_expression(arg)
-            # Store the argument in the argument registers
-            if not funct_decl_block.is_terminated:
+            with self.get_expression_reg(arg, self.module) as arg_eval:
                 arg_reg = self.module.register_manager.allocate('arg')
-            else:
-                # get the arg from the first
-                arg_reg = f"$a{node.arguments.index(arg)}"
-                self.module.register_manager.used_registers['arg'].append(arg_reg)
-            self.builder.add_instruction(f"move {arg_reg}, {arg_eval}")
-            # In the function block, the arguments will be stored in the memory
-            if not funct_decl_block.is_terminated:
-                all_blocks = self.module.text_blocks
-                for block in all_blocks:
-                    if block.label == node.name:
-                        # Store the argument in the memory
-                        block.instructions.insert(0, f"sw {arg_reg}, {node.arguments.index(arg)*4}($fp)")
-            self.module.register_manager.free(arg_reg)
-
-        funct_decl_block.is_terminated = True
+                regs.append(arg_reg)
+                self.builder.add_instruction(f"move {arg_reg}, {arg_eval}")
 
         # Call the function
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
+
+        # Free the argument registers
+        for reg in reversed(regs):
+            self.module.register_manager.free(reg)
 
         reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"move {reg}, $v0")

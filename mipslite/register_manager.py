@@ -30,6 +30,6 @@ class RegisterManager:
         for reg_type, reg_list in self.used_registers.items():
             if reg in reg_list:
                 reg_list.remove(reg)
-                self.registers[reg_type].append(reg)
+                self.registers[reg_type].insert(0, reg)
                 return
         raise ValueError(f"Register {reg} not found in used registers")
