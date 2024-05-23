@@ -289,42 +289,9 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        # 1. Evaluate the condition
-        condition = self.visit_expression(node.condition)
+        with self.builder.if_then(self.visit_expression(node.condition)):
+            self.visit_body(node.body)
 
-        # 2. Spawn the blocks for if, else, and end
-        if_block = self.builder.spawn(f"if_{id(node)}")
-        else_block = None
-        if node.else_statement:
-            else_block = self.builder.spawn(f"else_{id(node)}")
-        end_block = self.builder.spawn(f"end_{id(node)}")
-
-        # 3. Add instruction to branch to else or end based on condition
-        self.builder.add_instruction(f"beq {condition}, $zero, {else_block.label if else_block else end_block.label}")
-
-        # 4. Evaluate the if block
-        func = self.builder
-        self.builder = if_block
-        self.visit_body(node.body)
-        self.builder.add_instruction(f"j {end_block.label}")
-        self.builder.add_instruction("nop")
-        self.builder = func
-
-        # 5. Evaluate the else block if it exists
-        if else_block:
-            func = self.builder
-            self.builder = else_block
-            self.visit_else_statement(node.else_statement)
-            self.builder.add_instruction(f"j {end_block.label}")
-            self.builder.add_instruction("nop")
-            self.builder = func
-
-        # 6. Transfer control to the end block and add remaining instructions
-        self.builder = end_block
-        # TODO: self.visit_remaining_instructions(node)
-
-        # 7. Free the condition register
-        self.module.register_manager.free(condition)
     def visit_else_statement(self, node: ast.ElseStatement):
         if isinstance(node, ast.IfStatement):
             self.visit_if_statement(node)
