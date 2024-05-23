@@ -31,8 +31,8 @@ class Function(Block):
             f"lw      $fp, {total_stack_size-8}($sp)",
             f"lw      $ra, {total_stack_size-4}($sp)",
             f"addiu   $sp, $sp, {total_stack_size}",
-            f"jr      $ra",
-            f"nop"
+            f"jr      $ra" if self.label != "main" else "",
+            f"nop" if self.label != "main" else ""
         ]
         # add exit syscall
         if self.label == "main":
