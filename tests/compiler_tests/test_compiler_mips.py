@@ -15,7 +15,7 @@ def run_my_compiler(input_file, include_paths):
     return my_output
 
 def run_mars(file: str):
-    command = ["java", "-jar", "Mars4_5.jar", file]
+    command = ["java", "-jar", "Mars4_5.jar", "nc", "sm", file]
     result = subprocess.run(command, check=True, capture_output=True, text=True)
     # Filter out the MARS copyright tag and other non-MIPS outputs
     output_lines = result.stdout.splitlines()
