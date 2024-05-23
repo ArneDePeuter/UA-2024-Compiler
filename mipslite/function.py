@@ -89,3 +89,35 @@ class Function:
         # End block
         end_block = self.create_block(end_label)
         self.current_block = end_block
+
+    @contextmanager
+    def if_else(self, condition_register: str):
+        # Labels for branches
+        true_label = f"if_{uuid4().hex}"
+        false_label = f"else_{uuid4().hex}"
+        end_label = f"endif_{uuid4().hex}"
+
+        # Branch if false (if condition_register is zero)
+        self.add_instruction(f"beq {condition_register}, $zero, {false_label}")
+        self.add_instruction("nop")
+
+        # Define context managers for true and false blocks
+        @contextmanager
+        def true_block():
+            self.current_block = self.create_block(true_label)
+            yield
+            self.add_instruction(f"j {end_label}")
+            self.add_instruction("nop")
+
+        @contextmanager
+        def false_block():
+            self.current_block = self.create_block(false_label)
+            yield
+            self.add_instruction(f"j {end_label}")
+            self.add_instruction("nop")
+
+        try:
+            yield true_block(), false_block()
+        finally:
+            # Create the end block after both true and false blocks are executed
+            self.current_block = self.create_block(end_label)

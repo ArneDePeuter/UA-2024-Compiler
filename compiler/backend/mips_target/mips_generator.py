@@ -289,8 +289,16 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        with self.builder.if_then(self.visit_expression(node.condition)):
-            self.visit_body(node.body)
+        condition = self.visit_expression(node.condition)
+        if node.else_statement is None:
+            with self.builder.if_then(condition):
+                self.visit_body(node.body)
+        else:
+            with self.builder.if_else(condition) as (true_block, false_block):
+                with true_block:
+                    self.visit_body(node.body)
+                with false_block:
+                    self.visit_else_statement(node.else_statement)
 
     def visit_else_statement(self, node: ast.ElseStatement):
         if isinstance(node, ast.IfStatement):

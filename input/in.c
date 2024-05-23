@@ -5,7 +5,9 @@ int main() {
     if (a == 0) {
         printf("a is 0\n");
         if (1) {
-            printf("hey\n");
+            printf("yes\n");
+        } else {
+            printf("no\n");
         }
     }
     printf("hello");
