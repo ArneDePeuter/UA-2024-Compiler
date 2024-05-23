@@ -66,7 +66,10 @@ class Module:
                     printf_block.add_instruction("li $v0, 34")
                     printf_block.add_instruction("syscall")
                 elif part.count('f') > 0:
-                    printf_block.add_instruction(f"mov.d $f12, {args[arg_index]}")
+                    float_reg = self.register_manager.allocate('float')
+                    printf_block.add_instruction(f"mtc1 {args[arg_index]}, {float_reg}")
+                    printf_block.add_instruction(f"cvt.d.s {float_reg}, {float_reg}")  # Convert to double if necessary
+                    printf_block.add_instruction(f"mov.d $f12, {float_reg}")
                     printf_block.add_instruction("li $v0, 3")
                     printf_block.add_instruction("syscall")
                 elif part.count('c') > 0:
