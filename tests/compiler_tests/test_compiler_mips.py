@@ -20,21 +20,9 @@ def run_mars(file: str):
     # Filter out the MARS copyright tag and other non-MIPS outputs
     output_lines = result.stdout.splitlines()
 
-    # If the first line contains "MARS", skip the first two lines
-    if output_lines and "MARS" in output_lines[0]:
-        output_lines = output_lines[2:]
-
-    processed_lines = []
-
-    for line in output_lines:
-        # Skip error messages
-        if "Error" in line or "Processing terminated" in line:
-            continue
-        processed_lines.append(line.strip())
-
     # Normalize the output format
     normalized_output = []
-    for line in processed_lines:
+    for line in output_lines:
         import re
         if re.match(r'^0x[0-9a-fA-F]+$', line):
             # Convert hex to lower case without leading zeros
@@ -45,7 +33,6 @@ def run_mars(file: str):
         else:
             normalized_output.append(line)
 
-    normalized_output = normalized_output[:-1] # Remove last line aka an unnecessary newline
     # Join lines and strip leading/trailing whitespace
     return "\n".join(normalized_output)
 
