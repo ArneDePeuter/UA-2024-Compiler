@@ -1,3 +1,5 @@
+import uuid
+
 from mipslite.module import Module
 from mipslite.function import Function
 from mipslite.block import Block
@@ -246,7 +248,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
-        label = f"printf_{id(node)}"
+        label = f"printf_{uuid.uuid4().hex}"
 
         # Call the printf function to handle data and instruction generation
         args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
@@ -259,7 +261,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_scanf_call(self, node: ast.ScanFCall):
         # Link the scanf block
-        label = f"scanf_{id(node)}"
+        label = f"scanf_{uuid.uuid4().hex}"
 
         # Call the scanf function to handle data and instruction generation
         args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
