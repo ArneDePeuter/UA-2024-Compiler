@@ -15,26 +15,14 @@ def run_my_compiler(input_file, include_paths):
     return my_output
 
 def run_mars(file: str):
-    command = ["java", "-jar", "Mars4_5.jar", file]
+    command = ["java", "-jar", "Mars4_5.jar", "nc", "sm", file]
     result = subprocess.run(command, check=True, capture_output=True, text=True)
     # Filter out the MARS copyright tag and other non-MIPS outputs
     output_lines = result.stdout.splitlines()
 
-    # If the first line contains "MARS", skip the first two lines
-    if output_lines and "MARS" in output_lines[0]:
-        output_lines = output_lines[2:]
-
-    processed_lines = []
-
-    for line in output_lines:
-        # Skip error messages
-        if "Error" in line or "Processing terminated" in line:
-            continue
-        processed_lines.append(line.strip())
-
     # Normalize the output format
     normalized_output = []
-    for line in processed_lines:
+    for line in output_lines:
         import re
         if re.match(r'^0x[0-9a-fA-F]+$', line):
             # Convert hex to lower case without leading zeros
