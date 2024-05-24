@@ -23,11 +23,11 @@ class Block:
     def load(self, dest: str, src: str) -> None:
         self.add_instruction(f"lw {dest}, {src}")
 
-    def load_double(self, dest: str, src: str) -> None:
-        self.add_instruction(f"l.d {dest}, {src}")
+    def load_float(self, dest: str, src: str) -> None:
+        self.add_instruction(f"l.s {dest}, {src}")
 
     def store(self, src: str, dest: str) -> None:
         self.add_instruction(f"sw {src}, {dest}")
 
-    def store_double(self, src: str, dest: str) -> None:
-        self.add_instruction(f"s.d {src}, {dest}")
+    def store_float(self, src: str, dest: str) -> None:
+        self.add_instruction(f"s.s {src}, {dest}")

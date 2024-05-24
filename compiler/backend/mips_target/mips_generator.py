@@ -45,6 +45,7 @@ class MIPSGenerator(AstVisitor):
         for i, parameter in enumerate(node.parameters):
             # Allocate memory for the parameter and Store the address in the variable addresses
             self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
+            self.var_types[parameter.name] = self.visit_type(parameter.type)
             self.builder.store(f"$a{len(node.parameters)-i-1}", self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
@@ -76,7 +77,7 @@ class MIPSGenerator(AstVisitor):
             reg = self.visit_expression(qualifier.initializer)
             # store the value in the memory
             if isinstance(type, Float):
-                self.builder.store_double(reg, allocation_address)
+                self.builder.store_float(reg, allocation_address)
             else:
                 self.builder.store(reg, allocation_address)
             # free the register
@@ -100,8 +101,8 @@ class MIPSGenerator(AstVisitor):
         reg = self.module.register_manager.allocate('float')
         label = f"float_{id(node)}"
         float_data_block = self.module.data_block(label)
-        float_data_block.add_instruction(f".double {node.value}")
-        self.builder.add_instruction(f"l.d {reg}, {float_data_block.label}")
+        float_data_block.add_instruction(f".float {node.value}")
+        self.builder.add_instruction(f"l.s {reg}, {float_data_block.label}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
@@ -113,7 +114,7 @@ class MIPSGenerator(AstVisitor):
         addr = self.variable_addresses[node.name]
         if isinstance(self.var_types[node.name], Float):
             reg = self.module.register_manager.allocate('float')
-            self.builder.load_double(reg, addr)
+            self.builder.load_float(reg, addr)
         else:
             reg = self.module.register_manager.allocate('temp')
             self.builder.load(reg, addr)

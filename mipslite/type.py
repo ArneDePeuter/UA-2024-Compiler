@@ -30,7 +30,7 @@ class Float(Type):
 
     @cached_property
     def width(self):
-        return 8
+        return 4
 
 
 class Char(Type):
