@@ -307,9 +307,25 @@ class MIPSGenerator(AstVisitor):
             # Handle the base case where the target is an identifier
             target_reg = self.visit_identifier(node.target)
 
-        # Resolve the index
+        # Evaluate the index
         index_reg = self.visit_expression(node.index)
 
+        # TODO: Calculate the address of the array element, below is a dummy implementation but not correct
+
+        # Allocate a register for the result
+        result_reg = self.module.register_manager.allocate('temp')
+
+        # Assuming the size of each element in the array is 4 bytes (standard for 32-bit int)
+        element_size = 4
+
+        # Calculate the address
+        self.builder.add_instruction(f"mul {index_reg}, {index_reg}, {element_size}")
+        self.builder.add_instruction(f"add {result_reg}, {target_reg}, {index_reg}")
+
+        # Load value from the calculated address
+        self.builder.add_instruction(f"lw {result_reg}, 0({result_reg})")
+
+        # Free the temporary registers
         self.module.register_manager.free(target_reg)
         self.module.register_manager.free(index_reg)
 
