@@ -39,7 +39,7 @@ class Char(Type):
 
     @cached_property
     def width(self):
-        return 1
+        return 4
 
 
 class Array(Type):

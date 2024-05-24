@@ -15,40 +15,31 @@ def run_my_compiler(input_file, include_paths):
     return my_output
 
 def run_mars(file: str):
-    command = ["java", "-jar", "Mars4_5.jar", file]
+    command = ["java", "-jar", "Mars4_5.jar", "nc", "sm", file]
     result = subprocess.run(command, check=True, capture_output=True, text=True)
-    # Filter out the MARS copyright tag and other non-MIPS outputs
     output_lines = result.stdout.splitlines()
-
-    # If the first line contains "MARS", skip the first two lines
-    if output_lines and "MARS" in output_lines[0]:
-        output_lines = output_lines[2:]
-
-    processed_lines = []
-
-    for line in output_lines:
-        # Skip error messages
-        if "Error" in line or "Processing terminated" in line:
-            continue
-        processed_lines.append(line.strip())
-
     # Normalize the output format
     normalized_output = []
-    for line in processed_lines:
+    for line in output_lines:
+        line = line.strip()
         import re
-        if re.match(r'^0x[0-9a-fA-F]+$', line):
-            # Convert hex to lower case without leading zeros
-            normalized_output.append(hex(int(line, 16))[2:])
-        elif re.match(r'^\d+\.\d+$', line):
-            # Format floating point numbers to 6 decimal places
-            normalized_output.append(f"{float(line):.6f}")
-        else:
-            normalized_output.append(line)
+        # Check if the line contains a hexadecimal number prefixed with '0x'
+        if re.search(r'0x[0-9a-fA-F]+', line):
+            # Find all hexadecimal numbers in the line and convert them
+            line = re.sub(r'0x([0-9a-fA-F]+)', lambda x: hex(int(x.group(1), 16))[2:], line)
 
-    normalized_output = normalized_output[:-1] # Remove last line aka an unnecessary newline
+        # Check if the line contains a floating-point number
+        float_match = re.search(r'([+-]?\d*\.\d+([eE][+-]?\d+)?)', line)
+        if float_match:
+            # Extract the float value and format it to 6 decimal places
+            float_value = float(float_match.group(1))
+            formatted_float = f"{float_value:.6f}"
+            line = line.replace(float_match.group(1), formatted_float)
+
+        normalized_output.append(line)
+
     # Join lines and strip leading/trailing whitespace
     return "\n".join(normalized_output)
-
 
 def run_clang(input_file, include_paths):
     output_file = "temp.out"
