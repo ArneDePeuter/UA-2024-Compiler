@@ -3,9 +3,11 @@ from mipslite.function import Function
 from mipslite.block import Block
 from mipslite.allocator import Allocator
 from mipslite.type import Int, Float, Char, Array, Pointer, Struct
+from contextlib import contextmanager
 
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
+
 
 class MIPSGenerator(AstVisitor):
     def __init__(self):
@@ -13,6 +15,12 @@ class MIPSGenerator(AstVisitor):
         self.module = Module()
         self.builder = None
         self.variable_addresses = {}
+
+    @contextmanager
+    def get_expression_reg(self, expression: ast.Expression, module: Module):
+        reg = self.visit_expression(expression)
+        yield reg
+        module.register_manager.free(reg)
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -31,6 +39,10 @@ class MIPSGenerator(AstVisitor):
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         func = self.module.function(node.name)
         self.builder = func
+        for i, parameter in enumerate(node.parameters):
+            # Allocate memory for the parameter and Store the address in the variable addresses
+            self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
+            self.builder.store(f"$a{len(node.parameters)-i-1}", self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
@@ -210,8 +222,25 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
+        # Evaluate the arguments only if the function never has been called
+        regs = []
+        for arg in node.arguments:
+            with self.get_expression_reg(arg, self.module) as arg_eval:
+                arg_reg = self.module.register_manager.allocate('arg')
+                regs.append(arg_reg)
+                self.builder.add_instruction(f"move {arg_reg}, {arg_eval}")
+
+        # Call the function
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
+
+        # Free the argument registers
+        for reg in reversed(regs):
+            self.module.register_manager.free(reg)
+
+        reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"move {reg}, $v0")
+        return reg
 
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
@@ -260,12 +289,47 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        # Implement if statement logic
-        pass
+        # 1. Evaluate the condition
+        condition = self.visit_expression(node.condition)
 
+        # 2. Spawn the blocks for if, else, and end
+        if_block = self.builder.spawn(f"if_{id(node)}")
+        else_block = None
+        if node.else_statement:
+            else_block = self.builder.spawn(f"else_{id(node)}")
+        end_block = self.builder.spawn(f"end_{id(node)}")
+
+        # 3. Add instruction to branch to else or end based on condition
+        self.builder.add_instruction(f"beq {condition}, $zero, {else_block.label if else_block else end_block.label}")
+
+        # 4. Evaluate the if block
+        func = self.builder
+        self.builder = if_block
+        self.visit_body(node.body)
+        self.builder.add_instruction(f"j {end_block.label}")
+        self.builder.add_instruction("nop")
+        self.builder = func
+
+        # 5. Evaluate the else block if it exists
+        if else_block:
+            func = self.builder
+            self.builder = else_block
+            self.visit_else_statement(node.else_statement)
+            self.builder.add_instruction(f"j {end_block.label}")
+            self.builder.add_instruction("nop")
+            self.builder = func
+
+        # 6. Transfer control to the end block and add remaining instructions
+        self.builder = end_block
+        # TODO: self.visit_remaining_instructions(node)
+
+        # 7. Free the condition register
+        self.module.register_manager.free(condition)
     def visit_else_statement(self, node: ast.ElseStatement):
-        # Implement else statement logic
-        pass
+        if isinstance(node, ast.IfStatement):
+            self.visit_if_statement(node)
+        else:
+            self.visit_body(node.body)
 
     def visit_while_statement(self, node: ast.WhileStatement):
         # Implement while statement logic
@@ -280,8 +344,9 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_return_statement(self, node: ast.ReturnStatement):
-        self.visit_expression(node.expression)
-        # The rest gets handled in the function block
+        result_eval = self.visit_expression(node.expression)
+        self.builder.add_instruction(f"move $v0, {result_eval}")
+        self.module.register_manager.free(result_eval)
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         # Forward declaration is n/a for MIPS

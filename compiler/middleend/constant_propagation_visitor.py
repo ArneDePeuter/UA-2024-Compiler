@@ -114,7 +114,7 @@ class ConstantPropagationVisitor(AstVisitor):
             node.qualifiers[i] = self.visit_variable_declaration_qualifier(qualifier)
 
         for qual in node.qualifiers:
-            if qual.initializer is not None:
+            if qual.initializer is not None and not isinstance(qual.initializer, ast.FunctionCall):
                 self.const_scope[qual.identifier] = (qual.initializer, node.var_type.const)
         return node
 

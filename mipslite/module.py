@@ -32,6 +32,11 @@ class Module:
         self.data_blocks.append(block)
         return block
 
+    def text_block(self, label: str) -> Block:
+        block = Block(label)
+        self.text_blocks.append(block)
+        return block
+
     def printf(self, label: str, format_string: str, args: list):
         """
         Generates the MIPS assembly code for the printf function
