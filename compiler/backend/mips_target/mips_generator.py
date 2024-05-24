@@ -278,19 +278,49 @@ class MIPSGenerator(AstVisitor):
         self.builder.add_instruction("nop")
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        # Implement array specifier logic
-        pass
+        total_size = 1
+        for size in node.sizes:
+            if isinstance(size, ast.INT):
+                total_size *= size.value
+            else:
+                NotImplementedError("Only int is supported for array sizes")
+        return total_size
+
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
-        # Implement array initializer logic
-        pass
+        if node.struct_type:
+            return self.visit_struct_initializer(node)
+        # Store the array data in the data block
+        label = f"array_{uuid.uuid4().hex}"
+        array_block = self.module.data_block(label)
+        self.module.array(array_block, node.elements)
+        # Now you should first store the address of the array in a register
+        reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"la {reg}, {label}")
+        return reg
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        # Implement array access logic
-        pass
+        if isinstance(node.target, ast.ArrayAccess):
+            # Recursively resolve the inner array access
+            target_reg = self.visit_array_access(node.target)
+        else:
+            # Handle the base case where the target is an identifier
+            target_reg = self.visit_identifier(node.target)
+
+        # Resolve the index
+        index_reg = self.visit_expression(node.index)
+
+        self.module.register_manager.free(target_reg)
+        self.module.register_manager.free(index_reg)
+
+        return result_reg
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         # Implement struct definition logic
+        pass
+
+    def visit_struct_initializer(self, node: ast.ArrayInitializer):
+        # Implement struct initializer logic
         pass
 
     def visit_struct_access(self, node: ast.StructAccess):
@@ -347,6 +377,8 @@ class MIPSGenerator(AstVisitor):
             return Float()
         elif node.type == ast.BaseType.char:
             return Char()
+        elif isinstance(node.type, ast.ArrayType):
+            return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes))
         else:
             raise NotImplementedError("Only int, float and char are supported for default initializers")
 
