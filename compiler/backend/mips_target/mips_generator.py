@@ -17,6 +17,7 @@ class MIPSGenerator(AstVisitor):
         self.module = Module()
         self.builder = None
         self.variable_addresses = {}
+        self.var_types = {}
 
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
@@ -70,6 +71,7 @@ class MIPSGenerator(AstVisitor):
             allocation_address = self.builder.allocate(type)
             # store in the variable addresses
             self.variable_addresses[qualifier.identifier] = allocation_address
+            self.var_types[qualifier.identifier] = type
             # visit the initializer and get register for the value
             reg = self.visit_expression(qualifier.initializer)
             # store the value in the memory
@@ -108,11 +110,12 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_identifier(self, node: ast.IDENTIFIER):
-        reg = self.module.register_manager.allocate('temp')
         addr = self.variable_addresses[node.name]
-        if isinstance(type, Float):
+        if isinstance(self.var_types[node.name], Float):
+            reg = self.module.register_manager.allocate('float')
             self.builder.load_double(reg, addr)
         else:
+            reg = self.module.register_manager.allocate('temp')
             self.builder.load(reg, addr)
         return reg
 
