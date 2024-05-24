@@ -54,7 +54,11 @@ class Module:
             parts.remove("")
         arg_index = 0
         for part in parts:
-            if part.startswith('%'):
+            if part == '%(percent_placeholder)s':
+                printf_block.add_instruction(f"li $a0, 37")  # ASCII code for '%'
+                printf_block.add_instruction("li $v0, 11")
+                printf_block.add_instruction("syscall")
+            elif part.startswith('%'):
                 # Print the arg
                 if part.count('d') > 0:
                     printf_block.add_instruction(f"move $a0, {args[arg_index]}")
@@ -66,8 +70,8 @@ class Module:
                     printf_block.add_instruction("li $v0, 34")
                     printf_block.add_instruction("syscall")
                 elif part.count('f') > 0:
-                    printf_block.add_instruction(f"mov.d $f12, {args[arg_index]}")
-                    printf_block.add_instruction("li $v0, 3")
+                    printf_block.add_instruction(f"mov.s $f12, {args[arg_index]}")
+                    printf_block.add_instruction("li $v0, 2")
                     printf_block.add_instruction("syscall")
                 elif part.count('c') > 0:
                     printf_block.add_instruction(f"move $a0, {args[arg_index]}")

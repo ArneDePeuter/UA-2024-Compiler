@@ -1,3 +1,5 @@
+import uuid
+
 from mipslite.module import Module
 from mipslite.function import Function
 from mipslite.block import Block
@@ -15,6 +17,7 @@ class MIPSGenerator(AstVisitor):
         self.module = Module()
         self.builder = None
         self.variable_addresses = {}
+        self.var_types = {}
 
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
@@ -42,6 +45,7 @@ class MIPSGenerator(AstVisitor):
         for i, parameter in enumerate(node.parameters):
             # Allocate memory for the parameter and Store the address in the variable addresses
             self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
+            self.var_types[parameter.name] = self.visit_type(parameter.type)
             self.builder.store(f"$a{len(node.parameters)-i-1}", self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
@@ -68,11 +72,12 @@ class MIPSGenerator(AstVisitor):
             allocation_address = self.builder.allocate(type)
             # store in the variable addresses
             self.variable_addresses[qualifier.identifier] = allocation_address
+            self.var_types[qualifier.identifier] = type
             # visit the initializer and get register for the value
             reg = self.visit_expression(qualifier.initializer)
             # store the value in the memory
             if isinstance(type, Float):
-                self.builder.store_double(reg, allocation_address)
+                self.builder.store_float(reg, allocation_address)
             else:
                 self.builder.store(reg, allocation_address)
             # free the register
@@ -96,8 +101,8 @@ class MIPSGenerator(AstVisitor):
         reg = self.module.register_manager.allocate('float')
         label = f"float_{id(node)}"
         float_data_block = self.module.data_block(label)
-        float_data_block.add_instruction(f".double {node.value}")
-        self.builder.add_instruction(f"l.d {reg}, {float_data_block.label}")
+        float_data_block.add_instruction(f".float {node.value}")
+        self.builder.add_instruction(f"l.s {reg}, {float_data_block.label}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
@@ -106,9 +111,13 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_identifier(self, node: ast.IDENTIFIER):
-        reg = self.module.register_manager.allocate('temp')
         addr = self.variable_addresses[node.name]
-        self.builder.load(reg, addr)
+        if isinstance(self.var_types[node.name], Float):
+            reg = self.module.register_manager.allocate('float')
+            self.builder.load_float(reg, addr)
+        else:
+            reg = self.module.register_manager.allocate('temp')
+            self.builder.load(reg, addr)
         return reg
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
@@ -246,7 +255,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
-        label = f"printf_{id(node)}"
+        label = f"printf_{uuid.uuid4().hex}"
 
         # Call the printf function to handle data and instruction generation
         args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
@@ -259,7 +268,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_scanf_call(self, node: ast.ScanFCall):
         # Link the scanf block
-        label = f"scanf_{id(node)}"
+        label = f"scanf_{uuid.uuid4().hex}"
 
         # Call the scanf function to handle data and instruction generation
         args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
@@ -289,42 +298,17 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        # 1. Evaluate the condition
         condition = self.visit_expression(node.condition)
+        if node.else_statement is None:
+            with self.builder.if_then(condition):
+                self.visit_body(node.body)
+        else:
+            with self.builder.if_else(condition) as (true_block, false_block):
+                with true_block:
+                    self.visit_body(node.body)
+                with false_block:
+                    self.visit_else_statement(node.else_statement)
 
-        # 2. Spawn the blocks for if, else, and end
-        if_block = self.builder.spawn(f"if_{id(node)}")
-        else_block = None
-        if node.else_statement:
-            else_block = self.builder.spawn(f"else_{id(node)}")
-        end_block = self.builder.spawn(f"end_{id(node)}")
-
-        # 3. Add instruction to branch to else or end based on condition
-        self.builder.add_instruction(f"beq {condition}, $zero, {else_block.label if else_block else end_block.label}")
-
-        # 4. Evaluate the if block
-        func = self.builder
-        self.builder = if_block
-        self.visit_body(node.body)
-        self.builder.add_instruction(f"j {end_block.label}")
-        self.builder.add_instruction("nop")
-        self.builder = func
-
-        # 5. Evaluate the else block if it exists
-        if else_block:
-            func = self.builder
-            self.builder = else_block
-            self.visit_else_statement(node.else_statement)
-            self.builder.add_instruction(f"j {end_block.label}")
-            self.builder.add_instruction("nop")
-            self.builder = func
-
-        # 6. Transfer control to the end block and add remaining instructions
-        self.builder = end_block
-        # TODO: self.visit_remaining_instructions(node)
-
-        # 7. Free the condition register
-        self.module.register_manager.free(condition)
     def visit_else_statement(self, node: ast.ElseStatement):
         if isinstance(node, ast.IfStatement):
             self.visit_if_statement(node)
