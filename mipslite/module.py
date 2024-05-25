@@ -74,13 +74,15 @@ class Module:
                     printf_block.add_instruction(f"move $a0, {args[arg_index]}")
                     printf_block.add_instruction("li $v0, 1")
                     printf_block.add_instruction("syscall")
-                # Check if the argument is hex
-                if part.count('x') > 0:
+                elif part.count('x') > 0:
                     printf_block.add_instruction(f"move $a0, {args[arg_index]}")
                     printf_block.add_instruction("li $v0, 34")
                     printf_block.add_instruction("syscall")
                 elif part.count('f') > 0:
-                    printf_block.add_instruction(f"mov.s $f12, {args[arg_index]}")
+                    if args[arg_index].startswith('$f'):
+                        printf_block.add_instruction(f"mov.s $f12, {args[arg_index]}")
+                    else:
+                        printf_block.add_instruction(f"mtc1 {args[arg_index]}, $f12")
                     printf_block.add_instruction("li $v0, 2")
                     printf_block.add_instruction("syscall")
                 elif part.count('c') > 0:

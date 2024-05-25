@@ -1,5 +1,5 @@
 import uuid
-
+from typing import Union
 from mipslite.module import Module
 from mipslite.function import Function
 from mipslite.block import Block
@@ -43,7 +43,6 @@ class MIPSGenerator(AstVisitor):
         func = self.module.function(node.name)
         self.builder = func
         for i, parameter in enumerate(node.parameters):
-            # Allocate memory for the parameter and Store the address in the variable addresses
             self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
             self.var_types[parameter.name] = self.visit_type(parameter.type)
             self.builder.store(f"$a{len(node.parameters)-i-1}", self.variable_addresses[parameter.name])
@@ -55,11 +54,9 @@ class MIPSGenerator(AstVisitor):
         ...
 
     def visit_variable_declaration(self, node: ast.VariableDeclaration):
-        # retrieve type of every qualifier
         type = self.visit_type(node.var_type)
         for qualifier in node.qualifiers:
             if qualifier.initializer is None:
-                # Add a default initializer
                 if node.var_type.type == ast.BaseType.int:
                     qualifier.initializer = ast.INT(0)
                 elif node.var_type.type == ast.BaseType.float:
@@ -68,26 +65,24 @@ class MIPSGenerator(AstVisitor):
                     qualifier.initializer = ast.CHAR('\0')
                 else:
                     raise NotImplementedError("Only int, float and char are supported for default initializers")
-            # allocate memory for the variable
             allocation_address = self.builder.allocate(type)
-            # store in the variable addresses
             self.variable_addresses[qualifier.identifier] = allocation_address
             self.var_types[qualifier.identifier] = type
-            # visit the initializer and get register for the value
             reg = self.visit_expression(qualifier.initializer)
-            # store the value in the memory
             if isinstance(type, Float):
                 self.builder.store_float(reg, allocation_address)
             else:
                 self.builder.store(reg, allocation_address)
-            # free the register
-            self.module.register_manager.free(reg)
+            # Check if reg is in used_registers before freeing
+            if reg in self.module.register_manager.used_registers['temp'] or reg in \
+                    self.module.register_manager.used_registers['float']:
+                self.module.register_manager.free(reg)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
         right = self.visit_expression(node.right)
-        left = self.visit_expression(node.left)
         addr = self.variable_addresses[node.left.name]
         self.builder.store(right, addr)
+        self.module.register_manager.free(right)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         self.visit_expression(node.expression)
@@ -98,11 +93,11 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_float(self, node: ast.FLOAT):
-        reg = self.module.register_manager.allocate('float')
+        reg = self.module.register_manager.allocate_float()
         label = f"float_{id(node)}"
         float_data_block = self.module.data_block(label)
         float_data_block.add_instruction(f".float {node.value}")
-        self.builder.add_instruction(f"l.s {reg}, {float_data_block.label}")
+        self.builder.add_instruction(f"l.s {reg}, {label}")
         return reg
 
     def visit_char(self, node: ast.CHAR):
@@ -113,36 +108,64 @@ class MIPSGenerator(AstVisitor):
     def visit_identifier(self, node: ast.IDENTIFIER):
         addr = self.variable_addresses[node.name]
         if isinstance(self.var_types[node.name], Float):
-            reg = self.module.register_manager.allocate('float')
+            reg = self.module.register_manager.allocate_float()
             self.builder.load_float(reg, addr)
         else:
-            reg = self.module.register_manager.allocate('temp')
+            reg = self.module.register_manager.allocate_temp()
             self.builder.load(reg, addr)
         return reg
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
-        # Implement type casting logic if needed
-        pass
+        expr_reg = self.visit_expression(node.expression)
+        target_type = self.visit_type(node.cast_type)
+
+        if isinstance(target_type, Float) and isinstance(self.visit_type(node.expression), Int):
+            result_reg = self.module.register_manager.allocate_float()
+            self.builder.add_instruction(f"mtc1 {expr_reg}, {result_reg}")
+            self.builder.add_instruction(f"cvt.s.w {result_reg}, {result_reg}")
+        elif isinstance(target_type, Int) and isinstance(self.visit_type(node.expression), Float):
+            result_reg = self.module.register_manager.allocate_temp()
+            self.builder.add_instruction(f"cvt.w.s {result_reg}, {expr_reg}")
+            self.builder.add_instruction(f"mfc1 {result_reg}, {result_reg}")
+        else:
+            result_reg = expr_reg
+
+        self.module.register_manager.free(expr_reg)
+        return result_reg
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         left = self.visit_expression(node.left)
         right = self.visit_expression(node.right)
 
-        result_reg = self.module.register_manager.allocate('temp')
+        left_type = self.var_types[node.left.name] if isinstance(node.left, ast.IDENTIFIER) else self.visit_type(node.left)
+        right_type = self.var_types[node.right.name] if isinstance(node.right, ast.IDENTIFIER) else self.visit_type(node.right)
 
-        if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-            self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-            self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-            self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-            self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryArithmetic.Operator.MOD:
-            self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
-
-        self.module.register_manager.free(left)
-        self.module.register_manager.free(right)
+        if isinstance(left_type, Float) or isinstance(right_type, Float):
+            result_reg = self.module.register_manager.allocate_float()
+            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
+            self.module.register_manager.free(left)
+            self.module.register_manager.free(right)
+        else:
+            result_reg = self.module.register_manager.allocate_temp()
+            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+                self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
+            self.module.register_manager.free(left)
+            self.module.register_manager.free(right)
 
         return result_reg
 
@@ -212,6 +235,11 @@ class MIPSGenerator(AstVisitor):
             self.builder.add_instruction(f"not {result_reg}, {value}")
         elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
             self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
+        elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
+            addr = self.variable_addresses[node.value.name]
+            self.builder.add_instruction(f"la {result_reg}, {addr}")
+        elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            self.builder.add_instruction(f"lw {result_reg}, 0({value})")
 
         self.module.register_manager.free(value)
         return result_reg
@@ -233,7 +261,6 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
-        # Evaluate the arguments only if the function never has been called
         regs = []
         for arg in node.arguments:
             with self.get_expression_reg(arg, self.module) as arg_eval:
@@ -241,11 +268,9 @@ class MIPSGenerator(AstVisitor):
                 regs.append(arg_reg)
                 self.builder.add_instruction(f"move {arg_reg}, {arg_eval}")
 
-        # Call the function
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
 
-        # Free the argument registers
         for reg in reversed(regs):
             self.module.register_manager.free(reg)
 
@@ -254,28 +279,35 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_printf_call(self, node: ast.PrintFCall):
-        # Link the printf block
         label = f"printf_{uuid.uuid4().hex}"
+        args_eval = [self.visit_expression(arg) for arg in node.args]
+        args = []
 
-        # Call the printf function to handle data and instruction generation
-        args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
-        self.module.printf(label, node.format, args_eval)
+        for eval in args_eval:
+            if eval.startswith('$f'):
+                temp_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"mfc1 {temp_reg}, {eval}")
+                args.append(temp_reg)
+            else:
+                args.append(eval)
 
-        # TODO: When arg is a string this will not work
-
+        self.module.printf(label, node.format, args)
         self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
+
+        for reg in args_eval:
+            self.module.register_manager.free(reg)
 
     def visit_scanf_call(self, node: ast.ScanFCall):
-        # Link the scanf block
         label = f"scanf_{uuid.uuid4().hex}"
+        self.module.scanf(label, node.format)
 
-        # Call the scanf function to handle data and instruction generation
-        args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
-        self.module.scanf(label, node.format, args_eval)
-
+        regs = [self.visit_expression(arg) for arg in node.args]
         self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
+
+        for reg in regs:
+            self.module.register_manager.free(reg)
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         total_size = 1
@@ -286,61 +318,43 @@ class MIPSGenerator(AstVisitor):
                 NotImplementedError("Only int is supported for array sizes")
         return total_size
 
-
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if node.struct_type:
             return self.visit_struct_initializer(node)
-        # Store the array data in the data block
         label = f"array_{uuid.uuid4().hex}"
         array_block = self.module.data_block(label)
         self.module.array(array_block, node.elements)
-        # Now you should first store the address of the array in a register
         reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"la {reg}, {label}")
         return reg
 
     def visit_array_access(self, node: ast.ArrayAccess):
         if isinstance(node.target, ast.ArrayAccess):
-            # Recursively resolve the inner array access
             target_reg = self.visit_array_access(node.target)
         else:
-            # Handle the base case where the target is an identifier
             target_reg = self.visit_identifier(node.target)
 
-        # Evaluate the index
         index_reg = self.visit_expression(node.index)
 
-        # TODO: Calculate the address of the array element, below is a dummy implementation but not correct
-
-        # Allocate a register for the result
         result_reg = self.module.register_manager.allocate('temp')
-
-        # Assuming the size of each element in the array is 4 bytes (standard for 32-bit int)
         element_size = 4
 
-        # Calculate the address
         self.builder.add_instruction(f"mul {index_reg}, {index_reg}, {element_size}")
         self.builder.add_instruction(f"add {result_reg}, {target_reg}, {index_reg}")
-
-        # Load value from the calculated address
         self.builder.add_instruction(f"lw {result_reg}, 0({result_reg})")
 
-        # Free the temporary registers
         self.module.register_manager.free(target_reg)
         self.module.register_manager.free(index_reg)
 
         return result_reg
 
     def visit_struct_definition(self, node: ast.StructDefinition):
-        # Implement struct definition logic
         pass
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
-        # Implement struct initializer logic
         pass
 
     def visit_struct_access(self, node: ast.StructAccess):
-        # Implement struct access logic
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
@@ -362,15 +376,12 @@ class MIPSGenerator(AstVisitor):
             self.visit_body(node.body)
 
     def visit_while_statement(self, node: ast.WhileStatement):
-        # Implement while statement logic
         pass
 
     def visit_break_statement(self, node: ast.BreakStatement):
-        # Implement break statement logic
         pass
 
     def visit_continue_statement(self, node: ast.ContinueStatement):
-        # Implement continue statement logic
         pass
 
     def visit_return_statement(self, node: ast.ReturnStatement):
@@ -379,22 +390,33 @@ class MIPSGenerator(AstVisitor):
         self.module.register_manager.free(result_eval)
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
-        # Forward declaration is n/a for MIPS
         pass
 
     def visit_comment_statement(self, node: ast.CommentStatement):
-        # Implement comment statement logic
         pass
 
-    def visit_type(self, node: ast.Type):
-        if node.type == ast.BaseType.int:
+    def visit_type(self, node: Union[ast.Type, ast.Expression]):
+        if isinstance(node, ast.Type):
+            if isinstance(node.type, ast.BaseType):
+                if node.type == ast.BaseType.int:
+                    return Int()
+                elif node.type == ast.BaseType.float:
+                    return Float()
+                elif node.type == ast.BaseType.char:
+                    return Char()
+            elif isinstance(node.type, ast.ArrayType):
+                return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes))
+            elif isinstance(node.type, ast.StructType):
+                return Struct(node.type.definition)
+        elif isinstance(node, ast.INT):
             return Int()
-        elif node.type == ast.BaseType.float:
+        elif isinstance(node, ast.FLOAT):
             return Float()
-        elif node.type == ast.BaseType.char:
+        elif isinstance(node, ast.CHAR):
             return Char()
-        elif isinstance(node.type, ast.ArrayType):
-            return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes))
+        elif isinstance(node, ast.IDENTIFIER):
+            return self.var_types[node.name]
+        elif AddressQualifier.pointer in getattr(node, 'address_qualifiers', []):
+            return Pointer(self.visit_type(ast.Type(node.type, address_qualifiers=node.address_qualifiers[1:])))
         else:
-            raise NotImplementedError("Only int, float and char are supported for default initializers")
-
+            raise NotImplementedError(f"Type visit not implemented for {type(node)}")
