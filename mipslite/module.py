@@ -56,52 +56,45 @@ class Module:
         :return:
         """
         printf_block = self.function(label)
-        # Split the format string into part %\w using re.
-        # Then when the part starts with % meaning it is a format specifier, for an argument. We should make a printf_text_block for printing the argument
-        # When the part doesn't stat with % meaning it is a strign we should make a printf text block for printing the strin
-        parts = re.split(r'(%[dxfsc%])', format_string.strip("\""))
-        while parts.count("") > 0:
-            parts.remove("")
+
+        format_specifiers = re.findall(r'%[dxfsc]', format_string)
         arg_index = 0
-        for part in parts:
-            if part == '%(percent_placeholder)s':
-                printf_block.add_instruction(f"li $a0, 37")  # ASCII code for '%'
+
+        for specifier in format_specifiers:
+            if arg_index >= len(args):
+                raise ValueError(f"Not enough arguments for format string: {format_string}")
+
+            arg = args[arg_index]
+            if specifier == '%d':
+                printf_block.add_instruction(f"move $a0, {arg}")
+                printf_block.add_instruction("li $v0, 1")
+            elif specifier == '%x':
+                printf_block.add_instruction(f"move $a0, {arg}")
+                printf_block.add_instruction("li $v0, 34")
+            elif specifier == '%f':
+                printf_block.add_instruction(f"mov.s $f12, {arg}")
+                printf_block.add_instruction("li $v0, 2")
+            elif specifier == '%c':
+                printf_block.add_instruction(f"move $a0, {arg}")
                 printf_block.add_instruction("li $v0, 11")
-                printf_block.add_instruction("syscall")
-            elif part.startswith('%'):
-                # Print the arg
-                if part.count('d') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
-                    printf_block.add_instruction("li $v0, 1")
-                    printf_block.add_instruction("syscall")
-                elif part.count('x') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
-                    printf_block.add_instruction("li $v0, 34")
-                    printf_block.add_instruction("syscall")
-                elif part.count('f') > 0:
-                    if args[arg_index].startswith('$f'):
-                        printf_block.add_instruction(f"mov.s $f12, {args[arg_index]}")
-                    else:
-                        printf_block.add_instruction(f"mtc1 {args[arg_index]}, $f12")
-                    printf_block.add_instruction("li $v0, 2")
-                    printf_block.add_instruction("syscall")
-                elif part.count('c') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
-                    printf_block.add_instruction("li $v0, 11")
-                    printf_block.add_instruction("syscall")
-                elif part.count('s') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
-                    printf_block.add_instruction("li $v0, 4")
-                    printf_block.add_instruction("syscall")
-                arg_index += 1
-            else:
-                # Print the string
-                # Create a new data block for the string
-                printf_data_block = self.data_block(f"printf_text_{id(part)}")
-                printf_data_block.add_instruction(f".asciiz \"{part}\"")
-                printf_block.add_instruction(f"la $a0, {printf_data_block.label}")
+            elif specifier == '%s':
+                printf_block.add_instruction(f"move $a0, {arg}")
+                printf_block.add_instruction("li $v0, 4")
+
+            printf_block.add_instruction("syscall")
+            arg_index += 1
+
+        # Print the remaining parts of the format string
+        remaining_parts = re.split(r'%[dxfsc]', format_string)
+        for part in remaining_parts:
+            if part:
+                data_label = f"{label}_str_{arg_index}"
+                data_block = self.data_block(data_label)
+                data_block.add_instruction(f'.asciiz "{part}"')
+                printf_block.add_instruction(f"la $a0, {data_label}")
                 printf_block.add_instruction("li $v0, 4")
                 printf_block.add_instruction("syscall")
+                arg_index += 1
 
     def scanf(self, label: str, format_string: str, args: list):
         """

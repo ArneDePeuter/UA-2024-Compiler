@@ -6,6 +6,7 @@ from mipslite.block import Block
 from mipslite.allocator import Allocator
 from mipslite.type import Int, Float, Char, Array, Pointer, Struct
 from contextlib import contextmanager
+import re
 
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
@@ -80,10 +81,18 @@ class MIPSGenerator(AstVisitor):
                 self.module.register_manager.free(reg)
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        right = self.visit_expression(node.right)
-        addr = self.variable_addresses[node.left.name]
-        self.builder.store(right, addr)
-        self.module.register_manager.free(right)
+        right_eval = self.visit_expression(node.right)
+        left_eval = self.visit_expression(node.left)
+
+        if not left_eval.startswith('$'):
+            # If the left side is not a register, it should be an address
+            self.builder.add_instruction(f"sw {right_eval}, {left_eval}")
+        else:
+            # If the left side is a register, move the value from the right register to the left register
+            self.builder.add_instruction(f"move {left_eval}, {right_eval}")
+
+        self.module.register_manager.free(right_eval)
+        self.module.register_manager.free(left_eval)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         self.visit_expression(node.expression)
@@ -211,7 +220,6 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
             elif node.operator == ast.ComparisonOperation.Operator.NEQ:
                 self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
-
         return result_reg
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
@@ -241,6 +249,22 @@ class MIPSGenerator(AstVisitor):
             self.builder.add_instruction(f"lw {result_reg}, 0({value})")
             self.module.register_manager.free(value)
             return result_reg
+        elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
+            result_reg = self.module.register_manager.allocate_temp()
+            self.builder.add_instruction(f"addi {result_reg}, {value}, 1")
+            if not node.prefix:
+                self.module.register_manager.free(result_reg)
+                return value
+            return result_reg
+        elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
+            result_reg = self.module.register_manager.allocate_temp()
+            self.builder.add_instruction(f"addi {result_reg}, {value}, -1")
+            if not node.prefix:
+                self.module.register_manager.free(result_reg)
+                return value
+            return result_reg
+        else:
+            raise NotImplementedError(f"Unary operator {node.operator} is not supported")
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
         with self.get_expression_reg(node.value, self.module) as value, \
@@ -278,10 +302,19 @@ class MIPSGenerator(AstVisitor):
         args_eval = [self.visit_expression(arg) for arg in node.args]
         args = []
 
-        for eval in args_eval:
-            if eval.startswith('$f'):
-                temp_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"mfc1 {temp_reg}, {eval}")
+        format_specifiers = re.findall(r'%[dxfsc]', node.format)
+        print(f"Format specifiers: {format_specifiers}")  # Debugging statement
+        print(f"Args eval: {args_eval}")  # Debugging statement
+
+        if len(args_eval) != len(format_specifiers):
+            raise ValueError(f"Number of arguments does not match the number of format specifiers in {node.format}")
+
+        for eval, specifier in zip(args_eval, format_specifiers):
+            if eval is None:
+                raise ValueError(f"Argument cannot be None for format specifier {specifier}")
+            elif specifier == '%f' and not eval.startswith('$f'):
+                temp_reg = self.module.register_manager.allocate_float()
+                self.builder.add_instruction(f"mtc1 {eval}, {temp_reg}")
                 args.append(temp_reg)
             else:
                 args.append(eval)
@@ -290,7 +323,7 @@ class MIPSGenerator(AstVisitor):
         self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
 
-        for reg in args_eval:
+        for reg in args:
             self.module.register_manager.free(reg)
 
     def visit_scanf_call(self, node: ast.ScanFCall):
