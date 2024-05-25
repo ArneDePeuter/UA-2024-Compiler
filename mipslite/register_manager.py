@@ -36,3 +36,6 @@ class RegisterManager:
 
     def allocate_arg(self):
         return self.allocate('arg')
+
+    def allocate_saved(self):
+        return self.allocate('saved')

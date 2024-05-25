@@ -43,9 +43,10 @@ class MIPSGenerator(AstVisitor):
         func = self.module.function(node.name)
         self.builder = func
         for i, parameter in enumerate(node.parameters):
-            self.variable_addresses[parameter.name] = self.builder.allocate(self.visit_type(parameter.type))
-            self.var_types[parameter.name] = self.visit_type(parameter.type)
-            self.builder.store(f"$a{len(node.parameters)-i-1}", self.variable_addresses[parameter.name])
+            param_type = self.visit_type(parameter.type)
+            self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
+            self.var_types[parameter.name] = param_type
+            self.builder.store(f"$a{len(node.parameters) - i - 1}", self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
@@ -134,149 +135,143 @@ class MIPSGenerator(AstVisitor):
         return result_reg
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
-        left = self.visit_expression(node.left)
-        right = self.visit_expression(node.right)
+        with self.get_expression_reg(node.left, self.module) as left, \
+                self.get_expression_reg(node.right, self.module) as right:
 
-        left_type = self.var_types[node.left.name] if isinstance(node.left, ast.IDENTIFIER) else self.visit_type(node.left)
-        right_type = self.var_types[node.right.name] if isinstance(node.right, ast.IDENTIFIER) else self.visit_type(node.right)
+            left_type = self.visit_type(node.left)
+            right_type = self.visit_type(node.right)
 
-        if isinstance(left_type, Float) or isinstance(right_type, Float):
-            result_reg = self.module.register_manager.allocate_float()
-            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
-            self.module.register_manager.free(left)
-            self.module.register_manager.free(right)
-        else:
-            result_reg = self.module.register_manager.allocate_temp()
-            if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryArithmetic.Operator.MOD:
-                self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
-            self.module.register_manager.free(left)
-            self.module.register_manager.free(right)
+            if isinstance(left_type, Float) or isinstance(right_type, Float):
+                result_reg = self.module.register_manager.allocate_float()
+                if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                    self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                    self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                    self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                    self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
+            else:
+                result_reg = self.module.register_manager.allocate_temp()
+                if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                    self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                    self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                    self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                    self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+                    self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
 
         return result_reg
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        left = self.visit_expression(node.left)
-        right = self.visit_expression(node.right)
-        result_reg = self.module.register_manager.allocate('temp')
+        with self.get_expression_reg(node.left, self.module) as left, \
+                self.get_expression_reg(node.right, self.module) as right:
+            result_reg = self.module.register_manager.allocate_temp()
 
-        if node.operator == ast.BinaryBitwiseArithmetic.Operator.AND:
-            self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.OR:
-            self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
-            self.builder.add_instruction(f"xor {result_reg}, {left}, {right}")
+            if node.operator == ast.BinaryBitwiseArithmetic.Operator.AND:
+                self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryBitwiseArithmetic.Operator.OR:
+                self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
+                self.builder.add_instruction(f"xor {result_reg}, {left}, {right}")
 
-        self.module.register_manager.free(left)
-        self.module.register_manager.free(right)
         return result_reg
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        left = self.visit_expression(node.left)
-        right = self.visit_expression(node.right)
-        result_reg = self.module.register_manager.allocate('temp')
+        with self.get_expression_reg(node.left, self.module) as left, \
+                self.get_expression_reg(node.right, self.module) as right:
+            result_reg = self.module.register_manager.allocate_temp()
 
-        if node.operator == ast.BinaryLogicalOperation.Operator.AND:
-            self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
-        elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
-            self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+            if node.operator == ast.BinaryLogicalOperation.Operator.AND:
+                self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
+                self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
 
-        self.module.register_manager.free(left)
-        self.module.register_manager.free(right)
         return result_reg
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
-        left = self.visit_expression(node.left)
-        right = self.visit_expression(node.right)
-        result_reg = self.module.register_manager.allocate('temp')
+        with self.get_expression_reg(node.left, self.module) as left, \
+                self.get_expression_reg(node.right, self.module) as right:
+            result_reg = self.module.register_manager.allocate_temp()
 
-        if node.operator == ast.ComparisonOperation.Operator.GT:
-            self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
-        elif node.operator == ast.ComparisonOperation.Operator.LT:
-            self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
-        elif node.operator == ast.ComparisonOperation.Operator.GTE:
-            self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
-            self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
-        elif node.operator == ast.ComparisonOperation.Operator.LTE:
-            self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
-            self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
-        elif node.operator == ast.ComparisonOperation.Operator.EQ:
-            self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
-        elif node.operator == ast.ComparisonOperation.Operator.NEQ:
-            self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
+            if node.operator == ast.ComparisonOperation.Operator.GT:
+                self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+            elif node.operator == ast.ComparisonOperation.Operator.LT:
+                self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+            elif node.operator == ast.ComparisonOperation.Operator.GTE:
+                self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+                self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+            elif node.operator == ast.ComparisonOperation.Operator.LTE:
+                self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+                self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+            elif node.operator == ast.ComparisonOperation.Operator.EQ:
+                self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
+            elif node.operator == ast.ComparisonOperation.Operator.NEQ:
+                self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
 
-        self.module.register_manager.free(left)
-        self.module.register_manager.free(right)
         return result_reg
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         value = self.visit_expression(node.value)
-        result_reg = self.module.register_manager.allocate('temp')
-
         if node.operator == ast.UnaryExpression.Operator.POSITIVE:
-            self.builder.add_instruction(f"move {result_reg}, {value}")
+            return value
         elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
+            result_reg = self.module.register_manager.allocate_temp()
             self.builder.add_instruction(f"neg {result_reg}, {value}")
+            self.module.register_manager.free(value)
+            return result_reg
         elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
+            result_reg = self.module.register_manager.allocate_temp()
             self.builder.add_instruction(f"not {result_reg}, {value}")
+            self.module.register_manager.free(value)
+            return result_reg
         elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
+            result_reg = self.module.register_manager.allocate_temp()
             self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
+            self.module.register_manager.free(value)
+            return result_reg
         elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
             addr = self.variable_addresses[node.value.name]
-            self.builder.add_instruction(f"la {result_reg}, {addr}")
+            return addr
         elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+            result_reg = self.module.register_manager.allocate_temp()
             self.builder.add_instruction(f"lw {result_reg}, 0({value})")
-
-        self.module.register_manager.free(value)
-        return result_reg
+            self.module.register_manager.free(value)
+            return result_reg
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
-        value = self.visit_expression(node.amount)
-        amount = self.visit_expression(node.value)
+        with self.get_expression_reg(node.value, self.module) as value, \
+                self.get_expression_reg(node.amount, self.module) as amount:
 
-        result_reg = self.module.register_manager.allocate('temp')
+            result_reg = self.module.register_manager.allocate_temp()
 
-        if node.operator == ast.ShiftExpression.Operator.LEFT:
-            self.builder.add_instruction(f"sll {result_reg}, {value}, {amount}")
-        elif node.operator == ast.ShiftExpression.Operator.RIGHT:
-            self.builder.add_instruction(f"srl {result_reg}, {value}, {amount}")
-
-        self.module.register_manager.free(value)
-        self.module.register_manager.free(amount)
+            if node.operator == ast.ShiftExpression.Operator.LEFT:
+                self.builder.add_instruction(f"sll {result_reg}, {value}, {amount}")
+            elif node.operator == ast.ShiftExpression.Operator.RIGHT:
+                self.builder.add_instruction(f"srl {result_reg}, {value}, {amount}")
 
         return result_reg
 
     def visit_function_call(self, node: ast.FunctionCall):
-        regs = []
+        arg_regs = []
         for arg in node.arguments:
             with self.get_expression_reg(arg, self.module) as arg_eval:
                 arg_reg = self.module.register_manager.allocate('arg')
-                regs.append(arg_reg)
+                arg_regs.append(arg_reg)
                 self.builder.add_instruction(f"move {arg_reg}, {arg_eval}")
 
         self.builder.add_instruction(f"jal {node.name}")
         self.builder.add_instruction("nop")
 
-        for reg in reversed(regs):
+        for reg in reversed(arg_regs):
             self.module.register_manager.free(reg)
 
-        reg = self.module.register_manager.allocate('temp')
-        self.builder.add_instruction(f"move {reg}, $v0")
-        return reg
+        result_reg = self.module.register_manager.allocate_temp()
+        self.builder.add_instruction(f"move {result_reg}, $v0")
+        return result_reg
 
     def visit_printf_call(self, node: ast.PrintFCall):
         label = f"printf_{uuid.uuid4().hex}"
@@ -358,16 +353,16 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_if_statement(self, node: ast.IfStatement):
-        condition = self.visit_expression(node.condition)
-        if node.else_statement is None:
-            with self.builder.if_then(condition):
-                self.visit_body(node.body)
-        else:
-            with self.builder.if_else(condition) as (true_block, false_block):
-                with true_block:
+        with self.get_expression_reg(node.condition, self.module) as condition:
+            if node.else_statement is None:
+                with self.builder.if_then(condition):
                     self.visit_body(node.body)
-                with false_block:
-                    self.visit_else_statement(node.else_statement)
+            else:
+                with self.builder.if_else(condition) as (true_block, false_block):
+                    with true_block:
+                        self.visit_body(node.body)
+                    with false_block:
+                        self.visit_else_statement(node.else_statement)
 
     def visit_else_statement(self, node: ast.ElseStatement):
         if isinstance(node, ast.IfStatement):
@@ -385,9 +380,8 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_return_statement(self, node: ast.ReturnStatement):
-        result_eval = self.visit_expression(node.expression)
-        self.builder.add_instruction(f"move $v0, {result_eval}")
-        self.module.register_manager.free(result_eval)
+        with self.get_expression_reg(node.expression, self.module) as result_eval:
+            self.builder.add_instruction(f"move $v0, {result_eval}")
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         pass
@@ -398,12 +392,22 @@ class MIPSGenerator(AstVisitor):
     def visit_type(self, node: Union[ast.Type, ast.Expression]):
         if isinstance(node, ast.Type):
             if isinstance(node.type, ast.BaseType):
+                base_type = None
                 if node.type == ast.BaseType.int:
-                    return Int()
+                    base_type = Int()
                 elif node.type == ast.BaseType.float:
-                    return Float()
+                    base_type = Float()
                 elif node.type == ast.BaseType.char:
-                    return Char()
+                    base_type = Char()
+                else:
+                    raise NotImplementedError(f"Base type {node.type} is not supported")
+
+                # Handle pointers
+                if node.address_qualifiers:
+                    for qualifier in node.address_qualifiers:
+                        if qualifier == ast.AddressQualifier.pointer:
+                            base_type = Pointer(base_type)
+                return base_type
             elif isinstance(node.type, ast.ArrayType):
                 return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes))
             elif isinstance(node.type, ast.StructType):
@@ -416,7 +420,13 @@ class MIPSGenerator(AstVisitor):
             return Char()
         elif isinstance(node, ast.IDENTIFIER):
             return self.var_types[node.name]
-        elif AddressQualifier.pointer in getattr(node, 'address_qualifiers', []):
-            return Pointer(self.visit_type(ast.Type(node.type, address_qualifiers=node.address_qualifiers[1:])))
+        elif isinstance(node, ast.BinaryArithmetic):
+            left_type = self.visit_type(node.left)
+            right_type = self.visit_type(node.right)
+            if isinstance(left_type, Float) or isinstance(right_type, Float):
+                return Float()
+            else:
+                return Int()
         else:
             raise NotImplementedError(f"Type visit not implemented for {type(node)}")
+
