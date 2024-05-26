@@ -300,37 +300,51 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        if isinstance(node.target, ast.ArrayAccess):
-            # Recursively resolve the inner array access
-            target_reg = self.visit_array_access(node.target)
-        else:
-            # Handle the base case where the target is an identifier
-            target_reg = self.visit_identifier(node.target)
+        base = node
+        indices = []
+        while isinstance(base, ast.ArrayAccess):
+            indices.append(base.index)
+            base = base.target
+        indices.reverse()
 
-        # Evaluate the index
-        index_reg = self.visit_expression(node.index)
+        array_name = None
+        if isinstance(base, ast.IDENTIFIER):
+            array_name = base.name
 
-        # TODO: Calculate the address of the array element, below is a dummy implementation but not correct
+        # Get the type of the array
+        array_type = self.var_types[array_name]
 
-        # Allocate a register for the result
+        # Compute the dimensions
+        dimensions = []
+        for dim in array_type.dimensions.sizes:
+            dimensions.append(dim.value)
+
+        # Compute the offset
+        offset = 0
+        for i, index in enumerate(indices):
+            stride = array_type.target.width
+            for dim in dimensions[i + 1:]:
+                stride *= dim
+            offset += index.value * stride
+
+        # Load the frame address into a register
+        base_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"lw {base_reg}, {self.variable_addresses[array_name]}")
+        # Load the value into another register
+        offset_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"li {offset_reg}, {offset}")
+        # Compute the target address
+        target_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"add {target_reg}, {base_reg}, {offset_reg}")
+        # Laad the resulut in a new register
         result_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"lw {result_reg}, 0({target_reg})")
 
-        # Assuming the size of each element in the array is 4 bytes (standard for 32-bit int)
-        element_size = 4
-
-        # Calculate the address
-        self.builder.add_instruction(f"mul {index_reg}, {index_reg}, {element_size}")
-        self.builder.add_instruction(f"add {result_reg}, {target_reg}, {index_reg}")
-
-        # Load value from the calculated address
-        self.builder.add_instruction(f"lw {result_reg}, 0({result_reg})")
-
-        # Free the temporary registers
+        self.module.register_manager.free(base_reg)
+        self.module.register_manager.free(offset_reg)
         self.module.register_manager.free(target_reg)
-        self.module.register_manager.free(index_reg)
 
         return result_reg
-
     def visit_struct_definition(self, node: ast.StructDefinition):
         # Implement struct definition logic
         pass
@@ -394,7 +408,7 @@ class MIPSGenerator(AstVisitor):
         elif node.type == ast.BaseType.char:
             return Char()
         elif isinstance(node.type, ast.ArrayType):
-            return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes))
+            return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes), node.type.array_sizes)
         else:
             raise NotImplementedError("Only int, float and char are supported for default initializers")
 
