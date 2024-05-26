@@ -22,13 +22,16 @@ class MIPSGenerator(AstVisitor):
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
         reg = self.visit_expression(expression)
+        print(f"Allocated {reg} of type temp for expression {expression}")
         try:
             yield reg
         finally:
-            if reg in module.register_manager.used_registers['temp'] or reg in module.register_manager.used_registers['float']:
+            if reg in module.register_manager.used_registers['temp'] or reg in module.register_manager.used_registers[
+                'float']:
                 module.register_manager.free(reg)
+                print(f"Freed {reg} of type temp for expression {expression}")
             else:
-                print(f"Warning: Attempted to free register {reg} which was not in use")
+                print(f"Warning: Attempted to free register {reg} which was not in use for expression {expression}")
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -74,32 +77,30 @@ class MIPSGenerator(AstVisitor):
             allocation_address = self.builder.allocate(var_type)
             self.variable_addresses[qualifier.identifier] = allocation_address
             self.var_types[qualifier.identifier] = var_type
-            reg = self.visit_expression(qualifier.initializer)
 
-            # Determine the type of the initializer
-            initializer_type = self.determine_type(qualifier.initializer)
+            with self.get_expression_reg(qualifier.initializer, self.module) as reg:
+                # Determine the type of the initializer
+                initializer_type = self.determine_type(qualifier.initializer)
 
-            # Handle implicit conversion if necessary
-            if isinstance(var_type, Float) and isinstance(initializer_type, Int):
-                float_reg = self.module.register_manager.allocate_float()
-                self.builder.add_instruction(f"mtc1 {reg}, {float_reg}")
-                self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-                self.builder.store_float(float_reg, allocation_address)
-                self.module.register_manager.free(float_reg)
-            elif isinstance(var_type, Int) and isinstance(initializer_type, Float):
-                float_reg = self.module.register_manager.allocate_float()
-                self.builder.add_instruction(f"cvt.w.s {float_reg}, {reg}")
-                int_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-                self.builder.store(int_reg, allocation_address)
-                self.module.register_manager.free(float_reg)
-                self.module.register_manager.free(int_reg)
-            elif isinstance(var_type, Float):
-                self.builder.store_float(reg, allocation_address)
-            else:
-                self.builder.store(reg, allocation_address)
-
-            self.module.register_manager.free(reg)
+                # Handle implicit conversion if necessary
+                if isinstance(var_type, Float) and isinstance(initializer_type, Int):
+                    float_reg = self.module.register_manager.allocate_float()
+                    self.builder.add_instruction(f"mtc1 {reg}, {float_reg}")
+                    self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
+                    self.builder.store_float(float_reg, allocation_address)
+                    self.module.register_manager.free(float_reg)
+                elif isinstance(var_type, Int) and isinstance(initializer_type, Float):
+                    float_reg = self.module.register_manager.allocate_float()
+                    self.builder.add_instruction(f"cvt.w.s {float_reg}, {reg}")
+                    int_reg = self.module.register_manager.allocate_temp()
+                    self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
+                    self.builder.store(int_reg, allocation_address)
+                    self.module.register_manager.free(float_reg)
+                    self.module.register_manager.free(int_reg)
+                elif isinstance(var_type, Float):
+                    self.builder.store_float(reg, allocation_address)
+                else:
+                    self.builder.store(reg, allocation_address)
 
     def determine_type(self, expr):
         if isinstance(expr, ast.INT):
@@ -134,46 +135,43 @@ class MIPSGenerator(AstVisitor):
             raise NotImplementedError(f"Type determination not implemented for {type(expr)}")
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        right_eval = self.visit_expression(node.right)
-        if isinstance(node.left,
-                      ast.UnaryExpression) and node.left.operator == ast.UnaryExpression.Operator.DEREFERENCE:
-            # Handle dereferencing on the left side
-            left_addr = self.visit_expression(node.left.value)
-            self.builder.add_instruction(f"sw {right_eval}, 0({left_addr})")
-            self.module.register_manager.free(left_addr)
-        else:
-            left_eval = self.visit_expression(node.left)
-            if not left_eval.startswith('$'):
-                # If the left side is not a register, it should be an address
-                self.builder.add_instruction(f"sw {right_eval}, {left_eval}")
+        with self.get_expression_reg(node.right, self.module) as right_eval:
+            if isinstance(node.left,
+                          ast.UnaryExpression) and node.left.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+                # Handle dereferencing on the left side
+                with self.get_expression_reg(node.left.value, self.module) as left_addr:
+                    self.builder.add_instruction(f"sw {right_eval}, 0({left_addr})")
             else:
-                # If the left side is a register, move the value from the right register to the left register
-                left_type = self.var_types[node.left.name]
-                right_type = self.determine_type(node.right)
-
-                if isinstance(left_type, Int) and isinstance(right_type, Float):
-                    # Convert float to int
-                    float_reg = right_eval
-                    int_reg = self.module.register_manager.allocate_temp()
-                    self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
-                    self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-                    self.builder.add_instruction(f"move {left_eval}, {int_reg}")
-                    self.module.register_manager.free(int_reg)
-                elif isinstance(left_type, Float) and isinstance(right_type, Int):
-                    # Convert int to float
-                    int_reg = right_eval
-                    float_reg = self.module.register_manager.allocate_float()
-                    self.builder.add_instruction(f"mtc1 {int_reg}, {float_reg}")
-                    self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-                    self.builder.add_instruction(f"mov.s {left_eval}, {float_reg}")
-                    self.module.register_manager.free(float_reg)
-                else:
-                    if isinstance(left_type, Float):
-                        self.builder.add_instruction(f"mov.s {left_eval}, {right_eval}")
+                with self.get_expression_reg(node.left, self.module) as left_eval:
+                    if not left_eval.startswith('$'):
+                        # If the left side is not a register, it should be an address
+                        self.builder.add_instruction(f"sw {right_eval}, {left_eval}")
                     else:
-                        self.builder.add_instruction(f"move {left_eval}, {right_eval}")
+                        # If the left side is a register, move the value from the right register to the left register
+                        left_type = self.var_types[node.left.name]
+                        right_type = self.determine_type(node.right)
 
-        self.module.register_manager.free(right_eval)
+                        if isinstance(left_type, Int) and isinstance(right_type, Float):
+                            # Convert float to int
+                            float_reg = right_eval
+                            int_reg = self.module.register_manager.allocate_temp()
+                            self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
+                            self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
+                            self.builder.add_instruction(f"move {left_eval}, {int_reg}")
+                            self.module.register_manager.free(int_reg)
+                        elif isinstance(left_type, Float) and isinstance(right_type, Int):
+                            # Convert int to float
+                            int_reg = right_eval
+                            float_reg = self.module.register_manager.allocate_float()
+                            self.builder.add_instruction(f"mtc1 {int_reg}, {float_reg}")
+                            self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
+                            self.builder.add_instruction(f"mov.s {left_eval}, {float_reg}")
+                            self.module.register_manager.free(float_reg)
+                        else:
+                            if isinstance(left_type, Float):
+                                self.builder.add_instruction(f"mov.s {left_eval}, {right_eval}")
+                            else:
+                                self.builder.add_instruction(f"move {left_eval}, {right_eval}")
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         if node.c_syntax:
@@ -209,32 +207,29 @@ class MIPSGenerator(AstVisitor):
         return reg
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
-        expr_reg = self.visit_expression(node.expression)
-        target_type = self.visit_type(node.cast_type)
-        source_type = self.visit_type(node.expression)
+        with self.get_expression_reg(node.expression, self.module) as expr_reg:
+            target_type = self.visit_type(node.cast_type)
+            source_type = self.visit_type(node.expression)
 
-        if isinstance(target_type, Float) and isinstance(source_type, Int):
-            float_reg = self.module.register_manager.allocate_float()
-            self.builder.add_instruction(f"mtc1 {expr_reg}, {float_reg}")
-            self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-            self.module.register_manager.free(expr_reg)
-            return float_reg
-        elif isinstance(target_type, Int) and isinstance(source_type, Float):
-            float_reg = self.module.register_manager.allocate_float()
-            self.builder.add_instruction(f"mov.s {float_reg}, {expr_reg}")
-            int_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
-            self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-            self.module.register_manager.free(float_reg)
-            self.module.register_manager.free(expr_reg)
-            return int_reg
-        elif isinstance(target_type, Char) and isinstance(source_type, Int):
-            char_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"andi {char_reg}, {expr_reg}, 0xFF")
-            self.module.register_manager.free(expr_reg)
-            return char_reg
-        else:
-            return expr_reg
+            if isinstance(target_type, Float) and isinstance(source_type, Int):
+                float_reg = self.module.register_manager.allocate_float()
+                self.builder.add_instruction(f"mtc1 {expr_reg}, {float_reg}")
+                self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
+                return float_reg
+            elif isinstance(target_type, Int) and isinstance(source_type, Float):
+                float_reg = self.module.register_manager.allocate_float()
+                self.builder.add_instruction(f"mov.s {float_reg}, {expr_reg}")
+                int_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
+                self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
+                self.module.register_manager.free(float_reg)
+                return int_reg
+            elif isinstance(target_type, Char) and isinstance(source_type, Int):
+                char_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"andi {char_reg}, {expr_reg}, 0xFF")
+                return char_reg
+            else:
+                return expr_reg
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         with self.get_expression_reg(node.left, self.module) as left, \
@@ -244,50 +239,47 @@ class MIPSGenerator(AstVisitor):
             right_type = self.determine_type(node.right)
 
             if isinstance(left_type, Float) or isinstance(right_type, Float):
-                # Ensure both operands are floats
                 if not isinstance(left_type, Float):
-                    float_left = self.module.register_manager.allocate_float()
-                    self.builder.add_instruction(f"mtc1 {left}, {float_left}")
-                    self.builder.add_instruction(f"cvt.s.w {float_left}, {float_left}")
-                    self.module.register_manager.free(left)
-                    left = float_left
+                    with self.get_expression_reg(node.left, self.module) as float_left:
+                        self.builder.add_instruction(f"mtc1 {left}, {float_left}")
+                        self.builder.add_instruction(f"cvt.s.w {float_left}, {float_left}")
+                        left = float_left
 
                 if not isinstance(right_type, Float):
-                    float_right = self.module.register_manager.allocate_float()
-                    self.builder.add_instruction(f"mtc1 {right}, {float_right}")
-                    self.builder.add_instruction(f"cvt.s.w {float_right}, {float_right}")
-                    self.module.register_manager.free(right)
-                    right = float_right
+                    with self.get_expression_reg(node.right, self.module) as float_right:
+                        self.builder.add_instruction(f"mtc1 {right}, {float_right}")
+                        self.builder.add_instruction(f"cvt.s.w {float_right}, {float_right}")
+                        right = float_right
 
                 result_reg = self.module.register_manager.allocate_float()
-                if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                    self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                    self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                    self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                    self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
-
-                self.module.register_manager.free(left)
-                self.module.register_manager.free(right)
+                try:
+                    if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                        self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                        self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                        self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                        self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
+                    return result_reg
+                finally:
+                    self.module.register_manager.free(result_reg)
             else:
                 result_reg = self.module.register_manager.allocate_temp()
-                if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                    self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                    self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                    self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                    self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryArithmetic.Operator.MOD:
-                    self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
-
-                self.module.register_manager.free(left)
-                self.module.register_manager.free(right)
-
-        return result_reg
+                try:
+                    if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                        self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                        self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                        self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                        self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
+                    elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+                        self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
+                    return result_reg
+                finally:
+                    self.module.register_manager.free(result_reg)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         with self.get_expression_reg(node.left, self.module) as left, \
@@ -301,98 +293,83 @@ class MIPSGenerator(AstVisitor):
             elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
                 self.builder.add_instruction(f"xor {result_reg}, {left}, {right}")
 
-            self.module.register_manager.free(left)
-            self.module.register_manager.free(right)
-
         return result_reg
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
         with self.get_expression_reg(node.left, self.module) as left, \
                 self.get_expression_reg(node.right, self.module) as right:
             result_reg = self.module.register_manager.allocate_temp()
-
-            if node.operator == ast.BinaryLogicalOperation.Operator.AND:
-                self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
-            elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
-                self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
-
-            self.module.register_manager.free(left)
-            self.module.register_manager.free(right)
-
-        return result_reg
+            try:
+                if node.operator == ast.BinaryLogicalOperation.Operator.AND:
+                    self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
+                    self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+                return result_reg
+            finally:
+                self.module.register_manager.free(result_reg)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         with self.get_expression_reg(node.left, self.module) as left, \
                 self.get_expression_reg(node.right, self.module) as right:
             result_reg = self.module.register_manager.allocate_temp()
-
-            if node.operator == ast.ComparisonOperation.Operator.GT:
-                self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
-            elif node.operator == ast.ComparisonOperation.Operator.LT:
-                self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
-            elif node.operator == ast.ComparisonOperation.Operator.GTE:
-                self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
-                self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
-            elif node.operator == ast.ComparisonOperation.Operator.LTE:
-                self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
-                self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
-            elif node.operator == ast.ComparisonOperation.Operator.EQ:
-                self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
-            elif node.operator == ast.ComparisonOperation.Operator.NEQ:
-                self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
-
-            self.module.register_manager.free(left)
-            self.module.register_manager.free(right)
-
-        return result_reg
+            try:
+                if node.operator == ast.ComparisonOperation.Operator.GT:
+                    self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+                elif node.operator == ast.ComparisonOperation.Operator.LT:
+                    self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+                elif node.operator == ast.ComparisonOperation.Operator.GTE:
+                    self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+                    self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+                elif node.operator == ast.ComparisonOperation.Operator.LTE:
+                    self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+                    self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+                elif node.operator == ast.ComparisonOperation.Operator.EQ:
+                    self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
+                elif node.operator == ast.ComparisonOperation.Operator.NEQ:
+                    self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
+                return result_reg
+            finally:
+                self.module.register_manager.free(result_reg)
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
-        value = self.visit_expression(node.value)
-        if node.operator == ast.UnaryExpression.Operator.POSITIVE:
-            return value
-        elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
-            result_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"neg {result_reg}, {value}")
-            self.module.register_manager.free(value)
-            return result_reg
-        elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
-            result_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"not {result_reg}, {value}")
-            self.module.register_manager.free(value)
-            return result_reg
-        elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
-            result_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
-            self.module.register_manager.free(value)
-            return result_reg
-        elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
-            result_reg = self.module.register_manager.allocate_temp()
-            addr = self.variable_addresses[node.value.name]
-            self.builder.add_instruction(f"la {result_reg}, {addr}")
-            return result_reg
-        elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
-            result_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"lw {result_reg}, 0({value})")
-            self.module.register_manager.free(value)
-            return result_reg
-        elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
-            result_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"addi {result_reg}, {value}, 1")
-            if not node.prefix:
-                self.module.register_manager.free(result_reg)
+        with self.get_expression_reg(node.value, self.module) as value:
+            if node.operator == ast.UnaryExpression.Operator.POSITIVE:
                 return value
-            self.module.register_manager.free(value)
-            return result_reg
-        elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
-            result_reg = self.module.register_manager.allocate_temp()
-            self.builder.add_instruction(f"addi {result_reg}, {value}, -1")
-            if not node.prefix:
-                self.module.register_manager.free(result_reg)
-                return value
-            self.module.register_manager.free(value)
-            return result_reg
-        else:
-            raise NotImplementedError(f"Unary operator {node.operator} is not supported")
+            elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
+                result_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"neg {result_reg}, {value}")
+                return result_reg
+            elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
+                result_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"not {result_reg}, {value}")
+                return result_reg
+            elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
+                result_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
+                return result_reg
+            elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
+                result_reg = self.module.register_manager.allocate_temp()
+                addr = self.variable_addresses[node.value.name]
+                self.builder.add_instruction(f"la {result_reg}, {addr}")
+                return result_reg
+            elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
+                result_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"lw {result_reg}, 0({value})")
+                return result_reg
+            elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
+                result_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"addi {result_reg}, {value}, 1")
+                if not node.prefix:
+                    return value
+                return result_reg
+            elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
+                result_reg = self.module.register_manager.allocate_temp()
+                self.builder.add_instruction(f"addi {result_reg}, {value}, -1")
+                if not node.prefix:
+                    return value
+                return result_reg
+            else:
+                raise NotImplementedError(f"Unary operator {node.operator} is not supported")
 
     def visit_shift_expression(self, node: ast.ShiftExpression):
         with self.get_expression_reg(node.value, self.module) as value, \
@@ -404,9 +381,6 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"sll {result_reg}, {value}, {amount}")
             elif node.operator == ast.ShiftExpression.Operator.RIGHT:
                 self.builder.add_instruction(f"srl {result_reg}, {value}, {amount}")
-
-            self.module.register_manager.free(value)
-            self.module.register_manager.free(amount)
 
         return result_reg
 
@@ -432,13 +406,16 @@ class MIPSGenerator(AstVisitor):
         # Link the printf block
         label = f"printf_{uuid.uuid4().hex}"
 
-        # Call the printf function to handle data and instruction generation
-        args_eval = [self.visit_expression(arg) for arg in node.args]  # This is a list of registers
+        # Evaluate arguments with context manager
+        args_eval = []
+        for arg in node.args:
+            with self.get_expression_reg(arg, self.module) as arg_eval:
+                args_eval.append(arg_eval)
+
+        # Generate the printf call
         self.module.printf(label, node.format, args_eval)
 
-        for reg in args_eval:
-            self.module.register_manager.free(reg)
-
+        # Add instruction to call the printf function
         self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
 
@@ -478,18 +455,15 @@ class MIPSGenerator(AstVisitor):
         else:
             target_reg = self.visit_identifier(node.target)
 
-        index_reg = self.visit_expression(node.index)
+        with self.get_expression_reg(node.index, self.module) as index_reg:
+            result_reg = self.module.register_manager.allocate('temp')
+            element_size = 4
 
-        result_reg = self.module.register_manager.allocate('temp')
-        element_size = 4
-
-        self.builder.add_instruction(f"mul {index_reg}, {index_reg}, {element_size}")
-        self.builder.add_instruction(f"add {result_reg}, {target_reg}, {index_reg}")
-        self.builder.add_instruction(f"lw {result_reg}, 0({result_reg})")
+            self.builder.add_instruction(f"mul {index_reg}, {index_reg}, {element_size}")
+            self.builder.add_instruction(f"add {result_reg}, {target_reg}, {index_reg}")
+            self.builder.add_instruction(f"lw {result_reg}, 0({result_reg})")
 
         self.module.register_manager.free(target_reg)
-        self.module.register_manager.free(index_reg)
-
         return result_reg
 
     def visit_struct_definition(self, node: ast.StructDefinition):
