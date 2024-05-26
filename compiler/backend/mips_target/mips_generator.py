@@ -287,13 +287,23 @@ class MIPSGenerator(AstVisitor):
         return total_size
 
 
+    def array_elements(self, elements, elements_list=[]):
+        for element in elements:
+            if isinstance(element, ast.ArrayInitializer):
+                self.array_elements(element.elements, elements_list)
+            else:
+                elements_list.append(repr(element.value))
+
+
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if node.struct_type:
             return self.visit_struct_initializer(node)
         # Store the array data in the data block
         label = f"array_{uuid.uuid4().hex}"
         array_block = self.module.data_block(label)
-        self.module.array(array_block, node.elements)
+        elements = []
+        self.array_elements(node.elements, elements)
+        self.module.array(array_block, elements)
         # Now you should first store the address of the array in a register
         reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"la {reg}, {label}")
@@ -343,6 +353,8 @@ class MIPSGenerator(AstVisitor):
         self.module.register_manager.free(base_reg)
         self.module.register_manager.free(offset_reg)
         self.module.register_manager.free(target_reg)
+
+        # TODO: return (target_reg, result_reg)
 
         return result_reg
     def visit_struct_definition(self, node: ast.StructDefinition):

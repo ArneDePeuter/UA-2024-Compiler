@@ -40,12 +40,8 @@ class Module:
     def array(self, array_data_block: Block, elements: list):
         words = []
         for elem in elements:
-            if isinstance(elem, ast.ArrayInitializer):
-                self.array(array_data_block, elem.elements)
-            else:
-                words.append(repr(elem.value))
-        if words:
-            array_data_block.add_instruction(f".word {', '.join(words)}")
+            words.append(elem)
+        array_data_block.add_instruction(f".word {', '.join(words)}")
 
     def printf(self, label: str, format_string: str, args: list):
         """
