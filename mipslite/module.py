@@ -43,7 +43,7 @@ class Module:
             if isinstance(elem, ast.ArrayInitializer):
                 self.array(array_data_block, elem.elements)
             else:
-                words.append(str(elem.value))
+                words.append(repr(elem.value))
         if words:
             array_data_block.add_instruction(f".word {', '.join(words)}")
 
