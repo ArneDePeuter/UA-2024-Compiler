@@ -255,34 +255,28 @@ class MIPSGenerator(AstVisitor):
                         right = float_right
 
                 result_reg = self.module.register_manager.allocate_float()
-                try:
-                    if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                        self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                        self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                        self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                        self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
-                    return result_reg
-                finally:
-                    self.module.register_manager.free(result_reg)
+                if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                    self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                    self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                    self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                    self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
+                return result_reg
             else:
                 result_reg = self.module.register_manager.allocate_temp()
-                try:
-                    if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                        self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                        self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                        self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                        self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
-                    elif node.operator == ast.BinaryArithmetic.Operator.MOD:
-                        self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
-                    return result_reg
-                finally:
-                    self.module.register_manager.free(result_reg)
+                if node.operator == ast.BinaryArithmetic.Operator.PLUS:
+                    self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
+                    self.builder.add_instruction(f"sub {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MUL:
+                    self.builder.add_instruction(f"mul {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.DIV:
+                    self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
+                elif node.operator == ast.BinaryArithmetic.Operator.MOD:
+                    self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
+                return result_reg
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         with self.get_expression_reg(node.left, self.module) as left, \
@@ -302,37 +296,32 @@ class MIPSGenerator(AstVisitor):
         with self.get_expression_reg(node.left, self.module) as left, \
                 self.get_expression_reg(node.right, self.module) as right:
             result_reg = self.module.register_manager.allocate_temp()
-            try:
-                if node.operator == ast.BinaryLogicalOperation.Operator.AND:
-                    self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
-                elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
-                    self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
-                return result_reg
-            finally:
-                self.module.register_manager.free(result_reg)
+            if node.operator == ast.BinaryLogicalOperation.Operator.AND:
+                self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+            elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
+                self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+            return result_reg
+
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         with self.get_expression_reg(node.left, self.module) as left, \
                 self.get_expression_reg(node.right, self.module) as right:
             result_reg = self.module.register_manager.allocate_temp()
-            try:
-                if node.operator == ast.ComparisonOperation.Operator.GT:
-                    self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
-                elif node.operator == ast.ComparisonOperation.Operator.LT:
-                    self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
-                elif node.operator == ast.ComparisonOperation.Operator.GTE:
-                    self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
-                    self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
-                elif node.operator == ast.ComparisonOperation.Operator.LTE:
-                    self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
-                    self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
-                elif node.operator == ast.ComparisonOperation.Operator.EQ:
-                    self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
-                elif node.operator == ast.ComparisonOperation.Operator.NEQ:
-                    self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
-                return result_reg
-            finally:
-                self.module.register_manager.free(result_reg)
+            if node.operator == ast.ComparisonOperation.Operator.GT:
+                self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+            elif node.operator == ast.ComparisonOperation.Operator.LT:
+                self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+            elif node.operator == ast.ComparisonOperation.Operator.GTE:
+                self.builder.add_instruction(f"slt {result_reg}, {left}, {right}")
+                self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+            elif node.operator == ast.ComparisonOperation.Operator.LTE:
+                self.builder.add_instruction(f"slt {result_reg}, {right}, {left}")
+                self.builder.add_instruction(f"xori {result_reg}, {result_reg}, 1")
+            elif node.operator == ast.ComparisonOperation.Operator.EQ:
+                self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
+            elif node.operator == ast.ComparisonOperation.Operator.NEQ:
+                self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
+            return result_reg
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         with self.get_expression_reg(node.value, self.module) as value:
@@ -381,9 +370,9 @@ class MIPSGenerator(AstVisitor):
             result_reg = self.module.register_manager.allocate_temp()
 
             if node.operator == ast.ShiftExpression.Operator.LEFT:
-                self.builder.add_instruction(f"sll {result_reg}, {value}, {amount}")
+                self.builder.add_instruction(f"sllv {result_reg}, {value}, {amount}")
             elif node.operator == ast.ShiftExpression.Operator.RIGHT:
-                self.builder.add_instruction(f"srl {result_reg}, {value}, {amount}")
+                self.builder.add_instruction(f"srlv {result_reg}, {value}, {amount}")
 
         return result_reg
 
