@@ -74,7 +74,7 @@ class MIPSGenerator(AstVisitor):
                 elif node.var_type.type == ast.BaseType.char:
                     qualifier.initializer = ast.CHAR('\0')
                 else:
-                    raise NotImplementedError("Only int, float, and char are supported for default initializers")
+                    raise NotImplementedError(f"Only int, float, and char are supported for default initializers, not {node.var_type.type}")
             allocation_address = self.builder.allocate(var_type)
             self.variable_addresses[qualifier.identifier] = allocation_address
             self.var_types[qualifier.identifier] = var_type
@@ -411,14 +411,16 @@ class MIPSGenerator(AstVisitor):
 
     def visit_scanf_call(self, node: ast.ScanFCall):
         label = f"scanf_{uuid.uuid4().hex}"
-        self.module.scanf(label, node.format)
 
         regs = [self.visit_expression(arg) for arg in node.args]
-        self.builder.add_instruction(f"jal {label}")
-        self.builder.add_instruction("nop")
+        self.module.scanf(label, node.format, regs)
 
         for reg in reversed(regs):
             self.module.register_manager.free(reg)
+
+        self.builder.add_instruction(f"jal {label}")
+        self.builder.add_instruction("nop")
+
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         total_size = 1

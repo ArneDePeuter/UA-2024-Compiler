@@ -119,19 +119,19 @@ class Module:
                 if part.count('d') > 0:
                     scanf_block.add_instruction("li $v0, 5")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index]})")
                 elif part.count('x') > 0:
                     scanf_block.add_instruction("li $v0, 34")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index]})")
                 elif part.count('f') > 0:
                     scanf_block.add_instruction("li $v0, 6")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"s.d $f0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"s.d $f0, 0({args[arg_index]})")
                 elif part.count('c') > 0:
                     scanf_block.add_instruction("li $v0, 12")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sb $v0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"sb $v0, 0({args[arg_index]})")
                 elif part.count('s') > 0:
                     # Assume the argument is an address for storing the string
                     scanf_block.add_instruction("li $v0, 8")
