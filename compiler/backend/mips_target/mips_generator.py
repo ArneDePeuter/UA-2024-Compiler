@@ -55,6 +55,7 @@ class MIPSGenerator(AstVisitor):
             self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
             self.var_types[parameter.name] = param_type
             self.builder.store(f"$a{len(node.parameters) - i - 1}", self.variable_addresses[parameter.name])
+        self.var_types[node.name] = self.visit_type(node.return_type)
         self.visit_body(node.body)
         self.builder = None
 
@@ -131,6 +132,8 @@ class MIPSGenerator(AstVisitor):
                 return Float()
             else:
                 return Int()
+        elif isinstance(expr, ast.FunctionCall):
+            return self.var_types[expr.name]
         else:
             raise NotImplementedError(f"Type determination not implemented for {type(expr)}")
 
