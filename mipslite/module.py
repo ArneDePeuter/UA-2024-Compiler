@@ -18,7 +18,7 @@ class Module:
             repr_str = ".data\n"
             repr_str += "\n".join(map(str, self.data_blocks))
         if self.text_blocks:
-            repr_str += "\n\n.text\n"
+            repr_str += "\n\n.text\n.globl main\n"
             repr_str += "\n".join(map(str, self.text_blocks))
         return repr_str
 
