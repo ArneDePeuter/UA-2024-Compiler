@@ -70,7 +70,7 @@ class Function:
         self.current_block.add_instruction(f"sw {src}, {dest}")
 
     def store_float(self, src: str, dest: str) -> None:
-        self.add_instruction(f"s.s {src}, {dest}")
+        self.current_block.add_instruction(f"s.s {src}, {dest}")
 
     @contextmanager
     def if_then(self, condition_register: str) -> None:
