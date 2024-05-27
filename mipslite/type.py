@@ -43,10 +43,11 @@ class Char(Type):
 
 
 class Array(Type):
-    def __init__(self, target: Type, length: int):
+    def __init__(self, target: Type, length: int, dimensions: list[int]):
         super().__init__()
         self.target = target
         self.length = length
+        self.dimensions = dimensions
 
     @cached_property
     def width(self):

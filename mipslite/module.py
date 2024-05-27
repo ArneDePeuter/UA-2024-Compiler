@@ -37,6 +37,12 @@ class Module:
         self.text_blocks.append(block)
         return block
 
+    def array(self, array_data_block: Block, elements: list):
+        words = []
+        for elem in elements:
+            words.append(elem)
+        array_data_block.add_instruction(f".word {', '.join(words)}")
+
     def printf(self, label: str, format_string: str, args: list):
         """
         Generates the MIPS assembly code for the printf function

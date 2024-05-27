@@ -278,19 +278,91 @@ class MIPSGenerator(AstVisitor):
         self.builder.add_instruction("nop")
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
-        # Implement array specifier logic
-        pass
+        total_size = 1
+        for size in node.sizes:
+            if isinstance(size, ast.INT):
+                total_size *= size.value
+            else:
+                NotImplementedError("Only int is supported for array sizes")
+        return total_size
+
+
+    def array_elements(self, elements, elements_list=[]):
+        for element in elements:
+            if isinstance(element, ast.ArrayInitializer):
+                self.array_elements(element.elements, elements_list)
+            else:
+                elements_list.append(repr(element.value))
+
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
-        # Implement array initializer logic
-        pass
+        if node.struct_type:
+            return self.visit_struct_initializer(node)
+        # Store the array data in the data block
+        label = f"array_{uuid.uuid4().hex}"
+        array_block = self.module.data_block(label)
+        elements = []
+        self.array_elements(node.elements, elements)
+        self.module.array(array_block, elements)
+        # Now you should first store the address of the array in a register
+        reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"la {reg}, {label}")
+        return reg
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        # Implement array access logic
-        pass
+        base = node
+        indices = []
+        while isinstance(base, ast.ArrayAccess):
+            indices.append(base.index)
+            base = base.target
+        indices.reverse()
 
+        array_name = None
+        if isinstance(base, ast.IDENTIFIER):
+            array_name = base.name
+
+        # Get the type of the array
+        array_type = self.var_types[array_name]
+
+        # Compute the dimensions
+        dimensions = []
+        for dim in array_type.dimensions.sizes:
+            dimensions.append(dim.value)
+
+        # Compute the offset
+        offset = 0
+        for i, index in enumerate(indices):
+            stride = array_type.target.width
+            for dim in dimensions[i + 1:]:
+                stride *= dim
+            offset += index.value * stride
+
+        # Load the frame address into a register
+        base_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"lw {base_reg}, {self.variable_addresses[array_name]}")
+        # Load the value into another register
+        offset_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"li {offset_reg}, {offset}")
+        # Compute the target address
+        target_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"add {target_reg}, {base_reg}, {offset_reg}")
+        # Laad the resulut in a new register
+        result_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"lw {result_reg}, 0({target_reg})")
+
+        self.module.register_manager.free(base_reg)
+        self.module.register_manager.free(offset_reg)
+        self.module.register_manager.free(target_reg)
+
+        # TODO: return (target_reg, result_reg)
+
+        return result_reg
     def visit_struct_definition(self, node: ast.StructDefinition):
         # Implement struct definition logic
+        pass
+
+    def visit_struct_initializer(self, node: ast.ArrayInitializer):
+        # Implement struct initializer logic
         pass
 
     def visit_struct_access(self, node: ast.StructAccess):
@@ -347,6 +419,8 @@ class MIPSGenerator(AstVisitor):
             return Float()
         elif node.type == ast.BaseType.char:
             return Char()
+        elif isinstance(node.type, ast.ArrayType):
+            return Array(self.visit_type(node.type.element_type), self.visit_array_specifier(node.type.array_sizes), node.type.array_sizes)
         else:
             raise NotImplementedError("Only int, float and char are supported for default initializers")
 
