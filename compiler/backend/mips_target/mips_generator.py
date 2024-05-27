@@ -18,6 +18,7 @@ class MIPSGenerator(AstVisitor):
         self.builder = None
         self.variable_addresses = {}
         self.var_types = {}
+        self.while_fd = {}
 
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
@@ -563,13 +564,24 @@ class MIPSGenerator(AstVisitor):
             self.visit_body(node.body)
 
     def visit_while_statement(self, node: ast.WhileStatement):
-        pass
+        with self.builder.while_loop() as (condition, start, labels):
+            condition_label, start_label, end_label = labels
+            self.while_fd[(node.line, node.position)] = (condition_label, end_label)
+            with condition:
+                with self.get_expression_reg(node.expression, self.module) as condition_reg:
+                    with start(condition_reg):
+                        self.visit_body(node.to_execute)
+
 
     def visit_break_statement(self, node: ast.BreakStatement):
-        pass
+        start_block, end_block = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.add_instruction(f"j {end_block}")
+        self.builder.add_instruction("nop")
 
     def visit_continue_statement(self, node: ast.ContinueStatement):
-        pass
+        start_block, end_block = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.add_instruction(f"j {start_block}")
+        self.builder.add_instruction("nop")
 
     def visit_return_statement(self, node: ast.ReturnStatement):
         with self.get_expression_reg(node.expression, self.module) as result_eval:

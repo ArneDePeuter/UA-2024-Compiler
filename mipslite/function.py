@@ -127,3 +127,31 @@ class Function:
         finally:
             # Create the end block after both true and false blocks are executed
             self.current_block = self.create_block(end_label)
+
+    @contextmanager
+    def while_loop(self):
+        condition_label = f"while_{uuid4().hex}"
+        start_label = f"start_{uuid4().hex}"
+        end_label = f"end_{uuid4().hex}"
+
+        @contextmanager
+        def condition_block():
+            self.add_instruction(f"j {condition_label}")
+            self.add_instruction("nop")
+            self.current_block = self.create_block(condition_label)
+            yield condition_label
+            self.add_instruction(f"j {start_label}")
+            self.add_instruction("nop")
+
+        @contextmanager
+        def start_block(result_register: str):
+            self.add_instruction(f"beq {result_register}, $zero, {end_label}")
+            self.add_instruction("nop")
+            self.current_block = self.create_block(start_label)
+            yield start_label
+            self.add_instruction(f"j {condition_label}")
+            self.add_instruction("nop")
+
+        yield condition_block(), start_block, [condition_label, start_label, end_label]
+
+        self.current_block = self.create_block(end_label)
