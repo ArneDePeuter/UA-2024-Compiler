@@ -39,8 +39,17 @@ class MIPSGenerator(AstVisitor):
         lines = result.split("\n")
         return "\n".join(lines)
 
+    def visit_variable_declaration_global(self, node: ast.VariableDeclaration):
+        var_type = self.visit_type(node.var_type)
+        for qualifier in node.qualifiers:
+            if qualifier.initializer is None: # TODO: This is a hack
+                self.variable_addresses[node.name] = self.builder.allocate(var_type)
+
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
+            if isinstance(statement, ast.VariableDeclaration):
+                self.visit_variable_declaration_global(statement)
+                continue
             self.visit_statement(statement)
 
     def visit_body(self, node: ast.Body):

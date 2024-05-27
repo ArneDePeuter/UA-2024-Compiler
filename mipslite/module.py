@@ -1,4 +1,5 @@
 import re
+import uuid
 
 from compiler.core import ast
 
@@ -91,7 +92,7 @@ class Module:
             else:
                 # Print the string
                 # Create a new data block for the string
-                printf_data_block = self.data_block(f"printf_text_{id(part)}")
+                printf_data_block = self.data_block(f"printf_text_{uuid.uuid4().hex}")
                 printf_data_block.add_instruction(f".asciiz \"{part}\"")
                 printf_block.add_instruction(f"la $a0, {printf_data_block.label}")
                 printf_block.add_instruction("li $v0, 4")
