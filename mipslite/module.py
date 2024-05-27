@@ -44,6 +44,10 @@ class Module:
             words.append(elem)
         array_data_block.add_instruction(f".word {', '.join(words)}")
 
+    def global_variable(self, label: str, value: int):
+        block = self.data_block(label)
+        block.add_instruction(f".word {value}")
+
     def printf(self, label: str, format_string: str, args: list):
         """
         Generates the MIPS assembly code for the printf function

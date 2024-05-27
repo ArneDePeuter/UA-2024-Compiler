@@ -41,9 +41,31 @@ class MIPSGenerator(AstVisitor):
 
     def visit_variable_declaration_global(self, node: ast.VariableDeclaration):
         var_type = self.visit_type(node.var_type)
+
         for qualifier in node.qualifiers:
-            if qualifier.initializer is None: # TODO: This is a hack
-                self.variable_addresses[node.name] = self.builder.allocate(var_type)
+            if qualifier.initializer is None:
+                if node.var_type.type == ast.BaseType.int:
+                    qualifier.initializer = ast.INT(0)
+                elif node.var_type.type == ast.BaseType.float:
+                    qualifier.initializer = ast.FLOAT(0.0)
+                elif node.var_type.type == ast.BaseType.char:
+                    qualifier.initializer = ast.CHAR('\0')
+                else:
+                    raise NotImplementedError("Only int, float, and char are supported for default initializers")
+
+            initializer_value = qualifier.initializer.value
+
+            if isinstance(initializer_value, int):
+                value = initializer_value
+            elif isinstance(initializer_value, float):
+                value = hex(initializer_value)  # Convert float to hexadecimal representation
+            elif isinstance(initializer_value, str) and len(initializer_value) == 1:
+                value = ord(initializer_value)
+            else:
+                raise NotImplementedError("Unsupported initializer type")
+            self.module.global_variable(qualifier.identifier, value)
+            self.variable_addresses[qualifier.identifier] = qualifier.identifier
+            self.var_types[qualifier.identifier] = var_type
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
