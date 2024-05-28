@@ -308,7 +308,7 @@ class MIPSGenerator(AstVisitor):
         else:
             reg = self.module.register_manager.allocate_temp()
             self.builder.load(reg, addr)
-        return ExpressionEval(r_value=reg)
+        return ExpressionEval(l_value=addr, r_value=reg)
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         with self.get_expression_reg(node.expression, self.module) as expr_reg:
@@ -436,7 +436,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
         with self.get_expression_reg(node.value, self.module) as value_eval:
-            value = value_eval.r_value
+            value = value_eval
             if node.operator == ast.UnaryExpression.Operator.POSITIVE:
                 return ExpressionEval(r_value=value)
             elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
@@ -461,17 +461,17 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"lw {result_reg}, 0({value})")
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
-                result_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"addi {result_reg}, {value}, 1")
+                self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, 1")
+                self.builder.add_instruction(f"sw {value.r_value}, {value.l_value}")
                 if not node.prefix:
-                    return ExpressionEval(r_value=value)
-                return ExpressionEval(r_value=result_reg)
+                    return ExpressionEval(r_value=value.l_value)
+                return ExpressionEval(r_value=value)
             elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
-                result_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"addi {result_reg}, {value}, -1")
+                self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, -1")
+                self.builder.add_instruction(f"sw {value.r_value}, {value.l_value}")
                 if not node.prefix:
-                    return ExpressionEval(r_value=value)
-                return ExpressionEval(r_value=result_reg)
+                    return ExpressionEval(r_value=value.l_value)
+                return ExpressionEval(r_value=value.r_value)
             else:
                 raise NotImplementedError(f"Unary operator {node.operator} is not supported")
 
