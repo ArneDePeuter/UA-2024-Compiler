@@ -72,24 +72,24 @@ class Module:
             elif part.startswith('%'):
                 # Print the arg
                 if part.count('d') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
                     printf_block.add_instruction("li $v0, 1")
                     printf_block.add_instruction("syscall")
                 # Check if the argument is hex
                 if part.count('x') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
                     printf_block.add_instruction("li $v0, 34")
                     printf_block.add_instruction("syscall")
                 elif part.count('f') > 0:
-                    printf_block.add_instruction(f"mov.s $f12, {args[arg_index]}")
+                    printf_block.add_instruction(f"mov.s $f12, {args[arg_index].r_value}")
                     printf_block.add_instruction("li $v0, 2")
                     printf_block.add_instruction("syscall")
                 elif part.count('c') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
                 elif part.count('s') > 0:
-                    printf_block.add_instruction(f"move $a0, {args[arg_index]}")
+                    printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
                     printf_block.add_instruction("li $v0, 4")
                     printf_block.add_instruction("syscall")
                 arg_index += 1
@@ -124,23 +124,23 @@ class Module:
                 if part.count('d') > 0:
                     scanf_block.add_instruction("li $v0, 5")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index]})")
+                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index].r_value})")
                 elif part.count('x') > 0:
                     scanf_block.add_instruction("li $v0, 34")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index]})")
+                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index].r_value})")
                 elif part.count('f') > 0:
                     scanf_block.add_instruction("li $v0, 6")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"s.d $f0, 0({args[arg_index]})")
+                    scanf_block.add_instruction(f"s.d $f0, 0({args[arg_index].r_value})")
                 elif part.count('c') > 0:
                     scanf_block.add_instruction("li $v0, 12")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sb $v0, 0({args[arg_index]})")
+                    scanf_block.add_instruction(f"sb $v0, 0({args[arg_index].r_value})")
                 elif part.count('s') > 0:
                     # Assume the argument is an address for storing the string
                     scanf_block.add_instruction("li $v0, 8")
-                    scanf_block.add_instruction(f"la $a0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"la $a0, {args[arg_index].r_value}")
                     scanf_block.add_instruction("li $a1, 256")  # Maximum number of characters to read
                     scanf_block.add_instruction("syscall")
                 arg_index += 1
