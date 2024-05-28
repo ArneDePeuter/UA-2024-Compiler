@@ -1,15 +1,23 @@
+from dataclasses import dataclass
 import uuid
+from contextlib import contextmanager
+import re
+from typing import Optional
 from typing import Union
+
 from mipslite.module import Module
 from mipslite.function import Function
 from mipslite.block import Block
 from mipslite.allocator import Allocator
 from mipslite.type import Int, Float, Char, Array, Pointer, Struct
-from contextlib import contextmanager
-import re
 
 from compiler.core.ast_visitor import AstVisitor
 from compiler.core import ast
+
+@dataclass
+class ExpressionEval:
+    l_value: Optional[str]
+    r_value: Optional[str]
 
 class MIPSGenerator(AstVisitor):
     def __init__(self):
@@ -184,7 +192,7 @@ class MIPSGenerator(AstVisitor):
     def visit_int(self, node: ast.INT):
         reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"li {reg}, {node.value}")
-        return reg
+        return ExpressionEval(r_value=reg)
 
     def visit_float(self, node: ast.FLOAT):
         reg = self.module.register_manager.allocate_float()
@@ -192,12 +200,12 @@ class MIPSGenerator(AstVisitor):
         float_data_block = self.module.data_block(label)
         float_data_block.add_instruction(f".float {node.value}")
         self.builder.add_instruction(f"l.s {reg}, {label}")
-        return reg
+        return ExpressionEval(r_value=reg)
 
     def visit_char(self, node: ast.CHAR):
         reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"li {reg}, {ord(node.value)}")
-        return reg
+        return ExpressionEval(r_value=reg)
 
     def visit_identifier(self, node: ast.IDENTIFIER):
         addr = self.variable_addresses[node.name]
@@ -207,7 +215,7 @@ class MIPSGenerator(AstVisitor):
         else:
             reg = self.module.register_manager.allocate_temp()
             self.builder.load(reg, addr)
-        return reg
+        return ExpressionEval(r_value=reg)
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         with self.get_expression_reg(node.expression, self.module) as expr_reg:
@@ -218,7 +226,7 @@ class MIPSGenerator(AstVisitor):
                 float_reg = self.module.register_manager.allocate_float()
                 self.builder.add_instruction(f"mtc1 {expr_reg}, {float_reg}")
                 self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-                return float_reg
+                return ExpressionEval(r_value=float_reg)
             elif isinstance(target_type, Int) and isinstance(source_type, Float):
                 float_reg = self.module.register_manager.allocate_float()
                 self.builder.add_instruction(f"mov.s {float_reg}, {expr_reg}")
@@ -226,13 +234,13 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
                 self.module.register_manager.free(float_reg)
-                return int_reg
+                return ExpressionEval(r_value=int_reg)
             elif isinstance(target_type, Char) and isinstance(source_type, Int):
                 char_reg = self.module.register_manager.allocate_temp()
                 self.builder.add_instruction(f"andi {char_reg}, {expr_reg}, 0xFF")
-                return char_reg
+                return ExpressionEval(r_value=char_reg)
             else:
-                return expr_reg
+                return ExpressionEval(r_value=expr_reg)
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         with self.get_expression_reg(node.left, self.module) as left, \
@@ -263,7 +271,7 @@ class MIPSGenerator(AstVisitor):
                     self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
                 elif node.operator == ast.BinaryArithmetic.Operator.DIV:
                     self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
-                return result_reg
+                return ExpressionEval(r_value=result_reg)
             else:
                 result_reg = self.module.register_manager.allocate_temp()
                 if node.operator == ast.BinaryArithmetic.Operator.PLUS:
@@ -276,7 +284,7 @@ class MIPSGenerator(AstVisitor):
                     self.builder.add_instruction(f"div {result_reg}, {left}, {right}")
                 elif node.operator == ast.BinaryArithmetic.Operator.MOD:
                     self.builder.add_instruction(f"rem {result_reg}, {left}, {right}")
-                return result_reg
+                return ExpressionEval(r_value=result_reg)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
         with self.get_expression_reg(node.left, self.module) as left, \
@@ -290,7 +298,7 @@ class MIPSGenerator(AstVisitor):
             elif node.operator == ast.BinaryBitwiseArithmetic.Operator.XOR:
                 self.builder.add_instruction(f"xor {result_reg}, {left}, {right}")
 
-        return result_reg
+        return ExpressionEval(r_value=result_reg)
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
         with self.get_expression_reg(node.left, self.module) as left, \
@@ -300,7 +308,7 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
             elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
                 self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
-            return result_reg
+            return ExpressionEval(r_value=result_reg)
 
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
@@ -321,9 +329,10 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"seq {result_reg}, {left}, {right}")
             elif node.operator == ast.ComparisonOperation.Operator.NEQ:
                 self.builder.add_instruction(f"sne {result_reg}, {left}, {right}")
-            return result_reg
+            return ExpressionEval(r_value=result_reg)
 
     def visit_unary_expression(self, node: ast.UnaryExpression):
+        # TODO. uue ExpressionEval
         with self.get_expression_reg(node.value, self.module) as value:
             if node.operator == ast.UnaryExpression.Operator.POSITIVE:
                 return value
@@ -374,7 +383,7 @@ class MIPSGenerator(AstVisitor):
             elif node.operator == ast.ShiftExpression.Operator.RIGHT:
                 self.builder.add_instruction(f"srlv {result_reg}, {value}, {amount}")
 
-        return result_reg
+        return ExpressionEval(r_value=result_reg)
 
     def visit_function_call(self, node: ast.FunctionCall):
         arg_regs = []
@@ -392,7 +401,7 @@ class MIPSGenerator(AstVisitor):
 
         result_reg = self.module.register_manager.allocate_temp()
         self.builder.add_instruction(f"move {result_reg}, $v0")
-        return result_reg
+        return ExpressionEval(r_value=result_reg)
 
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
@@ -443,14 +452,13 @@ class MIPSGenerator(AstVisitor):
             return self.visit_struct_initializer(node)
         label = f"array_{uuid.uuid4().hex}"
         array_block = self.module.data_block(label)
-        self.module.array(array_block, node.elements)
         elements = []
         self.array_elements(node.elements, elements)
         self.module.array(array_block, elements)
         # Now you should first store the address of the array in a register
         reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"la {reg}, {label}")
-        return reg
+        return ExpressionEval(r_value=reg)
 
     def visit_array_access(self, node: ast.ArrayAccess):
         # TODO: context manager usage
@@ -498,9 +506,7 @@ class MIPSGenerator(AstVisitor):
         self.module.register_manager.free(offset_reg)
         self.module.register_manager.free(target_reg)
 
-        # TODO: return (target_reg, result_reg)
-
-        return result_reg
+        return ExpressionEval(l_value=target_reg, r_value=result_reg)
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         pass
