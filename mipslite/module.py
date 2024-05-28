@@ -1,4 +1,5 @@
 import re
+import uuid
 
 from compiler.core import ast
 
@@ -42,6 +43,10 @@ class Module:
         for elem in elements:
             words.append(elem)
         array_data_block.add_instruction(f".word {', '.join(words)}")
+
+    def global_variable(self, label: str, value: int):
+        block = self.data_block(label)
+        block.add_instruction(f".word {value}")
 
     def printf(self, label: str, format_string: str, args: list):
         """
@@ -91,7 +96,7 @@ class Module:
             else:
                 # Print the string
                 # Create a new data block for the string
-                printf_data_block = self.data_block(f"printf_text_{id(part)}")
+                printf_data_block = self.data_block(f"printf_text_{uuid.uuid4().hex}")
                 printf_data_block.add_instruction(f".asciiz \"{part}\"")
                 printf_block.add_instruction(f"la $a0, {printf_data_block.label}")
                 printf_block.add_instruction("li $v0, 4")
@@ -119,19 +124,19 @@ class Module:
                 if part.count('d') > 0:
                     scanf_block.add_instruction("li $v0, 5")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index]})")
                 elif part.count('x') > 0:
                     scanf_block.add_instruction("li $v0, 34")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sw $v0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"sw $v0, 0({args[arg_index]})")
                 elif part.count('f') > 0:
                     scanf_block.add_instruction("li $v0, 6")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"s.d $f0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"s.d $f0, 0({args[arg_index]})")
                 elif part.count('c') > 0:
                     scanf_block.add_instruction("li $v0, 12")
                     scanf_block.add_instruction("syscall")
-                    scanf_block.add_instruction(f"sb $v0, {args[arg_index]}")
+                    scanf_block.add_instruction(f"sb $v0, 0({args[arg_index]})")
                 elif part.count('s') > 0:
                     # Assume the argument is an address for storing the string
                     scanf_block.add_instruction("li $v0, 8")

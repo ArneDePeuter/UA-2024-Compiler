@@ -26,6 +26,7 @@ class MIPSGenerator(AstVisitor):
         self.builder = None
         self.variable_addresses = {}
         self.var_types = {}
+        self.while_fd = {}
 
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
@@ -47,8 +48,39 @@ class MIPSGenerator(AstVisitor):
         lines = result.split("\n")
         return "\n".join(lines)
 
+    def visit_variable_declaration_global(self, node: ast.VariableDeclaration):
+        var_type = self.visit_type(node.var_type)
+
+        for qualifier in node.qualifiers:
+            if qualifier.initializer is None:
+                if node.var_type.type == ast.BaseType.int:
+                    qualifier.initializer = ast.INT(0)
+                elif node.var_type.type == ast.BaseType.float:
+                    qualifier.initializer = ast.FLOAT(0.0)
+                elif node.var_type.type == ast.BaseType.char:
+                    qualifier.initializer = ast.CHAR('\0')
+                else:
+                    raise NotImplementedError("Only int, float, and char are supported for default initializers")
+
+            initializer_value = qualifier.initializer.value
+
+            if isinstance(initializer_value, int):
+                value = initializer_value
+            elif isinstance(initializer_value, float):
+                value = hex(initializer_value)  # Convert float to hexadecimal representation
+            elif isinstance(initializer_value, str) and len(initializer_value) == 1:
+                value = ord(initializer_value)
+            else:
+                raise NotImplementedError("Unsupported initializer type")
+            self.module.global_variable(qualifier.identifier, value)
+            self.variable_addresses[qualifier.identifier] = qualifier.identifier
+            self.var_types[qualifier.identifier] = var_type
+
     def visit_program(self, node: ast.Program):
         for statement in node.statements:
+            if isinstance(statement, ast.VariableDeclaration):
+                self.visit_variable_declaration_global(statement)
+                continue
             self.visit_statement(statement)
 
     def visit_body(self, node: ast.Body):
@@ -82,7 +114,7 @@ class MIPSGenerator(AstVisitor):
                 elif node.var_type.type == ast.BaseType.char:
                     qualifier.initializer = ast.CHAR('\0')
                 else:
-                    raise NotImplementedError("Only int, float, and char are supported for default initializers")
+                    raise NotImplementedError(f"Only int, float, and char are supported for default initializers, not {node.var_type.type}")
             allocation_address = self.builder.allocate(var_type)
             self.variable_addresses[qualifier.identifier] = allocation_address
             self.var_types[qualifier.identifier] = var_type
@@ -420,14 +452,16 @@ class MIPSGenerator(AstVisitor):
 
     def visit_scanf_call(self, node: ast.ScanFCall):
         label = f"scanf_{uuid.uuid4().hex}"
-        self.module.scanf(label, node.format)
 
         regs = [self.visit_expression(arg) for arg in node.args]
-        self.builder.add_instruction(f"jal {label}")
-        self.builder.add_instruction("nop")
+        self.module.scanf(label, node.format, regs)
 
         for reg in reversed(regs):
             self.module.register_manager.free(reg)
+
+        self.builder.add_instruction(f"jal {label}")
+        self.builder.add_instruction("nop")
+
 
     def visit_array_specifier(self, node: ast.ArraySpecifier):
         total_size = 1
@@ -536,13 +570,24 @@ class MIPSGenerator(AstVisitor):
             self.visit_body(node.body)
 
     def visit_while_statement(self, node: ast.WhileStatement):
-        pass
+        with self.builder.while_loop() as (condition, start, labels):
+            condition_label, start_label, end_label = labels
+            self.while_fd[(node.line, node.position)] = (condition_label, end_label)
+            with condition:
+                with self.get_expression_reg(node.expression, self.module) as condition_reg:
+                    with start(condition_reg):
+                        self.visit_body(node.to_execute)
+
 
     def visit_break_statement(self, node: ast.BreakStatement):
-        pass
+        start_block, end_block = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.add_instruction(f"j {end_block}")
+        self.builder.add_instruction("nop")
 
     def visit_continue_statement(self, node: ast.ContinueStatement):
-        pass
+        start_block, end_block = self.while_fd[(node.while_statement.line, node.while_statement.position)]
+        self.builder.add_instruction(f"j {start_block}")
+        self.builder.add_instruction("nop")
 
     def visit_return_statement(self, node: ast.ReturnStatement):
         with self.get_expression_reg(node.expression, self.module) as result_eval:
