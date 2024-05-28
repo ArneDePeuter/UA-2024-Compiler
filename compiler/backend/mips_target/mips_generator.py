@@ -274,8 +274,6 @@ class MIPSGenerator(AstVisitor):
                     self.module.register_manager.free(right_eval.r_value)
                 if left_eval.r_value:
                     self.module.register_manager.free(left_eval.r_value)
-                if left_eval.l_value:
-                    self.module.register_manager.free(left_eval.l_value)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         if node.c_syntax:
