@@ -264,16 +264,15 @@ class MIPSGenerator(AstVisitor):
                 else:
                     if left_eval.l_value:
                         self.builder.add_instruction(f"sw {right_eval.r_value}, 0({left_eval.l_value})")
+                        self.module.register_manager.free(right_eval.r_value)
                     else:
                         if isinstance(left_type, Float):
                             self.builder.add_instruction(f"mov.s {left_eval.r_value}, {right_eval.r_value}")
                         else:
                             self.builder.add_instruction(f"move {left_eval.r_value}, {right_eval.r_value}")
+                        self.module.register_manager.free(right_eval.r_value)
+                        self.module.register_manager.free(left_eval.r_value)
 
-                if right_eval.r_value:
-                    self.module.register_manager.free(right_eval.r_value)
-                if left_eval.r_value:
-                    self.module.register_manager.free(left_eval.r_value)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
         if node.c_syntax:
@@ -331,7 +330,7 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"andi {char_reg}, {expr_reg.r_value}, 0xFF")
                 return ExpressionEval(r_value=char_reg)
             else:
-                return ExpressionEval(r_value=expr_reg)
+                return ExpressionEval(r_value=expr_reg.r_value)
 
     def visit_binary_arithmetic(self, node: ast.BinaryArithmetic):
         with self.get_expression_reg(node.left, self.module) as left, \

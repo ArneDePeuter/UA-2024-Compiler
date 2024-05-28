@@ -16,7 +16,6 @@ class RegisterManager:
             raise RuntimeError(f"Out of {reg_type} registers")
         reg = self.registers[reg_type].pop(0)
         self.used_registers[reg_type].append(reg)
-        print(f"Allocated {reg} of type {reg_type}")  # Debug print
         return reg
 
     def free(self, reg):
@@ -24,7 +23,6 @@ class RegisterManager:
             if reg in reg_list:
                 reg_list.remove(reg)
                 self.registers[reg_type].insert(0, reg)
-                print(f"Freed {reg} of type {reg_type}")  # Debug print
                 return
         raise ValueError(f"Register {reg} not found in used registers")
 
