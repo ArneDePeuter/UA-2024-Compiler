@@ -436,18 +436,18 @@ class MIPSGenerator(AstVisitor):
         with self.get_expression_reg(node.value, self.module) as value_eval:
             value = value_eval
             if node.operator == ast.UnaryExpression.Operator.POSITIVE:
-                return ExpressionEval(r_value=value)
+                return ExpressionEval(r_value=value.r_value)
             elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
                 result_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"neg {result_reg}, {value}")
+                self.builder.add_instruction(f"neg {result_reg}, {value.r_value}")
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
                 result_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"not {result_reg}, {value}")
+                self.builder.add_instruction(f"not {result_reg}, {value.r_value}")
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
                 result_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"seq {result_reg}, {value}, $zero")
+                self.builder.add_instruction(f"seq {result_reg}, {value.r_value}, $zero")
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
                 addr = self.variable_addresses[node.value.name]
