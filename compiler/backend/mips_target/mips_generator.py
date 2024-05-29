@@ -31,7 +31,6 @@ class MIPSGenerator(AstVisitor):
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
         eval_result = self.visit_expression(expression)
-        print(f"Allocated {eval_result.r_value} of type temp for expression {expression}")
         reg_expr = eval_result.r_value
         try:
             yield eval_result
@@ -39,10 +38,6 @@ class MIPSGenerator(AstVisitor):
             if reg_expr in module.register_manager.used_registers['temp'] or reg_expr in \
                     module.register_manager.used_registers['float']:
                 module.register_manager.free(reg_expr)
-                print(f"Freed {reg_expr} of type temp for expression {expression}")
-            else:
-                print(
-                    f"Warning: Attempted to free register {reg_expr} which was not in use for expression {expression}")
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -265,6 +260,8 @@ class MIPSGenerator(AstVisitor):
                     if left_eval.l_value:
                         self.builder.add_instruction(f"sw {right_eval.r_value}, 0({left_eval.l_value})")
                         self.module.register_manager.free(right_eval.r_value)
+                        self.module.register_manager.free(left_eval.r_value)
+                        self.module.register_manager.free(left_eval.l_value)
                     else:
                         if isinstance(left_type, Float):
                             self.builder.add_instruction(f"mov.s {left_eval.r_value}, {right_eval.r_value}")
@@ -345,15 +342,15 @@ class MIPSGenerator(AstVisitor):
             if isinstance(left_type, Float) or isinstance(right_type, Float):
                 if not isinstance(left_type, Float):
                     with self.get_expression_reg(node.left, self.module) as float_left:
-                        self.builder.add_instruction(f"mtc1 {left}, {float_left}")
-                        self.builder.add_instruction(f"cvt.s.w {float_left}, {float_left}")
-                        left = float_left
+                        self.builder.add_instruction(f"mtc1 {left}, {float_left.r_value}")
+                        self.builder.add_instruction(f"cvt.s.w {float_left.r_value}, {float_left.r_value}")
+                        left = float_left.r_value
 
                 if not isinstance(right_type, Float):
                     with self.get_expression_reg(node.right, self.module) as float_right:
-                        self.builder.add_instruction(f"mtc1 {right}, {float_right}")
-                        self.builder.add_instruction(f"cvt.s.w {float_right}, {float_right}")
-                        right = float_right
+                        self.builder.add_instruction(f"mtc1 {right}, {float_right.r_value}")
+                        self.builder.add_instruction(f"cvt.s.w {float_right.r_value}, {float_right.r_value}")
+                        right = float_right.r_value
 
                 result_reg = self.module.register_manager.allocate_float()
                 if node.operator == ast.BinaryArithmetic.Operator.PLUS:
@@ -566,7 +563,6 @@ class MIPSGenerator(AstVisitor):
         return ExpressionEval(r_value=reg)
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        # TODO: context manager usage
         base = node
         indices = []
         while isinstance(base, ast.ArrayAccess):
@@ -586,25 +582,43 @@ class MIPSGenerator(AstVisitor):
         for dim in array_type.dimensions.sizes:
             dimensions.append(dim.value)
 
-        # Compute the offset
-        offset = 0
+        # Initialize offset register
+        offset_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"li {offset_reg}, 0")
+
+        # Compute the offset with MIPS instructions
         for i, index in enumerate(indices):
             stride = array_type.target.width
             for dim in dimensions[i + 1:]:
                 stride *= dim
-            offset += index.value * stride
+
+            # Use context manager to get the index value in a register
+            with self.get_expression_reg(index, self.module) as index_eval:
+                index_reg = index_eval.r_value
+
+                # Calculate offset for current dimension
+                stride_reg = self.module.register_manager.allocate('temp')
+                self.builder.add_instruction(f"li {stride_reg}, {stride}")
+                temp_reg = self.module.register_manager.allocate('temp')
+                self.builder.add_instruction(f"mul {temp_reg}, {index_reg}, {stride_reg}")
+                self.builder.add_instruction(f"add {offset_reg}, {offset_reg}, {temp_reg}")
+
+                # Free temporary registers
+                self.module.register_manager.free(stride_reg)
+                self.module.register_manager.free(temp_reg)
 
         # Load the frame address into a register
         base_reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"lw {base_reg}, {self.variable_addresses[array_name]}")
-        # Load the value into another register
-        offset_reg = self.module.register_manager.allocate('temp')
-        self.builder.add_instruction(f"li {offset_reg}, {offset}")
+
         # Compute the target address
         target_reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"add {target_reg}, {base_reg}, {offset_reg}")
+
+        # Free registers
         self.module.register_manager.free(base_reg)
         self.module.register_manager.free(offset_reg)
+
         # Load the result in a new register
         result_reg = self.module.register_manager.allocate('temp')
         self.builder.add_instruction(f"lw {result_reg}, 0({target_reg})")
