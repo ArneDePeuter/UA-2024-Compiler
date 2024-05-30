@@ -29,7 +29,8 @@ int main() {
 
     printf("%d\n", 1024 << 4);
     printf("%d\n", 2048 >> 3);
-    printf("%d\n", 2048 >> -3);
+    // printf("%d\n", 2048 >> -3);
+    // undefined behavior according to the C standard.
 
     printf("%d\n", 23423 ^ 7345345);
     printf("%d\n", 843 & -86);
