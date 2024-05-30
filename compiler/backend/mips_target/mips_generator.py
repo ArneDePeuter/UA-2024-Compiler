@@ -261,13 +261,6 @@ class MIPSGenerator(AstVisitor):
             self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
             self.builder.add_instruction(f"mov.s {left_eval.r_value}, {float_reg}")
             self.module.register_manager.free(float_reg)
-        else:
-            if isinstance(left_type, Float):
-                self.builder.add_instruction(f"mov.s {left_eval.r_value}, {right_eval.r_value}")
-            else:
-                self.builder.add_instruction(f"move {left_eval.r_value}, {right_eval.r_value}")
-            self.module.register_manager.free(right_eval.r_value)
-            self.module.register_manager.free(left_eval.r_value)
 
         self.builder.store(value, f"0({left_eval.l_value})")
 
@@ -303,7 +296,9 @@ class MIPSGenerator(AstVisitor):
         else:
             reg = self.module.register_manager.allocate_temp()
             self.builder.load(reg, addr)
-        return ExpressionEval(l_value=addr, r_value=reg)
+        addr_reg = self.module.register_manager.allocate_temp()
+        self.builder.add_instruction(f"la {addr_reg}, {addr}")
+        return ExpressionEval(l_value=addr_reg, r_value=reg)
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
         with self.get_expression_reg(node.expression, self.module) as expr_reg:
@@ -459,7 +454,7 @@ class MIPSGenerator(AstVisitor):
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
                 self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, 1")
-                self.builder.add_instruction(f"sw {value.r_value}, {value.l_value}")
+                self.builder.add_instruction(f"sw {value.r_value}, 0({value.l_value})")
                 if not node.prefix:
                     return ExpressionEval(r_value=value.l_value)
                 return ExpressionEval(r_value=value)
