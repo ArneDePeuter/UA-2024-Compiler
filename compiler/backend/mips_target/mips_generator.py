@@ -536,6 +536,10 @@ class MIPSGenerator(AstVisitor):
         #args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
         self.module.printf(label, node.format, args_eval)
 
+        # Free the registers
+        for reg in reversed(args_eval):
+            self.module.register_manager.free(reg.r_value)
+
         # Add instruction to call the printf function
         self.builder.add_instruction(f"jal {label}")
         self.builder.add_instruction("nop")
