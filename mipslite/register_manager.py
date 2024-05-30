@@ -24,7 +24,7 @@ class RegisterManager:
                 reg_list.remove(reg)
                 self.registers[reg_type].insert(0, reg)
                 return
-        raise ValueError(f"Register {reg} not found in used registers")
+        raise Warning(f"Register {reg} not found in used registers")
 
     def allocate_temp(self):
         return self.allocate('temp')
