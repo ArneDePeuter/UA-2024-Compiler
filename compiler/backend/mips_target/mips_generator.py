@@ -31,13 +31,18 @@ class MIPSGenerator(AstVisitor):
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
         eval_result = self.visit_expression(expression)
-        reg_expr = eval_result.r_value
+        right_reg_expr = eval_result.r_value
+        left_reg_expr = eval_result.l_value
         try:
             yield eval_result
         finally:
-            if reg_expr in module.register_manager.used_registers['temp'] or reg_expr in \
+            if right_reg_expr in module.register_manager.used_registers['temp'] or right_reg_expr in \
                     module.register_manager.used_registers['float']:
-                module.register_manager.free(reg_expr)
+                module.register_manager.free(right_reg_expr)
+            if left_reg_expr in module.register_manager.used_registers['temp'] or left_reg_expr in \
+                    module.register_manager.used_registers['float']:
+                module.register_manager.free(left_reg_expr)
+
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -113,6 +118,7 @@ class MIPSGenerator(AstVisitor):
                 else:
 
                     raise NotImplementedError(f"Only int, float, and char are supported for default initializers, not {node.var_type.type}")
+
             allocation_address = self.builder.allocate(var_type)
             self.variable_addresses[qualifier.identifier] = allocation_address
             self.var_types[qualifier.identifier] = var_type
@@ -309,6 +315,8 @@ class MIPSGenerator(AstVisitor):
                 float_reg = self.module.register_manager.allocate_float()
                 self.builder.add_instruction(f"mtc1 {expr_reg.r_value}, {float_reg}")
                 self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
+                self.builder.add_instruction(f"mov.s {float_reg}, {float_reg}")
+                self.module.register_manager.free(float_reg)
                 return ExpressionEval(r_value=float_reg)
             elif isinstance(target_type, Int) and isinstance(source_type, Float):
                 float_reg = self.module.register_manager.allocate_float()
