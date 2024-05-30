@@ -501,12 +501,31 @@ class MIPSGenerator(AstVisitor):
         self.builder.add_instruction(f"move {result_reg}, $v0")
         return ExpressionEval(r_value=result_reg)
 
+    def visit_string_literal(self, node: ast.ArrayInitializer):
+        label = f"string_{uuid.uuid4().hex}"
+        string_data_block = self.module.data_block(label)
+        elements = []
+        self.array_elements(node.elements, elements)
+        # Remove the qoutes from the string
+        elements= [element.replace('\'', '') for element in elements]
+        string_data_block.add_instruction(f".asciiz \"{''.join(elements)}\"")
+        # Now you should first store the address of the array in a register
+        reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"la {reg}, {label}")
+        return ExpressionEval(r_value=reg)
+
     def visit_printf_call(self, node: ast.PrintFCall):
         # Link the printf block
         label = f"printf_{uuid.uuid4().hex}"
 
         # Call the printf function to handle data and instruction generation
-        args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
+        args_eval = []
+        for arg in node.args:
+            if isinstance(arg, ast.ArrayInitializer):
+                args_eval.append(self.visit_string_literal(arg))
+            else:
+                args_eval.append(self.visit_expression(arg))
+        #args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
         self.module.printf(label, node.format, args_eval)
 
         for reg in reversed(args_eval):
@@ -544,7 +563,9 @@ class MIPSGenerator(AstVisitor):
             if isinstance(element, ast.ArrayInitializer):
                 self.array_elements(element.elements, elements_list)
             else:
-                elements_list.append(repr(element.value))
+                # Only append the element value if it is not zero-terminated
+                if element.value != '\x00':
+                    elements_list.append(repr(element.value))
 
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
