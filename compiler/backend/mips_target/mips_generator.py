@@ -450,7 +450,7 @@ class MIPSGenerator(AstVisitor):
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
                 result_reg = self.module.register_manager.allocate_temp()
-                self.builder.add_instruction(f"lw {result_reg}, 0({value})")
+                self.builder.add_instruction(f"lw {result_reg}, 0({value.r_value})")
                 return ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
                 self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, 1")
@@ -460,7 +460,7 @@ class MIPSGenerator(AstVisitor):
                 return ExpressionEval(r_value=value)
             elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
                 self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, -1")
-                self.builder.add_instruction(f"sw {value.r_value}, {value.l_value}")
+                self.builder.add_instruction(f"sw {value.r_value}, 0({value.l_value})")
                 if not node.prefix:
                     return ExpressionEval(r_value=value.l_value)
                 return ExpressionEval(r_value=value.r_value)
