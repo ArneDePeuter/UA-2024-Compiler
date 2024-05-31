@@ -555,9 +555,9 @@ class MIPSGenerator(AstVisitor):
             base = base_eval.l_value
             index = index_eval.r_value
 
-            l_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type.target)
+            l_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type)
             self.builder.add_instruction(f"add {l_reg}, {base}, {index}")
-            r_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type.target)
+            r_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type)
             self.builder.load_word(r_reg, l_reg)
 
         return ExpressionEval(r_value=r_reg, l_value=l_reg)
