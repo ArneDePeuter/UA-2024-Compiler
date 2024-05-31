@@ -127,7 +127,7 @@ class MIPSGenerator(AstVisitor):
                 # Determine the type of the initializer
                 initializer_type = self.determine_type(qualifier.initializer)
 
-                # Check for array-to-pointer decay
+                # Check for pointer to array assignment
                 if isinstance(var_type, Pointer) and isinstance(initializer_type, Array):
                     self.var_types[qualifier.identifier] = Pointer(initializer_type)
 
@@ -243,7 +243,7 @@ class MIPSGenerator(AstVisitor):
         # Type checking pointer, and safety checks for right-hand side
         if isinstance(left_type, Pointer) and not isinstance(right_type, Pointer):
             # Handle char* assignment
-            if isinstance(right_type, Array) and isinstance(right_type.target, Char):
+            if isinstance(right_type, Char):
                 self.builder.add_instruction(f"la {left_eval.r_value}, {right_eval.r_value}")
             else:
                 raise TypeError(f"Cannot assign value of type {right_type} to pointer of type {left_type}")
