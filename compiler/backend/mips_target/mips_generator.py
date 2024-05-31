@@ -550,17 +550,30 @@ class MIPSGenerator(AstVisitor):
         self.builder.load_address(reg, label)
         return ExpressionEval(r_value=reg)
 
+    def get_array_dimensions(self, node: ast.ArraySpecifier):
+        dimensions = []
+        if isinstance(node, ast.ArraySpecifier):
+            for size in node.sizes:
+                if isinstance(size, ast.INT):
+                    dimensions.append(size.value)
+                else:
+                    raise NotImplementedError("Only int is supported for array sizes")
+        return dimensions
+
+
     def visit_array_access(self, node: ast.ArrayAccess):
         with self.eval(node.target) as base_eval, self.eval(node.index) as index_eval:
             base = base_eval.l_value
             index = index_eval.r_value
+
+            dimensions = self.get_array_dimensions(base_eval.r_value.type)
 
             l_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type)
             self.builder.add_instruction(f"add {l_reg}, {base}, {index}")
             r_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type)
             self.builder.load_word(r_reg, l_reg)
 
-        return ExpressionEval(r_value=r_reg, l_value=l_reg)
+        return ExpressionEval(l_value=l_reg, r_value=r_reg)
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         new_type = Struct(name=node.name, fields=[])
