@@ -26,7 +26,7 @@ class MIPSGenerator(AstVisitor):
     def __init__(self):
         super().__init__()
         self.module = Module()
-        self.builder = None
+        self.builder: Block|Function = None
         self.variable_addresses = {}
         self.while_fd = {}
         self.structs = {}
@@ -35,17 +35,21 @@ class MIPSGenerator(AstVisitor):
     @contextmanager
     def eval(self, expression: ast.Expression) -> ExpressionEval:
         eval_result = self.visit_expression(expression)
-        right_reg_expr = eval_result.r_value
-        left_reg_expr = eval_result.l_value
         try:
             yield eval_result
         finally:
-            if right_reg_expr in self.module.register_manager.used_registers['temp'] or right_reg_expr in \
-                    self.module.register_manager.used_registers['float']:
+            if eval_result is None:
+                return
+            right_reg_expr = eval_result.r_value
+            left_reg_expr = eval_result.l_value
+            if right_reg_expr:
                 self.module.register_manager.free(right_reg_expr)
-            if left_reg_expr in self.module.register_manager.used_registers['temp'] or left_reg_expr in \
-                    self.module.register_manager.used_registers['float']:
+            if left_reg_expr:
                 self.module.register_manager.free(left_reg_expr)
+
+    def visit_expression(self, node: ast.Expression):
+        self.builder.comment(node.c_syntax)
+        return super().visit_expression(node)
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -84,7 +88,7 @@ class MIPSGenerator(AstVisitor):
         for i, parameter in enumerate(node.parameters):
             param_type = self.visit_type(parameter.type)
             self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
-            self.builder.store(f"$a{len(node.parameters) - i - 1}", self.variable_addresses[parameter.name])
+            self.builder.store_word(Register(f"$a{len(node.parameters) - i - 1}", param_type), self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
@@ -105,28 +109,28 @@ class MIPSGenerator(AstVisitor):
 
             with self.eval(qualifier.initializer) as eval:
                 # we only care about the r_value
-                reg = eval.r_value
-                initializer_type = reg.type
+                rval = eval.r_value
+                initializer_type = rval.type
 
                 # Handle implicit conversion if necessary
                 if isinstance(var_type, Float) and isinstance(initializer_type, Int):
-                    float_reg = self.module.register_manager.allocate_float()
-                    self.builder.add_instruction(f"mtc1 {reg.r_value}, {float_reg}")
+                    float_reg = self.module.register_manager.allocate('float', Float)
+                    self.builder.add_instruction(f"mtc1 {rval}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
                     self.builder.store_float(float_reg, allocation_address)
                     self.module.register_manager.free(float_reg)
                 elif isinstance(var_type, Int) and isinstance(initializer_type, Float):
-                    float_reg = self.module.register_manager.allocate_float()
-                    self.builder.add_instruction(f"cvt.w.s {float_reg}, {reg.r_value}")
-                    int_reg = self.module.register_manager.allocate_temp()
+                    float_reg = self.module.register_manager.allocate('float', Float)
+                    self.builder.add_instruction(f"cvt.w.s {float_reg}, {rval}")
+                    int_reg = self.module.register_manager.allocate('temp', Int)
                     self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-                    self.builder.store(int_reg, allocation_address)
+                    self.builder.store_word(int_reg, allocation_address)
                     self.module.register_manager.free(float_reg)
                     self.module.register_manager.free(int_reg)
                 elif isinstance(var_type, Float):
-                    self.builder.store_float(reg.r_value, allocation_address)
+                    self.builder.store_float(rval, allocation_address)
                 else:
-                    self.builder.store(reg.r_value, allocation_address)
+                    self.builder.store_word(rval, allocation_address)
 
     def get_array_dimensions(self, array_initializer: ast.ArrayInitializer):
         def get_dimensions(node, depth):
@@ -163,7 +167,7 @@ class MIPSGenerator(AstVisitor):
             if isinstance(left_type, Pointer) and not isinstance(right_type, Pointer):
                 # Handle char* assignment
                 if isinstance(right_type, Char):
-                    self.builder.add_instruction(f"la {left_eval.r_value}, {right_eval.r_value}")
+                    self.builder.load_address(left_eval.r_value, left_eval.r_value)
                 else:
                     raise TypeError(f"Cannot assign value of type {right_type} to pointer of type {left_type}")
 
@@ -173,7 +177,7 @@ class MIPSGenerator(AstVisitor):
             if isinstance(left_type, Int) and isinstance(right_type, Float):
                 # Convert float to int
                 float_reg = right_eval.r_value
-                int_reg = self.module.register_manager.allocate_temp()
+                int_reg = self.module.register_manager.allocate('temp', Int)
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
                 self.builder.add_instruction(f"move {left_eval.r_value}, {int_reg}")
@@ -181,18 +185,17 @@ class MIPSGenerator(AstVisitor):
             elif isinstance(left_type, Float) and isinstance(right_type, Int):
                 # Convert int to float
                 int_reg = right_eval.r_value
-                float_reg = self.module.register_manager.allocate_float()
+                float_reg = self.module.register_manager.allocate('float', Float)
                 self.builder.add_instruction(f"mtc1 {int_reg}, {float_reg}")
                 self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mov.s {left_eval.r_value}, {float_reg}")
                 self.module.register_manager.free(float_reg)
 
-            self.builder.store(value, f"0({left_eval.l_value})")
+            self.builder.store_word(value, left_eval.l_value)
 
     def visit_expression_statement(self, node: ast.ExpressionStatement):
-        if node.c_syntax:
-            self.builder.current_block.add_instruction(f"# {node.c_syntax}")
-        self.visit_expression(node.expression)
+        with self.eval(node.expression) as eval:
+            pass
 
     def visit_int(self, node: ast.INT):
         reg = self.module.register_manager.allocate('temp', Int)
@@ -218,9 +221,9 @@ class MIPSGenerator(AstVisitor):
             reg = self.module.register_manager.allocate('float', Float)
         else:
             reg = self.module.register_manager.allocate('temp', addr.type)
-        self.builder.load(reg, addr)
+        self.builder.load_word(reg, addr)
         addr_reg = self.module.register_manager.allocate('temp', addr.type)
-        self.builder.add_instruction(f"la {addr_reg}, {addr}")
+        self.builder.load_address(addr_reg, addr)
         return ExpressionEval(l_value=addr_reg, r_value=reg)
 
     def visit_type_cast_expression(self, node: ast.TypeCastExpression):
@@ -239,7 +242,7 @@ class MIPSGenerator(AstVisitor):
             elif isinstance(target_type, Int) and isinstance(source_type, Float):
                 float_reg = self.module.register_manager.allocate('float', Float)
                 self.builder.add_instruction(f"mov.s {float_reg}, {r_value}")
-                int_reg = self.module.register_manager.allocate_temp()
+                int_reg = self.module.register_manager.allocate('temp', Int)
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
                 self.module.register_manager.free(float_reg)
@@ -269,11 +272,13 @@ class MIPSGenerator(AstVisitor):
 
             if isinstance(left_type, Float) or isinstance(right_type, Float):
                 # cast to float if necessary
+                free_left = False
                 if not isinstance(left_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float)
                     self.builder.add_instruction(f"mtc1 {left}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
                     left = float_reg
+                    free_left = True
 
                 if not isinstance(right_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float)
@@ -290,6 +295,12 @@ class MIPSGenerator(AstVisitor):
                     self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
                 elif node.operator == ast.BinaryArithmetic.Operator.DIV:
                     self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
+
+                # free the allocated registers for casting that was done
+                if free_left:
+                    self.module.register_manager.free(left)
+                else:
+                    self.module.register_manager.free(right)
                 ret = ExpressionEval(r_value=result_reg)
             else:
                 result_reg = self.module.register_manager.allocate('temp', Int)
@@ -325,7 +336,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
         with self.eval(node.left) as left, self.eval(node.right) as right:
-            result_reg = self.module.register_manager.allocate_temp('temp', Int)
+            result_reg = self.module.register_manager.allocate('temp', Int)
 
             left = left.r_value
             right = right.r_value
@@ -339,7 +350,7 @@ class MIPSGenerator(AstVisitor):
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         with self.eval(node.left) as left, self.eval(node.right) as right:
 
-            result_reg = self.module.register_manager.allocate_temp('temp', Int)
+            result_reg = self.module.register_manager.allocate('temp', Int)
             left = left.r_value
             right = right.r_value
 
@@ -379,13 +390,13 @@ class MIPSGenerator(AstVisitor):
                 ret = ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.ADDRESSOF:
                 r_reg = self.module.register_manager.allocate('temp', Pointer(value.l_value.type))
-                self.builder.add_instruction(f"la {r_reg}, {value.l_value}")
+                self.builder.load_address(r_reg, value.l_value)
                 ret = ExpressionEval(r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
                 r_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
                 self.builder.add_instruction(f"lw {r_reg}, 0({value.r_value})")
                 l_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
-                self.builder.add_instruction(f"la {l_reg}, {value.r_value}")
+                self.builder.load_address(l_reg, value.r_value)
                 ret = ExpressionEval(l_value=l_reg, r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
                 # TODO: pointer arithmetic
@@ -400,7 +411,7 @@ class MIPSGenerator(AstVisitor):
                     # we need the value after the opration is done
                     self.builder.add_instruction(f"move {reg}, {value.r_value}")
 
-                self.builder.add_instruction(f"sw {value.r_value}, 0({value.l_value})")
+                self.builder.store_word(value.r_value, value.l_value)
                 ret = ExpressionEval(r_value=reg)
 
             elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
@@ -416,7 +427,7 @@ class MIPSGenerator(AstVisitor):
                     # we need the value after the opration is done
                     self.builder.add_instruction(f"move {reg}, {value.r_value}")
 
-                self.builder.add_instruction(f"sw {value.r_value}, 0({value.l_value})")
+                self.builder.store_word(value.r_value, value.l_value)
                 ret = ExpressionEval(r_value=reg)
             else:
                 raise NotImplementedError(f"Unary operator {node.operator} is not supported")
@@ -471,7 +482,7 @@ class MIPSGenerator(AstVisitor):
         string_data_block.add_instruction(f".asciiz \"{''.join(elements)}\"")
         # Now you should first store the address of the array in a register
         reg = self.module.register_manager.allocate('temp', Pointer(Char()))
-        self.builder.add_instruction(f"la {reg}, {label}")
+        self.builder.load_address(reg, label)
         return ExpressionEval(r_value=reg)
 
     def visit_printf_call(self, node: ast.PrintFCall):
@@ -536,7 +547,7 @@ class MIPSGenerator(AstVisitor):
         self.module.array(array_block, elements)
         # Now you should first store the address of the array in a register
         reg = self.module.register_manager.allocate('temp', Pointer(Any()))
-        self.builder.add_instruction(f"la {reg}, {label}")
+        self.builder.load_address(reg, label)
         return ExpressionEval(r_value=reg)
 
     def visit_array_access(self, node: ast.ArrayAccess):
@@ -547,7 +558,7 @@ class MIPSGenerator(AstVisitor):
             l_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type.target)
             self.builder.add_instruction(f"add {l_reg}, {base}, {index}")
             r_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type.target)
-            self.builder.add_instruction(f"lw {r_reg}, 0({l_reg})")
+            self.builder.load_word(r_reg, l_reg)
 
         return ExpressionEval(r_value=r_reg, l_value=l_reg)
 
@@ -562,11 +573,14 @@ class MIPSGenerator(AstVisitor):
     def visit_struct_access(self, node: ast.StructAccess):
         with self.eval(node.target) as target_eval:
             struct_type = target_eval.l_value.type
+            if not isinstance(struct_type, Struct):
+                raise TypeError(f"Cannot access member of non-struct type {struct_type}")
+
             offset = struct_type.get_member_offset(node.member_name)
 
-            rval = self.module.register_manager.allocate('temp')
+            rval = self.module.register_manager.allocate('temp', struct_type.get_member_type(node.member_name))
             self.builder.add_instruction(f"lw {rval}, {offset}({target_eval.l_value})")
-            lval = self.module.register_manager.allocate('temp')
+            lval = self.module.register_manager.allocate('temp', struct_type.get_member_type(node.member_name))
             self.builder.add_instruction(f"addi {lval}, {target_eval.l_value}, {offset}")
         return ExpressionEval(l_value=lval, r_value=rval)
 

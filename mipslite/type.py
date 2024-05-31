@@ -95,3 +95,12 @@ class Any(Type):
     @cached_property
     def width(self):
         raise RuntimeError("Any type does not have a width")
+
+
+class Void(Type):
+    def __init__(self):
+        super().__init__()
+
+    @cached_property
+    def width(self):
+        return 0

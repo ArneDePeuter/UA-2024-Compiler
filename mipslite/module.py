@@ -5,7 +5,7 @@ import uuid
 from .block import Block
 from .function import Function
 from .register_manager import RegisterManager
-from .type import Type
+from .type import Type, Void
 from typing import Optional
 
 
@@ -26,7 +26,7 @@ class Module:
         return repr_str
 
     def function(self, label: str, return_type: Type) -> Function:
-        func = Function(label)
+        func = Function(label, return_type)
         self.text_blocks.append(func)
         return func
 
@@ -61,7 +61,7 @@ class Module:
         :param args: The list of arguments to be printed
         :return:
         """
-        printf_block = self.function(label)
+        printf_block = self.function(label, Void)
         # Split the format string into part %\w using re.
         # Then when the part starts with % meaning it is a format specifier, for an argument. We should make a printf_text_block for printing the argument
         # When the part doesn't stat with % meaning it is a strign we should make a printf text block for printing the strin

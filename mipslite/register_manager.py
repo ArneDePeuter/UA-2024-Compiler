@@ -1,14 +1,16 @@
 from .type import Type
 
+from typing import Optional
+
 
 class Register:
-    def __init__(self, register: str, offset: int, type: Type):
+    def __init__(self, register: str, type: Type, offset: Optional[int] = None):
         self.register = register
         self.offset = offset
         self.type = type
 
     def __repr__(self):
-        if self.offset == 0:
+        if self.offset is None:
             return self.register
         return f"{self.offset}({self.register})"
 
@@ -31,7 +33,7 @@ class RegisterManager:
             raise RuntimeError(f"Out of {reg_type} registers")
         reg = self.registers[reg_type].pop(0)
         self.used_registers[reg_type].append(reg)
-        return Register(reg, 0,  type)
+        return Register(reg, type)
 
     def free(self, reg: Register):
         reg = reg.register

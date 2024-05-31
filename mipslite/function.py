@@ -62,17 +62,17 @@ class Function:
     def add_instruction(self, instruction: str) -> None:
         self.current_block.add_instruction(instruction)
 
-    def load(self, dest: Register, src: Register) -> None:
-        if src.type == Float:
-            self.current_block.add_instruction(f"l.s {dest}, {src}")
-        else:
-            self.current_block.add_instruction(f"lw {dest}, {src}")
+    def load_word(self, dest: Register, src: Register) -> None:
+        self.current_block.load_word(dest, src)
 
-    def store(self, src: str, dest: str) -> None:
-        self.current_block.add_instruction(f"sw {src}, {dest}")
+    def load_address(self, src: Register, dest: Register) -> None:
+        self.current_block.load_address(src, dest)
 
-    def store_float(self, src: str, dest: str) -> None:
-        self.current_block.add_instruction(f"s.s {src}, {dest}")
+    def store_word(self, src: Register, dest: Register) -> None:
+        self.current_block.store_word(src, dest)
+
+    def comment(self, comment: str) -> None:
+        self.current_block.comment(comment)
 
     @contextmanager
     def if_then(self, condition_register: str) -> None:

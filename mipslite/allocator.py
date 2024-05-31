@@ -9,4 +9,4 @@ class Allocator:
     def allocate(self, type_: Type) -> Register:
         start = self.allocation_ptr
         self.allocation_ptr += type_.width
-        return Register("$fp", start, type_)
+        return Register("$fp", type_, start)
