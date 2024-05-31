@@ -27,6 +27,7 @@ class MIPSGenerator(AstVisitor):
         self.variable_addresses = {}
         self.var_types = {}
         self.while_fd = {}
+        self.structs = {}
 
     @contextmanager
     def get_expression_reg(self, expression: ast.Expression, module: Module):
@@ -653,13 +654,24 @@ class MIPSGenerator(AstVisitor):
         return ExpressionEval(l_value=target_reg, r_value=result_reg)
 
     def visit_struct_definition(self, node: ast.StructDefinition):
-        pass
+        new_type = Struct(name=node.name, fields=[(member.name, self.visit_type(member.type)) for member in node.members])
+        self.structs[node.name] = new_type
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
-        pass
+        raise NotImplementedError("Struct initializer not implemented")
 
     def visit_struct_access(self, node: ast.StructAccess):
-        pass
+        result = self.visit_expression(node.target)
+        type = self.determine_type(node.target)
+
+        if not isinstance(type, Struct):
+            raise ValueError(f"Cannot access member of non-struct type {type}")
+
+        offset = type.get_member_offset(node.member_name)
+        result_reg = self.module.register_manager.allocate('temp')
+        self.builder.add_instruction(f"lw {result_reg}, {offset}({result.r_value})")
+        lvalue = f"{offset}({result.l_value})"
+        return ExpressionEval(l_value=lvalue, r_value=result_reg)
 
     def visit_if_statement(self, node: ast.IfStatement):
         with self.get_expression_reg(node.condition, self.module) as condition:
@@ -748,5 +760,7 @@ class MIPSGenerator(AstVisitor):
                 return Int()
         elif isinstance(node, ast.TypeCastExpression):
             return self.visit_type(node.cast_type)
+        elif isinstance(node, ast.StructType):
+            return self.structs[node.definition.name]
         else:
             raise NotImplementedError(f"Type visit not implemented for {type(node)}")

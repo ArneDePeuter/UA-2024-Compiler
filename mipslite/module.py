@@ -1,11 +1,11 @@
 import re
 import uuid
 
-from compiler.core import ast
 
 from .block import Block
 from .function import Function
 from .register_manager import RegisterManager
+
 
 class Module:
     def __init__(self):
