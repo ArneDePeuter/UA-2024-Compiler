@@ -244,7 +244,8 @@ class MIPSGenerator(AstVisitor):
         if isinstance(left_type, Pointer) and not isinstance(right_type, Pointer):
             # Handle char* assignment
             if isinstance(right_type, Char):
-                self.builder.add_instruction(f"la {left_eval.r_value}, {right_eval.r_value}")
+
+                self.builder.store(right_eval.r_value, left_eval.l_value)
             else:
                 raise TypeError(f"Cannot assign value of type {right_type} to pointer of type {left_type}")
 
