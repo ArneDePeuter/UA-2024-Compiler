@@ -5,6 +5,8 @@ import uuid
 from .block import Block
 from .function import Function
 from .register_manager import RegisterManager
+from .type import Type
+from typing import Optional
 
 
 class Module:
@@ -23,7 +25,7 @@ class Module:
             repr_str += "\n".join(map(str, self.text_blocks))
         return repr_str
 
-    def function(self, label: str) -> Function:
+    def function(self, label: str, return_type: Type) -> Function:
         func = Function(label)
         self.text_blocks.append(func)
         return func
@@ -44,9 +46,12 @@ class Module:
             words.append(elem)
         array_data_block.add_instruction(f".word {', '.join(words)}")
 
-    def global_variable(self, label: str, value: int):
+    def global_variable(self, label: str, type: Type, value: Optional[int] = None):
         block = self.data_block(label)
-        block.add_instruction(f".word {value}")
+        if value is None:
+            block.add_instruction(f".space {type.width}")
+        else:
+            block.add_instruction(f".word {value}")
 
     def printf(self, label: str, format_string: str, args: list):
         """

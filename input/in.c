@@ -1,15 +1,28 @@
 #include <stdio.h>
 
+struct Node {
+    int data;
+    struct Node *next;
+};
+
 int main() {
-    int a = 0;
-    if (a == 0) {
-        printf("a is 0\n");
-        if (1) {
-            printf("yes\n");
-        } else {
-            printf("no\n");
-        }
+    struct Node head;
+    head.data = 1;
+
+    struct Node node1;
+    node1.data = 2;
+    head.next = &node1;
+
+    struct Node node2;
+    node2.data = 3;
+    node1.next = &node2;
+
+
+    struct Node *current = &head;
+    while (current != 0) {
+        printf("%d\n", current->data);
+        current = current->next;
     }
-    printf("hello");
+
     return 0;
 }

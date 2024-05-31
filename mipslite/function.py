@@ -4,12 +4,14 @@ from typing import List
 
 from .block import Block
 from .allocator import Allocator
-from .type import Type
+from .type import Type, Float
+from .register_manager import Register
 
 
 class Function:
-    def __init__(self, label: str):
+    def __init__(self, label: str, return_type: Type):
         self.label = label
+        self.return_type = return_type
         self.allocator = Allocator()
         self.blocks: List[Block] = []
         self.current_block = self.create_block(label)
@@ -49,7 +51,7 @@ class Function:
             block.add_instruction("li $v0, 10")
             block.add_instruction("syscall")
 
-    def allocate(self, type_: Type) -> str:
+    def allocate(self, type_: Type) -> Register:
         return self.allocator.allocate(type_)
 
     def create_block(self, label: str) -> Block:
@@ -60,11 +62,11 @@ class Function:
     def add_instruction(self, instruction: str) -> None:
         self.current_block.add_instruction(instruction)
 
-    def load(self, dest: str, src: str) -> None:
-        self.current_block.add_instruction(f"lw {dest}, {src}")
-
-    def load_float(self, dest: str, src: str) -> None:
-        self.current_block.add_instruction(f"l.s {dest}, {src}")
+    def load(self, dest: Register, src: Register) -> None:
+        if src.type == Float:
+            self.current_block.add_instruction(f"l.s {dest}, {src}")
+        else:
+            self.current_block.add_instruction(f"lw {dest}, {src}")
 
     def store(self, src: str, dest: str) -> None:
         self.current_block.add_instruction(f"sw {src}, {dest}")

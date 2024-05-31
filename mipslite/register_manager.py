@@ -1,3 +1,18 @@
+from .type import Type
+
+
+class Register:
+    def __init__(self, register: str, offset: int, type: Type):
+        self.register = register
+        self.offset = offset
+        self.type = type
+
+    def __repr__(self):
+        if self.offset == 0:
+            return self.register
+        return f"{self.offset}({self.register})"
+
+
 class RegisterManager:
     def __init__(self):
         self.registers = {
@@ -11,29 +26,18 @@ class RegisterManager:
         }
         self.used_registers = {key: [] for key in self.registers}
 
-    def allocate(self, reg_type):
+    def allocate(self, reg_type: str, type: Type):
         if reg_type not in self.registers or not self.registers[reg_type]:
             raise RuntimeError(f"Out of {reg_type} registers")
         reg = self.registers[reg_type].pop(0)
         self.used_registers[reg_type].append(reg)
-        return reg
+        return Register(reg, 0,  type)
 
-    def free(self, reg):
+    def free(self, reg: Register):
+        reg = reg.register
         for reg_type, reg_list in self.used_registers.items():
             if reg in reg_list:
                 reg_list.remove(reg)
                 self.registers[reg_type].insert(0, reg)
                 return
         raise Warning(f"Register {reg} not found in used registers")
-
-    def allocate_temp(self):
-        return self.allocate('temp')
-
-    def allocate_float(self):
-        return self.allocate('float')
-
-    def allocate_arg(self):
-        return self.allocate('arg')
-
-    def allocate_saved(self):
-        return self.allocate('saved')

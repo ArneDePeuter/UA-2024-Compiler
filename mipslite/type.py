@@ -81,3 +81,17 @@ class Struct(Type):
                 return offset
             offset += field[1].width
         raise ValueError(f"Field {field_name} not found in struct {self.name}")
+
+    def get_member_type(self, field_name: str):
+        for field in self.fields:
+            if field[0] == field_name:
+                return field[1]
+        raise ValueError(f"Field {field_name} not found in struct {self.name}")
+
+class Any(Type):
+    def __init__(self):
+        super().__init__()
+
+    @cached_property
+    def width(self):
+        raise RuntimeError("Any type does not have a width")
