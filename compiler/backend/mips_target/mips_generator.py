@@ -48,8 +48,11 @@ class MIPSGenerator(AstVisitor):
                 self.module.register_manager.free(left_reg_expr)
 
     def visit_expression(self, node: ast.Expression):
-        self.builder.comment(node.c_syntax)
-        return super().visit_expression(node)
+        if self.builder is None or (isinstance(self.builder, Function) and self.builder.current_block is None):
+            return super().visit_expression(node)
+        else:
+            self.builder.comment(node.c_syntax)
+            return super().visit_expression(node)
 
     def generate_mips(self, node):
         self.visit_program(node)
@@ -117,7 +120,7 @@ class MIPSGenerator(AstVisitor):
                     float_reg = self.module.register_manager.allocate('float', Float)
                     self.builder.add_instruction(f"mtc1 {rval}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-                    self.builder.store_float(float_reg, allocation_address)
+                    self.builder.store_word(float_reg, allocation_address)
                     self.module.register_manager.free(float_reg)
                 elif isinstance(var_type, Int) and isinstance(initializer_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float)
@@ -128,7 +131,7 @@ class MIPSGenerator(AstVisitor):
                     self.module.register_manager.free(float_reg)
                     self.module.register_manager.free(int_reg)
                 elif isinstance(var_type, Float):
-                    self.builder.store_float(rval, allocation_address)
+                    self.builder.store_word(rval, allocation_address)
                 else:
                     self.builder.store_word(rval, allocation_address)
 
