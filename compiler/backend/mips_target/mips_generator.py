@@ -48,8 +48,11 @@ class MIPSGenerator(AstVisitor):
                 self.module.register_manager.free(left_reg_expr)
 
     def visit_expression(self, node: ast.Expression):
-        self.builder.comment(node.c_syntax)
-        return super().visit_expression(node)
+        if self.builder is None or (isinstance(self.builder, Function) and self.builder.current_block is None):
+            return super().visit_expression(node)
+        else:
+            self.builder.comment(node.c_syntax)
+            return super().visit_expression(node)
 
     def generate_mips(self, node):
         self.visit_program(node)
