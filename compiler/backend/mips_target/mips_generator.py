@@ -633,6 +633,8 @@ class MIPSGenerator(AstVisitor):
         pass
 
     def visit_comment_statement(self, node: ast.CommentStatement):
+        if self.builder is None or (isinstance(self.builder, Function) and self.builder.current_block is None):
+            return
         for line in node.content.split("\n"):
             self.builder.add_instruction(f"# {line}")
 
