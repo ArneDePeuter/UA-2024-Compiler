@@ -48,7 +48,8 @@ class MIPSGenerator(AstVisitor):
                 self.module.register_manager.free(left_reg_expr)
 
     def visit_expression(self, node: ast.Expression):
-        self.builder.comment(node.c_syntax)
+        if node.c_syntax:
+            self.builder.comment(node.c_syntax)
         return super().visit_expression(node)
 
     def generate_mips(self, node):
@@ -154,7 +155,7 @@ class MIPSGenerator(AstVisitor):
             raise ValueError(f"Unexpected node type in array access target: {type(target_node)}")
 
     def visit_assignment_statement(self, node: ast.AssignmentStatement):
-        with self.eval(node.left) as left_eval, self.eval(node.right) as right_eval:
+        with self.eval(node.right) as right_eval, self.eval(node.left) as left_eval:
             if not left_eval.l_value:
                 raise NotImplementedError("Cannot assign value to variable, l_value is None")
             if not right_eval.r_value:
@@ -550,6 +551,17 @@ class MIPSGenerator(AstVisitor):
         self.builder.load_address(reg, label)
         return ExpressionEval(r_value=reg)
 
+    def get_array_indices(self, node: ast.ArrayAccess):
+        indices = []
+        while isinstance(node, ast.ArrayAccess):
+            if isinstance(node.index, ast.INT):
+                indices.append(node.index.value)
+            else:
+                raise NotImplementedError("Only int is supported for array indices")
+            node = node.target
+        indices.reverse()
+        return indices
+
     def get_array_dimensions(self, node: ast.ArraySpecifier):
         dimensions = []
         if isinstance(node, ast.ArraySpecifier):
@@ -560,20 +572,33 @@ class MIPSGenerator(AstVisitor):
                     raise NotImplementedError("Only int is supported for array sizes")
         return dimensions
 
-
     def visit_array_access(self, node: ast.ArrayAccess):
-        with self.eval(node.target) as base_eval, self.eval(node.index) as index_eval:
-            base = base_eval.l_value
-            index = index_eval.r_value
+        indices = self.get_array_indices(node)
+        array_eval = node.target
+        while isinstance(array_eval, ast.ArrayAccess):
+            array_eval = array_eval.target
 
-            dimensions = self.get_array_dimensions(base_eval.r_value.type)
 
-            l_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type)
-            self.builder.add_instruction(f"add {l_reg}, {base}, {index}")
-            r_reg = self.module.register_manager.allocate('temp', base_eval.r_value.type)
-            self.builder.load_word(r_reg, l_reg)
+        with self.eval(array_eval) as array_identifier_eval:
+            array_type = array_identifier_eval.l_value.type
 
-        return ExpressionEval(l_value=l_reg, r_value=r_reg)
+            dimensions = self.get_array_dimensions(array_type.dimensions)
+
+            # Calculate the offset for multidimensional arrays
+            offset = 0
+            stride = array_type.target.width
+            for index, dim in zip(reversed(indices), reversed(dimensions)):
+                offset += index * stride
+                stride *= dim
+
+            l_val = self.module.register_manager.allocate('temp', array_type.target)
+            self.builder.add_instruction(f"addi {l_val}, {array_identifier_eval.r_value}, {offset} # The address of the array word at index {offset}")
+            r_val = self.module.register_manager.allocate('temp', array_type.target)
+            self.builder.load_word(r_val, l_val)
+
+        return ExpressionEval(l_value=l_val, r_value=r_val)
+
+
 
     def visit_struct_definition(self, node: ast.StructDefinition):
         new_type = Struct(name=node.name, fields=[])
