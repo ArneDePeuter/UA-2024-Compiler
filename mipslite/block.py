@@ -42,7 +42,7 @@ class Block:
 
     def load_address(self, dest: Register, src: Union[Register, str]) -> None:
         src_fmt = None
-        if isinstance(src, Register) and src.offset is not None:
+        if isinstance(src, Register):
             if src.offset is not None:
                 src_fmt = f"{src.offset}({src.register})"
             else:
