@@ -102,19 +102,17 @@ class Module:
                     printf_block.add_instruction("li $v0, 11")
                     printf_block.add_instruction("syscall")
                 elif part.count('s') > 0:
-                    # Char * (C-style string)
-                    # Array of Characters
-                    if isinstance(args[arg_index].r_value.type, Array) and isinstance(args[arg_index].r_value.type.target, Char):
-                        for i in range(args[arg_index].r_value.type.length):
-                            printf_block.add_instruction(f"lw $a0, {i*args[arg_index].r_value.type.target.width}({args[arg_index].r_value})")
-                            printf_block.add_instruction("li $v0, 11")
-                            printf_block.add_instruction("syscall")
-                    # Constant String Literals
+                    # Char * (C-style string) or Constant String Literals
                     if isinstance(args[arg_index].r_value.type, Pointer) and isinstance(args[arg_index].r_value.type.target, Char):
                         printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
                         printf_block.add_instruction("li $v0, 4")
                         printf_block.add_instruction("syscall")
-
+                    # Array of Characters
+                    elif isinstance(args[arg_index].r_value.type, Array) and isinstance(args[arg_index].r_value.type.target, Char):
+                        for i in range(args[arg_index].r_value.type.length-1):
+                            printf_block.add_instruction(f"lw $a0, {i*args[arg_index].r_value.type.target.width}({args[arg_index].r_value})")
+                            printf_block.add_instruction("li $v0, 11")
+                            printf_block.add_instruction("syscall")
                 arg_index += 1
             else:
                 # Print the string

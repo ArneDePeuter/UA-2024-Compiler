@@ -116,6 +116,12 @@ class MIPSGenerator(AstVisitor):
                 # leave the variable uninitialised
                 return
 
+            # Check if it is a char* meaning it is a string_literal
+            if isinstance(qualifier.initializer, ast.ArrayInitializer) and isinstance(var_type, Pointer) and isinstance(var_type.target, Char):
+                string_literal_eval = self.visit_string_literal(qualifier.initializer)
+                self.builder.store_word(string_literal_eval.r_value, allocation_address)
+                return
+
             with self.eval(qualifier.initializer) as eval:
                 # we only care about the r_value
                 rval = eval.r_value
