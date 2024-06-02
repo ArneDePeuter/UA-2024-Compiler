@@ -26,6 +26,7 @@ class Block:
         self.cursor = len(self.instructions)
 
     def load_word(self, dest: Register, src: Register) -> None:
+        # TODO: Format reg like load_address
         src_fmt = f"({src})" if src.offset is None else src
         if src.type == Float:
             self.add_instruction(f"l.s {dest}, {src_fmt}")
@@ -33,11 +34,23 @@ class Block:
             self.add_instruction(f"lw {dest}, {src_fmt}")
 
     def load_address(self, dest: Register, src: Union[Register, str]) -> None:
-        src_fmt = f"({src})" if isinstance(src, Register) and src.offset is None else src
+        src_fmt = None
+        if isinstance(src, Register) and src.offset is not None:
+            if src.offset is not None:
+                src_fmt = f"{src.offset}({src.register})"
+            else:
+                if src.register.startswith("$"):
+                    src_fmt = f"({src.register})"
+                else:
+                    src_fmt = src.register
+        else:
+            src_fmt = src
+        #src_fmt = f"({src})" if isinstance(src, Register) and src.offset is None else src
         self.add_instruction(f"la {dest}, {src_fmt}")
 
-    def store_word(self, src: Register, dest: Register) -> None:
-        dest_fmt = f"({dest})" if dest.offset is None else dest
+    def store_word(self, src: Register, dest: Union[Register, str]) -> None:
+        #  TODO: Format reg like load_address
+        dest_fmt = f"({dest})" if isinstance(dest, Register) and dest.offset is None else dest
         if src.type == Float:
             self.add_instruction(f"s.s {src}, {dest_fmt}")
         else:

@@ -64,11 +64,15 @@ class MIPSGenerator(AstVisitor):
             if qualifier.initializer is None:
                 value = None
             else:
+                self.builder = self.module.global_blocks
                 with self.eval(qualifier.initializer) as eval:
                     value = eval.r_value
+                self.builder.store_word(value, qualifier.identifier)
+                self.builder = None
 
-            self.module.global_variable(qualifier.identifier, var_type, value)
-            self.variable_addresses[qualifier.identifier] = qualifier.identifier
+
+            self.module.global_variable(qualifier.identifier, var_type)
+            self.variable_addresses[qualifier.identifier] = Register(qualifier.identifier, var_type)
 
     def visit_program(self, node: ast.Program):
         for statement in node.statements:

@@ -11,12 +11,19 @@ from typing import Optional
 
 class Module:
     def __init__(self):
+        self.global_blocks: Block = Block("global")
         self.data_blocks: list[Block] = []
         self.text_blocks: list[Block] = []
         self.register_manager = RegisterManager()
 
     def __repr__(self):
         repr_str = ""
+        for block in self.text_blocks:
+            if block.label == "main":
+                block = block.blocks[0]
+                block.position_at_start()
+                for instruction in self.global_blocks.instructions:
+                    block.add_instruction(instruction)
         if self.data_blocks:
             repr_str = ".data\n"
             repr_str += "\n".join(map(str, self.data_blocks))
