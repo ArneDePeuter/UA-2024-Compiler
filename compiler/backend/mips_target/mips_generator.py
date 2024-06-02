@@ -83,7 +83,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
         # if not forward declared create function and add to dict
-        if node.name in self.functions:
+        if node.name not in self.functions:
             func = self.module.function(node.name, self.visit_type(node.return_type))
             self.functions[node.name] = func
         self.builder = self.functions[node.name]
