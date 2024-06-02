@@ -38,7 +38,11 @@ class Struct(Type):
     def __init__(self, name: str, fields: list[tuple[str, Type]]):
         self.name = name
         self.fields = fields
-        super().__init__(sum([field[1].width for field in self.fields]))
+        super().__init__(None)
+        self.set_width()
+
+    def set_width(self):
+        self.width = sum([field[1].width for field in self.fields])
 
     def get_member_offset(self, field_name: str):
         offset = 0

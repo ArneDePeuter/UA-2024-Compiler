@@ -97,7 +97,7 @@ class MIPSGenerator(AstVisitor):
         for i, parameter in enumerate(node.parameters):
             param_type = self.visit_type(parameter.type)
             self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
-            self.builder.store_word(Register(f"$a{len(node.parameters) - i - 1}", param_type), self.variable_addresses[parameter.name])
+            self.builder.store_word(Register(f"$a{i}", param_type), self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
@@ -427,9 +427,9 @@ class MIPSGenerator(AstVisitor):
                 ret = ExpressionEval(r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
                 r_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
-                self.builder.add_instruction(f"lw {r_reg}, 0({value.r_value})")
+                self.builder.load_word(r_reg, value.r_value)
                 l_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
-                self.builder.load_address(l_reg, value.r_value)
+                self.builder.add_instruction(f"move {l_reg}, {value.r_value}")
                 ret = ExpressionEval(l_value=l_reg, r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
                 # TODO: pointer arithmetic
@@ -634,6 +634,7 @@ class MIPSGenerator(AstVisitor):
         new_type = Struct(name=node.name, fields=[])
         self.structs[node.name] = new_type
         new_type.fields = [(member.name, self.visit_type(member.type)) for member in node.members]
+        new_type.set_width()
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
         raise NotImplementedError("Struct initializer not implemented")
@@ -646,10 +647,11 @@ class MIPSGenerator(AstVisitor):
 
             offset = struct_type.get_member_offset(node.member_name)
 
-            rval = self.module.register_manager.allocate('temp', struct_type.get_member_type(node.member_name))
-            self.builder.add_instruction(f"lw {rval}, {offset}({target_eval.l_value})")
-            lval = self.module.register_manager.allocate('temp', struct_type.get_member_type(node.member_name))
+            member_type = struct_type.get_member_type(node.member_name)
+            lval = self.module.register_manager.allocate('temp', member_type)
             self.builder.add_instruction(f"addi {lval}, {target_eval.l_value}, {offset}")
+            rval = self.module.register_manager.allocate('temp', member_type)
+            self.builder.load_word(rval, lval)
         return ExpressionEval(l_value=lval, r_value=rval)
 
     def visit_if_statement(self, node: ast.IfStatement):

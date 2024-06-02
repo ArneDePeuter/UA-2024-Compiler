@@ -5,7 +5,8 @@ struct Test {
 };
 
 int main() {
-    struct Test test = {{10, 20, 30, 40, '2'}};
+    struct Test test;
+    test.array = {1, 2, 3, 4, 5};
 
     for (int i = 0; i < 5; i++ ) {
         printf("%d", test.array[i]);

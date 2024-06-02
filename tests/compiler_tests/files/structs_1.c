@@ -16,14 +16,25 @@ void printA(struct A a) {
     printf("%d", a.b.num);
 }
 
-int main() {
-    struct A a1 = {10, 'a', {1}};
+struct A generateA() {
+    struct A a;
+    a.num = 10;
+    a.character = 'a';
+    a.b.num = 1;
+    return a;
+}
 
-    printA((struct A){10,  'a', {1}});
+int main() {
+    struct A a1;
+    a1.num = 10;
+    a1.character = 'a';
+    a1.b.num = 1;
 
     printA(a1);
     a1.num = 20;
     printA(a1);
+
+    printA(generateA());
 
     return 0;
 }

@@ -17,9 +17,10 @@ void modifyInner(struct Outer *outer) {
 }
 
 int main() {
-    struct Inner inner = {10};
-    struct Outer outer = {&inner};
-
+    struct Inner inner;
+    inner.value = 0;
+    struct Outer outer;
+    outer.inner_ptr = &inner;
 
     printf("%d", outer.inner_ptr->value);
     modifyInner(&outer);
