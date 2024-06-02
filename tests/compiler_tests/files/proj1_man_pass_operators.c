@@ -23,7 +23,7 @@ int main() {
     printf("%d\n", 98333 != 6565911);
     printf("%d\n", 55 % 963);
     printf("%d\n", 45 << 4);
-//    printf("%d\n", -33 >> -4); // Right shifting a negative number by a negative amount is undefined behavior.
+    printf("%d\n", -33 >> -4); // Right shifting a negative number by a negative amount is undefined behavior.
     printf("%d\n", 1 & 8784573);
     printf("%d\n", 898 | 98);
     printf("%d\n", !-97435345);

@@ -39,11 +39,16 @@ class RegisterManager:
         return cls
 
     def free(self, reg: Register):
-        reg = reg.register
-        del self.used_reg_classes[reg]
+        reg_name = reg.register
+        if reg_name in self.used_reg_classes:
+            del self.used_reg_classes[reg_name]
+        else:
+            return  # Register not found in used_reg_classes, no need to free
+
         for reg_type, reg_list in self.used_registers.items():
-            if reg in reg_list:
-                reg_list.remove(reg)
-                self.registers[reg_type].insert(0, reg)
+            if reg_name in reg_list:
+                reg_list.remove(reg_name)
+                self.registers[reg_type].append(reg_name)
                 return
-        raise Warning(f"Register {reg} not found in used registers")
+
+        raise Warning(f"Register {reg_name} not found in used registers")
