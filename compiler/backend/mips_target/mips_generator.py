@@ -493,13 +493,7 @@ class MIPSGenerator(AstVisitor):
         label = f"printf_{uuid.uuid4().hex}"
 
         # Call the printf function to handle data and instruction generation
-        args_eval = []
-        for arg in node.args:
-            if isinstance(arg, ast.ArrayInitializer):
-                args_eval.append(self.visit_string_literal(arg))
-            else:
-                args_eval.append(self.visit_expression(arg))
-        #args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
+        args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
         self.module.printf(label, node.format, args_eval)
 
         # Free the registers
@@ -539,6 +533,27 @@ class MIPSGenerator(AstVisitor):
                 if element.value != '\x00':
                     elements_list.append(repr(element.value))
 
+    def get_array_dimensions(self, node: ast.ArrayInitializer):
+        if isinstance(node, ast.ArrayInitializer):
+            return self.get_array_dimensions(node.elements[0])
+        else:
+            return 1
+
+
+    def get_array_element_type(self, node: ast.ArrayInitializer):
+        node = node.elements[0]
+        if isinstance(node, ast.ArrayInitializer):
+            return self.get_array_element_type(node)
+        else:
+            if isinstance(node, ast.INT):
+                return Int()
+            elif isinstance(node, ast.FLOAT):
+                return Float()
+            elif isinstance(node, ast.CHAR):
+                return Char()
+            else:
+                raise NotImplementedError("Only int, float and char are supported for array elements")
+
 
     def visit_array_initializer(self, node: ast.ArrayInitializer):
         if node.struct_type:
@@ -549,6 +564,7 @@ class MIPSGenerator(AstVisitor):
         self.array_elements(node.elements, elements)
         self.module.array(array_block, elements)
         # Now you should first store the address of the array in a register
+        #array_type = Array(target=self.get_array_element_type(node), length=len(node.elements), dimensions=self.get_array_dimensions(node))
         reg = self.module.register_manager.allocate('temp', Pointer(Any()))
         self.builder.load_address(reg, label)
         return ExpressionEval(r_value=reg)
