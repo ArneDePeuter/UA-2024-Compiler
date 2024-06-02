@@ -48,7 +48,10 @@ class MIPSGenerator(AstVisitor):
         if self.builder is None or (isinstance(self.builder, Function) and self.builder.current_block is None):
             return super().visit_expression(node)
         else:
-            self.builder.comment(node.c_syntax)
+            if node.c_syntax is None:
+                return super().visit_expression(node)
+            for line in node.c_syntax.split("\n"):
+                self.builder.comment(line)
             return super().visit_expression(node)
 
     def generate_mips(self, node):
