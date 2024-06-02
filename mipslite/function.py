@@ -5,7 +5,7 @@ from typing import List
 from .block import Block
 from .allocator import Allocator
 from .type import Type, Float
-from .register_manager import Register
+from .register_manager import Register, RegisterManager
 
 
 class Function:
@@ -22,7 +22,7 @@ class Function:
 
         # add enter and exit stack setup to first and last block
         self.add_function_enter(self.blocks[0])
-        self.add_function_exit(self.blocks[-1])
+        self.add_function_exit()
 
         return "\n".join(map(str, self.blocks))
 
@@ -37,7 +37,8 @@ class Function:
         block.add_instruction(f"sw $fp, {self.total_stack_size - 8}($sp)")
         block.add_instruction(f"move $fp, $sp")
 
-    def add_function_exit(self, block: Block):
+    def add_function_exit(self):
+        block = Block(f"{self.label}_exit", self.allocator)
         block.position_at_end()
         block.add_instruction("move $sp, $fp")
         block.add_instruction(f"lw $fp, {self.total_stack_size - 8}($sp)")
@@ -50,12 +51,13 @@ class Function:
         else:
             block.add_instruction("li $v0, 10")
             block.add_instruction("syscall")
+        self.blocks.append(block)
 
     def allocate(self, type_: Type) -> Register:
         return self.allocator.allocate(type_)
 
     def create_block(self, label: str) -> Block:
-        block = Block(label)
+        block = Block(label, self.allocator)
         self.blocks.append(block)
         return block
 
@@ -73,6 +75,14 @@ class Function:
 
     def comment(self, comment: str) -> None:
         self.current_block.comment(comment)
+
+    def ret(self, register: Register) -> None:
+        self.add_instruction(f"move $v0, {register}")
+        self.add_instruction(f"j {self.label}_exit")
+        self.add_instruction("nop")
+
+    def jal(self, label: str, register_manager: RegisterManager) -> None:
+        self.current_block.jal(label, register_manager)
 
     @contextmanager
     def if_then(self, condition_register: str) -> None:
