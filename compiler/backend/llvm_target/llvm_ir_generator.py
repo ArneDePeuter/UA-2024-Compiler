@@ -207,6 +207,9 @@ class LLVMIRGenerator(AstVisitor):
         if not left_value or not right_value:
             raise NotImplementedError("Cannot perform binary logical operation, r_value is None")
 
+        # convert left and right value to int32 boolean values
+        left_value = self.builder.icmp_signed("!=", left_value, ir.Constant(IrIntType, 0))
+        right_value = self.builder.icmp_signed("!=", right_value, ir.Constant(IrIntType, 0))
         if node.operator == ast.BinaryLogicalOperation.Operator.AND:
             result = self.builder.and_(left_value, right_value)
         elif node.operator == ast.BinaryLogicalOperation.Operator.OR:

@@ -54,10 +54,10 @@ class AstDotVisitor(AstVisitor):
         self.gen_binary_dot(node, node.operator.name)
 
     def visit_binary_bitwise_arithmetic(self, node: ast.BinaryBitwiseArithmetic):
-        self.gen_binary_dot(node, node.operator.name)
+        self.gen_binary_dot(node, "bitwise " + node.operator.name)
 
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
-        self.gen_binary_dot(node, node.operator.name)
+        self.gen_binary_dot(node, "logical " + node.operator.name)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
         self.gen_binary_dot(node, node.operator.name)
