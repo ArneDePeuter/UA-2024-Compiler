@@ -1,12 +1,14 @@
-from .register_manager import Register
-from .type import Float
+from .register_manager import Register, RegisterManager
+from .allocator import Allocator
+from .type import Float, Type
 
-from typing import Union
+from typing import Union, Optional
 
 
 class Block:
-    def __init__(self, label: str):
+    def __init__(self, label: str, allocator: Optional[Allocator] = None):
         self.label = label
+        self.allocator = allocator
         self.instructions: list[str] = []
         self.cursor = 0
 
@@ -44,3 +46,19 @@ class Block:
     def comment(self, comment: str) -> None:
         self.add_instruction(f"# {comment}")
 
+    def allocate(self, type_: Type) -> Register:
+        return self.allocator.allocate(type_)
+
+    def jal(self, label: str, register_manager: RegisterManager) -> None:
+        # save all temp registers on the stack
+        fd_dict = {}
+        for reg in register_manager.used_registers["temp"]:
+            cls = register_manager.used_reg_classes[reg]
+            alloc = self.allocator.allocate(cls.type)
+            self.add_instruction(f"sw {reg}, {alloc}")
+            fd_dict[reg] = alloc
+        self.add_instruction(f"jal {label}")
+        self.add_instruction("nop")
+        # restore all temp registers from the stack
+        for reg, alloc in fd_dict.items():
+            self.add_instruction(f"lw {reg}, {alloc}")

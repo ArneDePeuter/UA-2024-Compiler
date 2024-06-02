@@ -27,16 +27,20 @@ class RegisterManager:
             'special': ['$zero', '$at', '$gp', '$sp', '$fp', '$ra']
         }
         self.used_registers = {key: [] for key in self.registers}
+        self.used_reg_classes: dict[str, Register] = {}
 
     def allocate(self, reg_type: str, type: Type):
         if reg_type not in self.registers or not self.registers[reg_type]:
             raise RuntimeError(f"Out of {reg_type} registers")
         reg = self.registers[reg_type].pop(0)
         self.used_registers[reg_type].append(reg)
-        return Register(reg, type)
+        cls = Register(reg, type)
+        self.used_reg_classes[cls.register] = cls
+        return cls
 
     def free(self, reg: Register):
         reg = reg.register
+        del self.used_reg_classes[reg]
         for reg_type, reg_list in self.used_registers.items():
             if reg in reg_list:
                 reg_list.remove(reg)
