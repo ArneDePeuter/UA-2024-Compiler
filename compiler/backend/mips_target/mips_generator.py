@@ -408,7 +408,9 @@ class MIPSGenerator(AstVisitor):
             value = value_eval
 
             if node.operator == ast.UnaryExpression.Operator.POSITIVE:
-                ret = ExpressionEval(r_value=value.r_value)
+                result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
+                self.builder.add_instruction(f"move {result_reg}, {value.r_value}")
+                ret = ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
                 result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
                 self.builder.add_instruction(f"neg {result_reg}, {value.r_value}")
