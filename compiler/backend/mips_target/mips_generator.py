@@ -342,15 +342,13 @@ class MIPSGenerator(AstVisitor):
         with self.eval(node.left) as left, self.eval(node.right) as right:
             result_reg = self.module.register_manager.allocate('temp', Int())
 
-            left = left.r_value != 0
-            right = right.r_value != 0
+            left_reg = left.r_value
+            right_reg = right.r_value
 
             if node.operator == ast.BinaryLogicalOperation.Operator.AND:
-                res = left and right
+                self.builder.add_instruction(f"and {result_reg}, {left_reg}, {right_reg}")
             elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
-                res = left or right
-
-            self.builder.add_instruction(f"li {result_reg}, {int(res)}")
+                self.builder.add_instruction(f"or {result_reg}, {left_reg}, {right_reg}")
 
         return ExpressionEval(r_value=result_reg)
 
