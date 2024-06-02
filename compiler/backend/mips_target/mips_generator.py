@@ -519,7 +519,10 @@ class MIPSGenerator(AstVisitor):
 
         # Free the registers
         for reg in reversed(args_eval):
-            self.module.register_manager.free(reg.r_value)
+            if reg.l_value:
+                self.module.register_manager.free(reg.l_value)
+            if reg.r_value:
+                self.module.register_manager.free(reg.r_value)
 
         # Add instruction to call the printf function
         self.builder.add_instruction(f"jal {label}")
