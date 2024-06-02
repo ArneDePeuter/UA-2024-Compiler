@@ -97,7 +97,7 @@ class MIPSGenerator(AstVisitor):
         for i, parameter in enumerate(node.parameters):
             param_type = self.visit_type(parameter.type)
             self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
-            self.builder.store_word(Register(f"$a{len(node.parameters) - i - 1}", param_type), self.variable_addresses[parameter.name])
+            self.builder.store_word(Register(f"$a{i}", param_type), self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
