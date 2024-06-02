@@ -207,6 +207,9 @@ class LLVMIRGenerator(AstVisitor):
         if not left_value or not right_value:
             raise NotImplementedError("Cannot perform binary logical operation, r_value is None")
 
+        # convert left and right value to int32 boolean values
+        left_value = self.builder.icmp_signed("!=", left_value, ir.Constant(IrIntType, 0))
+        right_value = self.builder.icmp_signed("!=", right_value, ir.Constant(IrIntType, 0))
         if node.operator == ast.BinaryLogicalOperation.Operator.AND:
             result = self.builder.and_(left_value, right_value)
         elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
@@ -214,6 +217,8 @@ class LLVMIRGenerator(AstVisitor):
         else:
             raise NotImplementedError(f"Binary logical operator {node.operator} is not supported")
 
+        # cast result to int32
+        result = self.builder.zext(result, IrIntType)
         return ExpressionEval(r_value=result)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation) -> ExpressionEval:
@@ -234,6 +239,8 @@ class LLVMIRGenerator(AstVisitor):
             result = self.builder.fcmp_ordered(node.operator.value, left_value, right_value)
         else:
             result = self.builder.icmp_signed(node.operator.value, left_value, right_value)
+        # cast result to int32
+        result = self.builder.zext(result, IrIntType)
         return ExpressionEval(r_value=result)
 
     def visit_unary_expression(self, node: ast.UnaryExpression) -> ExpressionEval:
@@ -250,6 +257,7 @@ class LLVMIRGenerator(AstVisitor):
             result = self.builder.not_(value.r_value)
         elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
             result = self.builder.icmp_signed("==", value.r_value, ir.Constant(value.r_value.type, 0))
+            result = self.builder.zext(result, IrIntType)
         elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
             return ExpressionEval(r_value=self.builder.load(value.r_value), l_value=value.r_value)
         elif value.l_value:
