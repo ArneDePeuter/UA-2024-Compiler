@@ -346,9 +346,38 @@ class MIPSGenerator(AstVisitor):
             right = right.r_value
 
             if node.operator == ast.BinaryLogicalOperation.Operator.AND:
-                self.builder.add_instruction(f"and {result_reg}, {left}, {right}")
+                end_label = f"and_end_{uuid.uuid4().hex}"
+                false_label = f"and_false_{uuid.uuid4().hex}"
+
+                self.builder.add_instruction(f"beq {left}, $zero, {false_label}")
+                self.builder.add_instruction("nop")
+                self.builder.add_instruction(f"beq {right}, $zero, {false_label}")
+                self.builder.add_instruction("nop")
+                self.builder.add_instruction(f"li {result_reg}, 1")
+                self.builder.add_instruction(f"j {end_label}")
+                self.builder.add_instruction("nop")
+
+                self.builder.add_instruction(f"{false_label}:")
+                self.builder.add_instruction(f"li {result_reg}, 0")
+
+                self.builder.add_instruction(f"{end_label}:")
+
             elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
-                self.builder.add_instruction(f"or {result_reg}, {left}, {right}")
+                end_label = f"or_end_{uuid.uuid4().hex}"
+                true_label = f"or_true_{uuid.uuid4().hex}"
+
+                self.builder.add_instruction(f"bne {left}, $zero, {true_label}")
+                self.builder.add_instruction("nop")
+                self.builder.add_instruction(f"bne {right}, $zero, {true_label}")
+                self.builder.add_instruction("nop")
+                self.builder.add_instruction(f"li {result_reg}, 0")
+                self.builder.add_instruction(f"j {end_label}")
+                self.builder.add_instruction("nop")
+
+                self.builder.add_instruction(f"{true_label}:")
+                self.builder.add_instruction(f"li {result_reg}, 1")
+
+                self.builder.add_instruction(f"{end_label}:")
         return ExpressionEval(r_value=result_reg)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
