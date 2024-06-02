@@ -174,11 +174,15 @@ class MIPSGenerator(AstVisitor):
 
             # Type checking pointer, and safety checks for right-hand side
             if isinstance(left_type, Pointer) and not isinstance(right_type, Pointer):
-                # Handle char* assignment
-                if isinstance(right_type, Char):
-                    self.builder.load_address(left_eval.r_value, left_eval.r_value)
+                # handle nullptr
+                if isinstance(node.right, ast.INT) and node.right.value == 0:
+                    pass
                 else:
-                    raise TypeError(f"Cannot assign value of type {right_type} to pointer of type {left_type}")
+                    # Handle char* assignment
+                    if isinstance(right_type, Char):
+                        self.builder.load_address(left_eval.r_value, left_eval.r_value)
+                    else:
+                        raise TypeError(f"Cannot assign value of type {right_type} to pointer of type {left_type}")
 
             value = right_eval.r_value
 
