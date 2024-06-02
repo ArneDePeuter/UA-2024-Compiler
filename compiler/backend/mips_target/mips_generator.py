@@ -341,9 +341,14 @@ class MIPSGenerator(AstVisitor):
     def visit_binary_logical_operation(self, node: ast.BinaryLogicalOperation):
         with self.eval(node.left) as left, self.eval(node.right) as right:
             result_reg = self.module.register_manager.allocate('temp', Int())
-
             left_reg = left.r_value
             right_reg = right.r_value
+
+            # Convert non-zero values to 1 (true) and zero to 0 (false)
+            self.builder.add_instruction(
+                f"sltu {left_reg}, $zero, {left_reg}")  # if left_reg != 0 -> left_reg = 1 else left_reg = 0
+            self.builder.add_instruction(
+                f"sltu {right_reg}, $zero, {right_reg}")  # if right_reg != 0 -> right_reg = 1 else right_reg = 0
 
             if node.operator == ast.BinaryLogicalOperation.Operator.AND:
                 self.builder.add_instruction(f"and {result_reg}, {left_reg}, {right_reg}")
