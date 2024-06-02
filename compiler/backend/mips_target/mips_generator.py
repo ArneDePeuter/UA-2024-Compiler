@@ -229,7 +229,7 @@ class MIPSGenerator(AstVisitor):
 
     def visit_identifier(self, node: ast.IDENTIFIER):
         addr = self.variable_addresses[node.name]
-        if addr.type == Float:
+        if isinstance(addr.type, Float):
             reg = self.module.register_manager.allocate('float', Float())
         else:
             reg = self.module.register_manager.allocate('temp', addr.type)
