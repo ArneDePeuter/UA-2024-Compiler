@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 int main() {
-    char b = '\n';
+    char b = 'a';
     b++;
     printf("%c", b);
 }
