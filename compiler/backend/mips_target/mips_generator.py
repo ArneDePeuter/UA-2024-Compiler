@@ -109,7 +109,6 @@ class MIPSGenerator(AstVisitor):
         var_type = self.visit_type(node.var_type)
 
         for qualifier in node.qualifiers:
-            print("allocate", qualifier.identifier, var_type)
             allocation_address = self.builder.allocate(var_type)
             self.variable_addresses[qualifier.identifier] = allocation_address
 
@@ -399,9 +398,9 @@ class MIPSGenerator(AstVisitor):
                 ret = ExpressionEval(r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
                 r_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
-                self.builder.add_instruction(f"lw {r_reg}, 0({value.r_value})")
+                self.builder.load_word(r_reg, value.r_value)
                 l_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
-                self.builder.load_address(l_reg, value.r_value)
+                self.builder.add_instruction(f"move {l_reg}, {value.r_value}")
                 ret = ExpressionEval(l_value=l_reg, r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
                 # TODO: pointer arithmetic
