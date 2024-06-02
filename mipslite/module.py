@@ -5,7 +5,7 @@ import uuid
 from .block import Block
 from .function import Function
 from .register_manager import RegisterManager
-from .type import Type, Void, Pointer, Array, Char
+from .type import Type, Void, Pointer, Array, Char, Any
 from typing import Optional
 
 
@@ -110,11 +110,11 @@ class Module:
                             printf_block.add_instruction("li $v0, 11")
                             printf_block.add_instruction("syscall")
                     # Constant String Literals
+                    if isinstance(args[arg_index].r_value.type, Pointer) and isinstance(args[arg_index].r_value.type.target, Char):
+                        printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
+                        printf_block.add_instruction("li $v0, 4")
+                        printf_block.add_instruction("syscall")
 
-
-                    printf_block.add_instruction(f"move $a0, {args[arg_index].r_value}")
-                    printf_block.add_instruction("li $v0, 4")
-                    printf_block.add_instruction("syscall")
                 arg_index += 1
             else:
                 # Print the string

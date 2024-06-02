@@ -493,7 +493,14 @@ class MIPSGenerator(AstVisitor):
         label = f"printf_{uuid.uuid4().hex}"
 
         # Call the printf function to handle data and instruction generation
-        args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
+        args_eval = []
+        for arg in node.args:
+            if isinstance(arg, ast.ArrayInitializer):
+                arg_eval = self.visit_string_literal(arg)
+            else:
+                arg_eval = self.visit_expression(arg)
+            args_eval.append(arg_eval)
+        #args_eval = [self.visit_expression(arg) for arg in node.args] # This is a list of registers
         self.module.printf(label, node.format, args_eval)
 
         # Free the registers
