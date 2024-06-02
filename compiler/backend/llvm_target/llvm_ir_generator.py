@@ -252,7 +252,11 @@ class LLVMIRGenerator(AstVisitor):
         if node.operator == ast.UnaryExpression.Operator.POSITIVE:
             result = value.r_value
         elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
-            result = self.builder.neg(value.r_value)
+            # if float use f neg otherwise use neg
+            if isinstance(value.r_value.type, ir.FloatType):
+                result = self.builder.fsub(ir.Constant(value.r_value.type, 0), value.r_value)
+            else:
+                result = self.builder.sub(ir.Constant(value.r_value.type, 0), value.r_value)
         elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
             result = self.builder.not_(value.r_value)
         elif node.operator == ast.UnaryExpression.Operator.LOGICALNEGATION:
