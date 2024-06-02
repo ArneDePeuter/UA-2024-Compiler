@@ -1,15 +1,12 @@
 from dataclasses import dataclass
 import uuid
 from contextlib import contextmanager
-import re
 from typing import Optional
-from typing import Union
 
 from mipslite.module import Module
 from mipslite.function import Function
 from mipslite.block import Block
-from mipslite.allocator import Allocator
-from mipslite.type import Int, Float, Char, Array, Pointer, Struct, Any
+from mipslite.type import Int, Float, Char, Array, Pointer, Struct, Any, Void
 from mipslite.register_manager import Register
 
 from compiler.core.ast_visitor import AstVisitor
@@ -85,9 +82,11 @@ class MIPSGenerator(AstVisitor):
             self.visit_statement(statement)
 
     def visit_function_declaration(self, node: ast.FunctionDeclaration):
-        func = self.module.function(node.name, self.visit_type(node.return_type))
-        self.functions[node.name] = func
-        self.builder = func
+        # if not forward declared create function and add to dict
+        if node.name in self.functions:
+            func = self.module.function(node.name, self.visit_type(node.return_type))
+            self.functions[node.name] = func
+        self.builder = self.functions[node.name]
         for i, parameter in enumerate(node.parameters):
             param_type = self.visit_type(parameter.type)
             self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
@@ -630,7 +629,9 @@ class MIPSGenerator(AstVisitor):
             # TODO: do a jump
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
-        pass
+        # create an empty block for the function if it does not exist yet
+        if node.name not in self.functions:
+            self.functions[node.name] = self.module.function(node.name, self.visit_type(node.return_type))
 
     def visit_comment_statement(self, node: ast.CommentStatement):
         if self.builder is None or (isinstance(self.builder, Function) and self.builder.current_block is None):
@@ -647,6 +648,8 @@ class MIPSGenerator(AstVisitor):
                 mips_type = Float()
             elif node.type == ast.BaseType.char:
                 mips_type = Char()
+            elif node.type == ast.BaseType.void:
+                mips_type = Void()
             else:
                 raise NotImplementedError(f"Base type {node.type} is not supported")
 
