@@ -31,7 +31,7 @@ class Module:
         return func
 
     def data_block(self, label: str,) -> Block:
-        block = Block(label)
+        block = Block(label, None)
         self.data_blocks.append(block)
         return block
 
