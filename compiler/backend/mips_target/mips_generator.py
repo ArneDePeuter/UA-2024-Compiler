@@ -448,11 +448,7 @@ class MIPSGenerator(AstVisitor):
             if node.operator == ast.ShiftExpression.Operator.LEFT:
                 self.builder.add_instruction(f"sllv {result_reg}, {value}, {amount}")
             elif node.operator == ast.ShiftExpression.Operator.RIGHT:
-                # Handle negative shift amounts
-                temp_reg = self.module.register_manager.allocate('temp', Int())
-                self.builder.add_instruction(f"abs {temp_reg}, {amount}")
-                self.builder.add_instruction(f"srlv {result_reg}, {value}, {temp_reg}")
-                self.module.register_manager.free(temp_reg)
+                self.builder.add_instruction(f"srlv {result_reg}, {value}, {amount}")
 
         return ExpressionEval(r_value=result_reg)
 
