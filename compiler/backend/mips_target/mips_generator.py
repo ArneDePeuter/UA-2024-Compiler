@@ -177,6 +177,9 @@ class MIPSGenerator(AstVisitor):
                 # Handle char* assignment
                 if isinstance(right_type, Char):
                     self.builder.load_address(left_eval.r_value, left_eval.r_value)
+                elif isinstance(node.right, ast.INT) and node.right.value == 0:
+                    # null pointer assignment
+                    pass
                 else:
                     raise TypeError(f"Cannot assign value of type {right_type} to pointer of type {left_type}")
 
@@ -255,14 +258,6 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
                 self.module.register_manager.free(float_reg)
-                res = ExpressionEval(r_value=int_reg)
-            elif isinstance(target_type, Char) and isinstance(source_type, Int):
-                char_reg = self.module.register_manager.allocate('temp', Char())
-                self.builder.add_instruction(f"andi {char_reg}, {r_value}, 0xFF")
-                res = ExpressionEval(r_value=char_reg)
-            elif isinstance(target_type, Int) and isinstance(source_type, Char):
-                int_reg = self.module.register_manager.allocate('temp', Int())
-                self.builder.add_instruction(f"seb {int_reg}, {r_value}")
                 res = ExpressionEval(r_value=int_reg)
             else:
                 result_reg = self.module.register_manager.allocate('temp', target_type)
