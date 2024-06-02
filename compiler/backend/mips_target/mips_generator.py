@@ -342,42 +342,16 @@ class MIPSGenerator(AstVisitor):
         with self.eval(node.left) as left, self.eval(node.right) as right:
             result_reg = self.module.register_manager.allocate('temp', Int())
 
-            left = left.r_value
-            right = right.r_value
+            left = left.r_value != 0
+            right = right.r_value != 0
 
             if node.operator == ast.BinaryLogicalOperation.Operator.AND:
-                end_label = f"and_end_{uuid.uuid4().hex}"
-                false_label = f"and_false_{uuid.uuid4().hex}"
-
-                self.builder.add_instruction(f"beq {left}, $zero, {false_label}")
-                self.builder.add_instruction("nop")
-                self.builder.add_instruction(f"beq {right}, $zero, {false_label}")
-                self.builder.add_instruction("nop")
-                self.builder.add_instruction(f"li {result_reg}, 1")
-                self.builder.add_instruction(f"j {end_label}")
-                self.builder.add_instruction("nop")
-
-                self.builder.add_instruction(f"{false_label}:")
-                self.builder.add_instruction(f"li {result_reg}, 0")
-
-                self.builder.add_instruction(f"{end_label}:")
-
+                res = left and right
             elif node.operator == ast.BinaryLogicalOperation.Operator.OR:
-                end_label = f"or_end_{uuid.uuid4().hex}"
-                true_label = f"or_true_{uuid.uuid4().hex}"
+                res = left or right
 
-                self.builder.add_instruction(f"bne {left}, $zero, {true_label}")
-                self.builder.add_instruction("nop")
-                self.builder.add_instruction(f"bne {right}, $zero, {true_label}")
-                self.builder.add_instruction("nop")
-                self.builder.add_instruction(f"li {result_reg}, 0")
-                self.builder.add_instruction(f"j {end_label}")
-                self.builder.add_instruction("nop")
+            self.builder.add_instruction(f"li {result_reg}, {int(res)}")
 
-                self.builder.add_instruction(f"{true_label}:")
-                self.builder.add_instruction(f"li {result_reg}, 1")
-
-                self.builder.add_instruction(f"{end_label}:")
         return ExpressionEval(r_value=result_reg)
 
     def visit_comparison_operation(self, node: ast.ComparisonOperation):
