@@ -109,6 +109,7 @@ class MIPSGenerator(AstVisitor):
         var_type = self.visit_type(node.var_type)
 
         for qualifier in node.qualifiers:
+            print("allocate", qualifier.identifier, var_type)
             allocation_address = self.builder.allocate(var_type)
             self.variable_addresses[qualifier.identifier] = allocation_address
 
@@ -605,6 +606,7 @@ class MIPSGenerator(AstVisitor):
         new_type = Struct(name=node.name, fields=[])
         self.structs[node.name] = new_type
         new_type.fields = [(member.name, self.visit_type(member.type)) for member in node.members]
+        new_type.set_width()
 
     def visit_struct_initializer(self, node: ast.ArrayInitializer):
         raise NotImplementedError("Struct initializer not implemented")
@@ -617,10 +619,11 @@ class MIPSGenerator(AstVisitor):
 
             offset = struct_type.get_member_offset(node.member_name)
 
-            rval = self.module.register_manager.allocate('temp', struct_type.get_member_type(node.member_name))
-            self.builder.add_instruction(f"lw {rval}, {offset}({target_eval.l_value})")
-            lval = self.module.register_manager.allocate('temp', struct_type.get_member_type(node.member_name))
+            member_type = struct_type.get_member_type(node.member_name)
+            lval = self.module.register_manager.allocate('temp', member_type)
             self.builder.add_instruction(f"addi {lval}, {target_eval.l_value}, {offset}")
+            rval = self.module.register_manager.allocate('temp', member_type)
+            self.builder.load_word(rval, lval)
         return ExpressionEval(l_value=lval, r_value=rval)
 
     def visit_if_statement(self, node: ast.IfStatement):
