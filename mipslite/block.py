@@ -35,14 +35,14 @@ class Block:
             else:
                 src_fmt = src.register
         #src_fmt = f"({src})" if src.offset is None else src
-        if src.type == Float:
+        if isinstance(src.type, Float):
             self.add_instruction(f"l.s {dest}, {src_fmt}")
         else:
             self.add_instruction(f"lw {dest}, {src_fmt}")
 
     def load_address(self, dest: Register, src: Union[Register, str]) -> None:
         src_fmt = None
-        if isinstance(src, Register) and src.offset is not None:
+        if isinstance(src, Register):
             if src.offset is not None:
                 src_fmt = f"{src.offset}({src.register})"
             else:
@@ -67,7 +67,7 @@ class Block:
         else:
             dest_fmt = dest
         #dest_fmt = f"({dest})" if isinstance(dest, Register) and dest.offset is None else dest
-        if src.type == Float:
+        if isinstance(src.type, Float):
             self.add_instruction(f"s.s {src}, {dest_fmt}")
         else:
             self.add_instruction(f"sw {src}, {dest_fmt}")
