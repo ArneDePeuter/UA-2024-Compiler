@@ -559,6 +559,8 @@ class SymbolTableVisitor(AstVisitor):
                 raise SemanticError(f"Array access method to an object which isn't an array or a pointer", node.line, node.position)
             cp = copy.deepcopy(target_type)
             cp.type.array_sizes.sizes.pop(0)
+            if len(cp.type.array_sizes.sizes) == 0:
+                return cp.type.element_type
             return cp
         if len(target_type.address_qualifiers) > 0:
             cp = copy.deepcopy(target_type)
