@@ -476,9 +476,9 @@ class MIPSGenerator(AstVisitor):
                 self.builder.load_address(r_reg, value.l_value)
                 ret = ExpressionEval(r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.DEREFERENCE:
-                r_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
+                r_reg = self.module.register_manager.allocate('temp', value.r_value.type.target)
                 self.builder.load_word(r_reg, value.r_value)
-                l_reg = self.module.register_manager.allocate('temp', value.l_value.type.target)
+                l_reg = self.module.register_manager.allocate('temp', value.r_value.type.target)
                 self.builder.add_instruction(f"move {l_reg}, {value.r_value}")
                 ret = ExpressionEval(l_value=l_reg, r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
