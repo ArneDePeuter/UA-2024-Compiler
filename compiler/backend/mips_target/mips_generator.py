@@ -519,7 +519,10 @@ class MIPSGenerator(AstVisitor):
 
         # Free the registers
         for reg in reversed(args_eval):
-            self.module.register_manager.free(reg.r_value)
+            if reg.l_value:
+                self.module.register_manager.free(reg.l_value)
+            if reg.r_value:
+                self.module.register_manager.free(reg.r_value)
 
         # Add instruction to call the printf function
         self.builder.add_instruction(f"jal {label}")
@@ -593,10 +596,10 @@ class MIPSGenerator(AstVisitor):
     def get_array_indices(self, node: ast.ArrayAccess):
         indices = []
         while isinstance(node, ast.ArrayAccess):
-            if isinstance(node.index, ast.INT):
-                indices.append(node.index.value)
-            else:
-                raise NotImplementedError("Only int is supported for array indices")
+            index_eval = self.visit_expression(node.index)
+            indices.append(index_eval.r_value)
+            if index_eval.l_value:
+                self.module.register_manager.free(index_eval.l_value)
             node = node.target
         indices.reverse()
         return indices
@@ -624,14 +627,26 @@ class MIPSGenerator(AstVisitor):
             dimensions = self.get_array_dimensions(array_type.dimensions)
 
             # Calculate the offset for multidimensional arrays
-            offset = 0
-            stride = array_type.target.width
-            for index, dim in zip(reversed(indices), reversed(dimensions)):
-                offset += index * stride
-                stride *= dim
+            offset_reg = self.module.register_manager.allocate('temp', Int())
+            self.builder.add_instruction(f"li {offset_reg}, 0 # Initialize the offset to 0")
+            stride_reg = self.module.register_manager.allocate('temp', Int())
+            self.builder.add_instruction(f"li {stride_reg}, {array_type.target.width} # The size of the array element")
+            self.builder.add_instruction(f"# Calculating the offset for the array access")
+            for index_reg, dim in zip(reversed(indices), reversed(dimensions)):
+                temp_reg = self.module.register_manager.allocate('temp', Int())
+                # Multiply index by current stride and add to offset
+                self.builder.add_instruction(f"mul {temp_reg}, {index_reg}, {stride_reg} # temp = index * stride")
+                self.builder.add_instruction(f"add {offset_reg}, {offset_reg}, {temp_reg} # offset += temp")
+                # Update stride for the next dimension
+                self.builder.add_instruction(f"li {temp_reg}, {dim} # Load dimension size into temp")
+                self.builder.add_instruction(f"mul {stride_reg}, {stride_reg}, {temp_reg} # stride *= dimension size")
+                self.module.register_manager.free(temp_reg)
+                self.module.register_manager.free(index_reg)
+            self.module.register_manager.free(stride_reg)
 
             l_val = self.module.register_manager.allocate('temp', array_type.target)
-            self.builder.add_instruction(f"addi {l_val}, {array_identifier_eval.r_value}, {offset} # The address of the array word at index {offset}")
+            self.builder.add_instruction(f"add {l_val}, {array_identifier_eval.r_value}, {offset_reg} # The address of the array word at the index just calculated")
+            self.module.register_manager.free(offset_reg)
             r_val = self.module.register_manager.allocate('temp', array_type.target)
             self.builder.load_word(r_val, l_val)
 
