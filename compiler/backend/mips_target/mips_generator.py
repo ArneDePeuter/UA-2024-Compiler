@@ -102,6 +102,17 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"mtc1 $a{i}, {reg}")
                 self.builder.store_word(reg, self.variable_addresses[parameter.name])
                 self.module.register_manager.free(reg)
+            elif isinstance(param_type, Struct):
+                # we get the pointer and fully allocate the struct on the stack
+                for name, type in param_type.fields:
+                    reg = self.module.register_manager.allocate(f"temp", type)
+                    from_reg = Register(f"$a{i}", Any(), offset=param_type.get_member_offset(name))
+                    self.builder.load_word(reg, from_reg)
+                    to_addr = self.variable_addresses[parameter.name]
+                    to_addr.offset = param_type.get_member_offset(name)
+                    self.builder.store_word(reg, to_addr)
+                    to_addr.offset = 0
+                    self.module.register_manager.free(reg)
             else:
                 self.builder.store_word(Register(f"$a{i}", param_type), self.variable_addresses[parameter.name])
         self.visit_body(node.body)
@@ -540,6 +551,9 @@ class MIPSGenerator(AstVisitor):
                 arg_regs.append(arg_reg)
                 if isinstance(arg_eval.r_value.type, Float):
                     self.builder.add_instruction(f"mfc1 {arg_reg}, {arg_eval.r_value}")
+                elif isinstance(arg_eval.r_value.type, Struct):
+                    # move the address of the struct to the argument register
+                    self.builder.add_instruction(f"move {arg_reg}, {arg_eval.l_value}")
                 else:
                     self.builder.add_instruction(f"move {arg_reg}, {arg_eval.r_value}")
 
