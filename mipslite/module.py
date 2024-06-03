@@ -78,7 +78,7 @@ class Module:
             parts.remove("")
         arg_index = 0
         for part in parts:
-            if part == '%(percent_placeholder)s':
+            if part.startswith('%%'):
                 printf_block.add_instruction(f"li $a0, 37")  # ASCII code for '%'
                 printf_block.add_instruction("li $v0, 11")
                 printf_block.add_instruction("syscall")
