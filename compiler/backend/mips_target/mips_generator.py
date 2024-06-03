@@ -308,7 +308,14 @@ class MIPSGenerator(AstVisitor):
 
                 ret = ExpressionEval(r_value=result_reg)
             else:
-                result_reg = self.module.register_manager.allocate('temp', Int())
+                # pointer arithmetic
+                if isinstance(left_type, Pointer) and isinstance(right_type, Int):
+                    # multiply right by the size of the target type
+                    self.builder.add_instruction(f"mul {right}, {right}, {left_type.target.width}")
+                    result_reg = self.module.register_manager.allocate('temp', left_type)
+                else:
+                    result_reg = self.module.register_manager.allocate('temp', Int())
+
                 if node.operator == ast.BinaryArithmetic.Operator.PLUS:
                     self.builder.add_instruction(f"add {result_reg}, {left}, {right}")
                 elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
@@ -412,13 +419,19 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"move {l_reg}, {value.r_value}")
                 ret = ExpressionEval(l_value=l_reg, r_value=r_reg)
             elif node.operator == ast.UnaryExpression.Operator.INCREMENT:
-                # TODO: pointer arithmetic
                 reg = self.module.register_manager.allocate('temp', value.r_value.type)
+
                 if not node.prefix:
                     # we need to return the value before the operation is done
                     self.builder.add_instruction(f"move {reg}, {value.r_value}")
 
-                self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, 1")
+                # pointer arithmetic
+                if isinstance(value.r_value.type, Pointer):
+                    immediate_value = value.r_value.type.target.width
+                else:
+                    immediate_value = 1
+
+                self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, {immediate_value}")
 
                 if node.prefix:
                     # we need the value after the opration is done
@@ -428,13 +441,19 @@ class MIPSGenerator(AstVisitor):
                 ret = ExpressionEval(r_value=reg)
 
             elif node.operator == ast.UnaryExpression.Operator.DECREMENT:
-                # TODO: pointer arithmetic
                 reg = self.module.register_manager.allocate('temp', value.r_value.type)
+
                 if not node.prefix:
                     # we need to return the value before the operation is done
                     self.builder.add_instruction(f"move {reg}, {value.r_value}")
 
-                self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, -1")
+                # pointer arithmetic
+                if isinstance(value.r_value.type, Pointer):
+                    immediate_value = value.r_value.type.target.width
+                else:
+                    immediate_value = 1
+
+                self.builder.add_instruction(f"addi {value.r_value}, {value.r_value}, -{immediate_value}")
 
                 if node.prefix:
                     # we need the value after the opration is done

@@ -1,6 +1,6 @@
 from .register_manager import Register, RegisterManager
 from .allocator import Allocator
-from .type import Float, Type
+from .type import Float, Type, Pointer
 
 from typing import Union, Optional
 
