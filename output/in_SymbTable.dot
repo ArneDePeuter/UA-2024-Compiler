@@ -1,0 +1,8 @@
+digraph SymbolTable {
+1923451886544 [label="Scope Level 0
+ main : int
+"style=filled, fillcolor=lightblue];
+1923451886544 -> 1923451889936;
+1923451889936 [label="Scope Level 1
+ "style=filled, fillcolor=lightblue];
+}

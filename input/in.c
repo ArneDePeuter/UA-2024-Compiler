@@ -1,16 +1,9 @@
+//HELLO TO OUR COMPILER
 #include <stdio.h>
 
 int main() {
-    int arr[3] = {1, 2, 3};
-    printf("%d\n", arr[0]);
-    printf("%d\n", arr[1]);
-    printf("%d\n", arr[2]);
-    arr[0] = 4;
-    arr[1] = 5;
-    arr[2] = 6;
-    printf("%d\n", arr[0]);
-    printf("%d\n", arr[1]);
-    printf("%d\n", arr[2]);
-
+    printf("Hello, World!\n");
+    printf("WE ARE THE BEST\n");
+    printf("WELCOME TO OUR COMPILER\n");
     return 0;
 }

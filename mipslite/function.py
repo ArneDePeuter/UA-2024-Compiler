@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from uuid import uuid4
-from typing import List
+from typing import List, Optional
 
 from .block import Block
 from .allocator import Allocator
@@ -76,11 +76,12 @@ class Function:
     def comment(self, comment: str) -> None:
         self.current_block.comment(comment)
 
-    def ret(self, register: Register) -> None:
-        if isinstance(self.return_type, Float):
-            self.add_instruction(f"mov.s $f0, {register}")
-        else:
-            self.add_instruction(f"move $v0, {register}")
+    def ret(self, register: Optional[Register] = None) -> None:
+        if register is not None:
+            if isinstance(self.return_type, Float):
+                self.add_instruction(f"mov.s $f0, {register}")
+            else:
+                self.add_instruction(f"move $v0, {register}")
         self.add_instruction(f"j {self.label}_exit")
         self.add_instruction("nop")
 

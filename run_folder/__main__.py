@@ -13,4 +13,4 @@ args = parser.parse_args()
 directory = os.fsencode(args.input_folder)
 for file in os.listdir(directory):
     file_str = file.decode()
-    subprocess.run(f"python3 -m compiler --input {args.input_folder}/{file_str} --render_ast {args.output_folder} --render_symb {args.output_folder} --target_llvm {args.output_folder} --include_paths {' '.join(args.include_paths)} ", shell=True, check=True)
+    subprocess.run(f"python3 -m compiler --input {args.input_folder}/{file_str} --render_ast {args.output_folder} --render_symb {args.output_folder} --target_llvm {args.output_folder} --target_mips {args.output_folder} --include_paths {' '.join(args.include_paths)} ", shell=True, check=True)
