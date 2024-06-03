@@ -113,6 +113,14 @@ class Module:
                             printf_block.add_instruction(f"lw $a0, {i*args[arg_index].r_value.type.target.width}({args[arg_index].r_value})")
                             printf_block.add_instruction("li $v0, 11")
                             printf_block.add_instruction("syscall")
+                    elif isinstance(args[arg_index].r_value.type, Pointer) and isinstance(args[arg_index].r_value.type.target, Array):
+                        array_type = args[arg_index].r_value.type.target
+                        while isinstance(array_type, Pointer):
+                            array_type = array_type.target
+                        for i in range(array_type.length-1):
+                            printf_block.add_instruction(f"lw $a0, {i*args[arg_index].r_value.type.target.target.width}({args[arg_index].r_value})")
+                            printf_block.add_instruction("li $v0, 11")
+                            printf_block.add_instruction("syscall")
                 arg_index += 1
             else:
                 # Print the string
