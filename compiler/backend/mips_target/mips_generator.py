@@ -128,6 +128,19 @@ class MIPSGenerator(AstVisitor):
                     self.builder.load_address(temp_reg, label)
                     self.builder.store_word(temp_reg, allocation_address)
                     self.module.register_manager.free(temp_reg)
+                elif isinstance(var_type, Struct):
+                    # allocate space for all arrays in the struct and assign the address to the struct
+                    for name, type in var_type.fields:
+                        if isinstance(type, Array):
+                            label = f"array_{uuid.uuid4().hex}"
+                            array_block = self.module.data_block(label)
+                            array_block.add_instruction(f".space {type.width}")
+                            temp_reg = self.module.register_manager.allocate('temp', Pointer(Any()))
+                            self.builder.load_address(temp_reg, label)
+                            allocation_address.offset = var_type.get_member_offset(name)
+                            self.builder.store_word(temp_reg, allocation_address)
+                            allocation_address.offset = 0
+                            self.module.register_manager.free(temp_reg)
                 return
 
             # Check if it is a char* meaning it is a string_literal
@@ -774,8 +787,11 @@ class MIPSGenerator(AstVisitor):
         self.builder.add_instruction("nop")
 
     def visit_return_statement(self, node: ast.ReturnStatement):
-        with self.eval(node.expression) as result_eval:
-            self.builder.ret(result_eval.r_value)
+        if node.expression is None:
+            self.builder.ret()
+        else:
+            with self.eval(node.expression) as result_eval:
+                self.builder.ret(result_eval.r_value)
 
     def visit_forward_declaration(self, node: ast.ForwardDeclaration):
         # create an empty block for the function if it does not exist yet
