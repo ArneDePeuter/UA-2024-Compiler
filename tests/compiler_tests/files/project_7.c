@@ -76,12 +76,13 @@ int main() {
     printf("%d\n", s5.arr[1]);
     printf("%d\n", s5.arr[2]);
 
-    // explicit initialization
-    struct myStruct s6 = {5, 10, 15};
+    struct myStruct s6;
+    s6.x = 20;
+    s6.y = 25;
+    s6.z = 30;
 
     // function to print struct
     printStruct(s6);
-    printStruct((struct myStruct){5, 10, 15});
 
     return 0;
 }
