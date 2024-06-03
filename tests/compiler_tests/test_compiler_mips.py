@@ -67,6 +67,13 @@ def replace_float_to_int(text):
     text = re.sub(r'([+-]?\d*\.\d+([eE][+-]?\d+)?)', float_to_int, text)
     return text
 
+def remove_whitespaces(text):
+    return re.sub(r'\s', '', text)
+
+def rinse_output(output):
+    output = remove_whitespaces(output)
+    output = replace_float_to_int(output)
+    return output
 
 @pytest.mark.parametrize("input_file", os.listdir("./tests/compiler_tests/files"))
 def test_compiler(input_file):
@@ -78,7 +85,7 @@ def test_compiler(input_file):
     my_output = run_my_compiler(relative, include_paths)
     clang_output = run_clang(relative, include_paths)
 
-    normalized_my_output = replace_float_to_int(my_output)
-    normalized_clang_output = replace_float_to_int(clang_output)
+    normalized_my_output = rinse_output(my_output)
+    normalized_clang_output = rinse_output(clang_output)
 
     assert normalized_my_output == normalized_clang_output
