@@ -57,14 +57,14 @@ def run_clang(input_file, include_paths):
 
 
 def replace_float_to_int(text):
-    """replace every float occurence in text to int"""
-    # Use regex to match floats and normalize them
-    float_match = re.search(r'([+-]?\d*\.\d+([eE][+-]?\d+)?)', text)
-    if float_match:
-        # Extract the float value and format it to 6 decimal places
-        float_value = float(float_match.group(1))
+    """Replace every float occurrence in text with int"""
+    def float_to_int(match):
+        float_value = float(match.group(0))
         int_value = int(float_value)
-        text = text.replace(float_match.group(1), str(int_value))
+        return str(int_value)
+
+    # Use regex to find and replace all float occurrences
+    text = re.sub(r'([+-]?\d*\.\d+([eE][+-]?\d+)?)', float_to_int, text)
     return text
 
 
