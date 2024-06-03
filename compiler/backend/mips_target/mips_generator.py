@@ -113,7 +113,15 @@ class MIPSGenerator(AstVisitor):
             self.variable_addresses[qualifier.identifier] = allocation_address
 
             if qualifier.initializer is None:
-                # leave the variable uninitialised
+                # leave the variable uninitialised, but if it is an array  you allocate space for it
+                if isinstance(var_type, Array):
+                    label = f"array_{uuid.uuid4().hex}"
+                    array_block = self.module.data_block(label)
+                    array_block.add_instruction(f".space {var_type.width}")
+                    temp_reg = self.module.register_manager.allocate('temp', Pointer(Any()))
+                    self.builder.load_address(temp_reg, label)
+                    self.builder.store_word(temp_reg, allocation_address)
+                    self.module.register_manager.free(temp_reg)
                 return
 
             # Check if it is a char* meaning it is a string_literal
