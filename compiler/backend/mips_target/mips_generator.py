@@ -273,7 +273,6 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"mtc1 {r_value}, {float_reg}")
                 self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mov.s {float_reg}, {float_reg}")
-                #self.module.register_manager.free(float_reg)
                 res = ExpressionEval(r_value=float_reg)
             elif isinstance(target_type, Int) and isinstance(source_type, Float):
                 float_reg = self.module.register_manager.allocate('float', Float())
@@ -281,11 +280,14 @@ class MIPSGenerator(AstVisitor):
                 int_reg = self.module.register_manager.allocate('temp', Int())
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-                #self.module.register_manager.free(float_reg)
                 res = ExpressionEval(r_value=int_reg)
             else:
-                result_reg = self.module.register_manager.allocate('temp', target_type)
-                self.builder.add_instruction(f"move {result_reg}, {r_value}")
+                if isinstance(target_type, Float):
+                    result_reg = self.module.register_manager.allocate('float', Float())
+                    self.builder.add_instruction(f"mov.s {result_reg}, {r_value}")
+                else:
+                    result_reg = self.module.register_manager.allocate('temp', target_type)
+                    self.builder.add_instruction(f"move {result_reg}, {r_value}")
                 res = ExpressionEval(r_value=result_reg)
         # we return here so context manager can free the used registers
         return res
@@ -299,30 +301,41 @@ class MIPSGenerator(AstVisitor):
             right_type = right.type
 
             if isinstance(left_type, Float) or isinstance(right_type, Float):
+                dealloc_left = False
                 # cast to float if necessary
                 if not isinstance(left_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float())
                     self.builder.add_instruction(f"mtc1 {left}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-                    self.module.register_manager.free(left)
-                    left = float_reg
+                    left_float = float_reg
+                    dealloc_left = True
+                else:
+                    left_float = left
 
+                dealloc_right = False
                 if not isinstance(right_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float())
                     self.builder.add_instruction(f"mtc1 {right}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
-                    self.module.register_manager.free(right)
-                    right = float_reg
+                    right_float = float_reg
+                    dealloc_right = True
+                else:
+                    right_float = right
 
                 result_reg = self.module.register_manager.allocate('float', Float())
                 if node.operator == ast.BinaryArithmetic.Operator.PLUS:
-                    self.builder.add_instruction(f"add.s {result_reg}, {left}, {right}")
+                    self.builder.add_instruction(f"add.s {result_reg}, {left_float}, {right_float}")
                 elif node.operator == ast.BinaryArithmetic.Operator.MINUS:
-                    self.builder.add_instruction(f"sub.s {result_reg}, {left}, {right}")
+                    self.builder.add_instruction(f"sub.s {result_reg}, {left_float}, {right_float}")
                 elif node.operator == ast.BinaryArithmetic.Operator.MUL:
-                    self.builder.add_instruction(f"mul.s {result_reg}, {left}, {right}")
+                    self.builder.add_instruction(f"mul.s {result_reg}, {left_float}, {right_float}")
                 elif node.operator == ast.BinaryArithmetic.Operator.DIV:
-                    self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
+                    self.builder.add_instruction(f"div.s {result_reg}, {left_float}, {right_float}")
+
+                if dealloc_left:
+                    self.module.register_manager.free(left_float)
+                if dealloc_right:
+                    self.module.register_manager.free(right_float)
 
                 ret = ExpressionEval(r_value=result_reg)
             else:
