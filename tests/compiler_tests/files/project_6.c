@@ -50,12 +50,10 @@ int main() {
     printf("%s", "This is a string\n");
 
     char str[] = "hello"; // Mutable array
-    char* hello = str; // Decay array to pointer
-    capitalise_string(hello, 5);
-    printf("Capitalise: %s\n", hello);
 
     for (int i = 0; i < 5; i++) {
-        printf("%c", capitalise_char(&str[i]));
+        capitalise_char(&str[i]);
+        printf("%c", str[i]);
     }
 
     return 0;
