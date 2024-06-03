@@ -18,6 +18,7 @@
   - generate AST
   - generate Symbol Table
   - generate LLVM code
+  - generate MIPS code
 
 ## How to run tests
 **!You must have poetry env enabled!**
