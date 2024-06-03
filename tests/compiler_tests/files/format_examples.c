@@ -11,7 +11,7 @@ int main() {
     printf("Hexadecimal: %x\n", num);
 
     // Print floating-point number
-    printf("Pi: %.2f\n", pi);
+    printf("Pi: %f\n", pi);
 
     // Print character
     printf("Character: %c\n", ch);
