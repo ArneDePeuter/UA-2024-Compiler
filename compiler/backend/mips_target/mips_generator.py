@@ -267,7 +267,7 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"mtc1 {r_value}, {float_reg}")
                 self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mov.s {float_reg}, {float_reg}")
-                self.module.register_manager.free(float_reg)
+                #self.module.register_manager.free(float_reg)
                 res = ExpressionEval(r_value=float_reg)
             elif isinstance(target_type, Int) and isinstance(source_type, Float):
                 float_reg = self.module.register_manager.allocate('float', Float())
@@ -275,7 +275,7 @@ class MIPSGenerator(AstVisitor):
                 int_reg = self.module.register_manager.allocate('temp', Int())
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-                self.module.register_manager.free(float_reg)
+                #self.module.register_manager.free(float_reg)
                 res = ExpressionEval(r_value=int_reg)
             else:
                 result_reg = self.module.register_manager.allocate('temp', target_type)
@@ -405,12 +405,20 @@ class MIPSGenerator(AstVisitor):
             value = value_eval
 
             if node.operator == ast.UnaryExpression.Operator.POSITIVE:
-                result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
-                self.builder.add_instruction(f"move {result_reg}, {value.r_value}")
+                if isinstance(value.r_value.type, Float):
+                    result_reg = self.module.register_manager.allocate('float', Float())
+                    self.builder.add_instruction(f"mov.s {result_reg}, {value.r_value}")
+                else:
+                    result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
+                    self.builder.add_instruction(f"move {result_reg}, {value.r_value}")
                 ret = ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.NEGATIVE:
-                result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
-                self.builder.add_instruction(f"neg {result_reg}, {value.r_value}")
+                if isinstance(value.r_value.type, Float):
+                    result_reg = self.module.register_manager.allocate('float', Float())
+                    self.builder.add_instruction(f"neg.s {result_reg}, {value.r_value}")
+                else:
+                    result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
+                    self.builder.add_instruction(f"neg {result_reg}, {value.r_value}")
                 ret = ExpressionEval(r_value=result_reg)
             elif node.operator == ast.UnaryExpression.Operator.ONESCOMPLEMENT:
                 result_reg = self.module.register_manager.allocate('temp', value.r_value.type)
