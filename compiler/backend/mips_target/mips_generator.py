@@ -267,7 +267,7 @@ class MIPSGenerator(AstVisitor):
                 self.builder.add_instruction(f"mtc1 {r_value}, {float_reg}")
                 self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mov.s {float_reg}, {float_reg}")
-                self.module.register_manager.free(float_reg)
+                #self.module.register_manager.free(float_reg)
                 res = ExpressionEval(r_value=float_reg)
             elif isinstance(target_type, Int) and isinstance(source_type, Float):
                 float_reg = self.module.register_manager.allocate('float', Float())
@@ -275,7 +275,7 @@ class MIPSGenerator(AstVisitor):
                 int_reg = self.module.register_manager.allocate('temp', Int())
                 self.builder.add_instruction(f"cvt.w.s {float_reg}, {float_reg}")
                 self.builder.add_instruction(f"mfc1 {int_reg}, {float_reg}")
-                self.module.register_manager.free(float_reg)
+                #self.module.register_manager.free(float_reg)
                 res = ExpressionEval(r_value=int_reg)
             else:
                 result_reg = self.module.register_manager.allocate('temp', target_type)
