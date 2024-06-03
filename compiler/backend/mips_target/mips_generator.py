@@ -97,7 +97,13 @@ class MIPSGenerator(AstVisitor):
         for i, parameter in enumerate(node.parameters):
             param_type = self.visit_type(parameter.type)
             self.variable_addresses[parameter.name] = self.builder.allocate(param_type)
-            self.builder.store_word(Register(f"$a{i}", param_type), self.variable_addresses[parameter.name])
+            if isinstance(param_type, Float):
+                reg = self.module.register_manager.allocate(f"float", Float())
+                self.builder.add_instruction(f"mtc1 $a{i}, {reg}")
+                self.builder.store_word(reg, self.variable_addresses[parameter.name])
+                self.module.register_manager.free(reg)
+            else:
+                self.builder.store_word(Register(f"$a{i}", param_type), self.variable_addresses[parameter.name])
         self.visit_body(node.body)
         self.builder = None
 
@@ -506,7 +512,10 @@ class MIPSGenerator(AstVisitor):
             with self.eval(arg) as arg_eval:
                 arg_reg = self.module.register_manager.allocate('arg', arg_eval.r_value.type)
                 arg_regs.append(arg_reg)
-                self.builder.add_instruction(f"move {arg_reg}, {arg_eval.r_value}")
+                if isinstance(arg_eval.r_value.type, Float):
+                    self.builder.add_instruction(f"mfc1 {arg_reg}, {arg_eval.r_value}")
+                else:
+                    self.builder.add_instruction(f"move {arg_reg}, {arg_eval.r_value}")
 
         self.builder.jal(node.name, self.module.register_manager)
 
@@ -514,7 +523,7 @@ class MIPSGenerator(AstVisitor):
             self.module.register_manager.free(reg)
 
         return_type = self.functions[node.name].return_type
-        if return_type == Float:
+        if isinstance(return_type, Float):
             result_reg = self.module.register_manager.allocate('float', Float())
             self.builder.add_instruction(f"mov.s {result_reg}, $f0")
         else:

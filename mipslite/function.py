@@ -77,7 +77,10 @@ class Function:
         self.current_block.comment(comment)
 
     def ret(self, register: Register) -> None:
-        self.add_instruction(f"move $v0, {register}")
+        if isinstance(self.return_type, Float):
+            self.add_instruction(f"mov.s $f0, {register}")
+        else:
+            self.add_instruction(f"move $v0, {register}")
         self.add_instruction(f"j {self.label}_exit")
         self.add_instruction("nop")
 
