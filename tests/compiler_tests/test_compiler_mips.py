@@ -56,6 +56,18 @@ def run_clang(input_file, include_paths):
     return result.stdout
 
 
+def normalize_float_string(float_str):
+    """Normalize the floating point string by removing trailing zeroes and optional decimal point."""
+    # Use regex to match floats and normalize them
+    def normalize(match):
+        s = match.group(0)
+        return s.rstrip('0').rstrip('.') if '.' in s else s
+
+    # Apply the regex substitution to the whole string
+    normalized_str = re.sub(r'\d+\.\d+', normalize, float_str)
+    return normalized_str
+
+
 @pytest.mark.parametrize("input_file", os.listdir("./tests/compiler_tests/files"))
 def test_compiler(input_file):
     if re.findall(r"struct_explicit_constructing.c", input_file):
@@ -66,4 +78,7 @@ def test_compiler(input_file):
     my_output = run_my_compiler(relative, include_paths)
     clang_output = run_clang(relative, include_paths)
 
-    assert my_output == clang_output
+    normalized_my_output = normalize_float_string(my_output)
+    normalized_clang_output = normalize_float_string(clang_output)
+
+    assert normalized_my_output == normalized_clang_output
