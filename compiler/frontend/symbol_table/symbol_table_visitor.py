@@ -250,7 +250,7 @@ class SymbolTableVisitor(AstVisitor):
         if isinstance(node.left, ast.BinaryArithmetic) or isinstance(node.left, ast.BinaryBitwiseArithmetic) or isinstance(node.left, ast.BinaryLogicalOperation) or isinstance(node.left, ast.ComparisonOperation):
             raise SemanticError(f"Cannot assign to an expression.", node.line, node.position)
 
-        if isinstance(left_type.type, ast.ArrayType):
+        if isinstance(left_type.type, ast.ArrayType) and left_type != right_type:
             if left_type.type.element_type != right_type:
                 if isinstance(left_type.type.element_type.type, ast.BaseType) and isinstance(right_type.type, ast.BaseType):
                     if TypeCaster.get_heirarchy_of_base_type(left_type.type.element_type.type) > TypeCaster.get_heirarchy_of_base_type(right_type.type):
