@@ -11,7 +11,7 @@
     node1.next_ptr = 0;
     struct ListNode node2;
     node2.value = 3;
-    node2.next_ptr = 0;
+    node2.next_ptr = &node1;
 
     printf("%d", node1.value);
     node2.next_ptr->value = 8;
