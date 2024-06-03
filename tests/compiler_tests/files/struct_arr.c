@@ -6,7 +6,9 @@ struct myStruct {
 
 int main() {
     struct myStruct s;
-    s.x = {1, 2, 3};
+    s.x[0] = 1;
+    s.x[1] = 2;
+    s.x[2] = 3;
 
     printf("%d\n", s.x[0]);
     printf("%d\n", s.x[1]);
