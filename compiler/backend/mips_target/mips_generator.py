@@ -127,6 +127,10 @@ class MIPSGenerator(AstVisitor):
                 rval = eval.r_value
                 initializer_type = rval.type
 
+                # Check if the var_type is a poiter and the initializer is an array
+                if isinstance(var_type, Pointer) and isinstance(rval.type, Array):
+                    var_type.target = rval.type
+
                 # Handle implicit conversion if necessary
                 if isinstance(var_type, Float) and isinstance(initializer_type, Int):
                     float_reg = self.module.register_manager.allocate('float', Float())
@@ -619,13 +623,16 @@ class MIPSGenerator(AstVisitor):
         with self.eval(array_eval) as array_identifier_eval:
             array_type = array_identifier_eval.l_value.type
 
-            dimensions = self.get_array_dimensions(array_type.dimensions)
+            temp_array_type = array_type
+            while isinstance(temp_array_type, Pointer):
+                temp_array_type = temp_array_type.target
+            dimensions = self.get_array_dimensions(temp_array_type.dimensions)
 
             # Calculate the offset for multidimensional arrays
             offset_reg = self.module.register_manager.allocate('temp', Int())
             self.builder.add_instruction(f"li {offset_reg}, 0 # Initialize the offset to 0")
             stride_reg = self.module.register_manager.allocate('temp', Int())
-            self.builder.add_instruction(f"li {stride_reg}, {array_type.target.width} # The size of the array element")
+            self.builder.add_instruction(f"li {stride_reg}, {temp_array_type.target.width} # The size of the array element")
             self.builder.add_instruction(f"# Calculating the offset for the array access")
             for index_reg, dim in zip(reversed(indices), reversed(dimensions)):
                 temp_reg = self.module.register_manager.allocate('temp', Int())
