@@ -282,18 +282,18 @@ class MIPSGenerator(AstVisitor):
 
             if isinstance(left_type, Float) or isinstance(right_type, Float):
                 # cast to float if necessary
-                free_left = False
                 if not isinstance(left_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float())
                     self.builder.add_instruction(f"mtc1 {left}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
+                    self.module.register_manager.free(left)
                     left = float_reg
-                    free_left = True
 
                 if not isinstance(right_type, Float):
                     float_reg = self.module.register_manager.allocate('float', Float())
                     self.builder.add_instruction(f"mtc1 {right}, {float_reg}")
                     self.builder.add_instruction(f"cvt.s.w {float_reg}, {float_reg}")
+                    self.module.register_manager.free(right)
                     right = float_reg
 
                 result_reg = self.module.register_manager.allocate('float', Float())
@@ -306,11 +306,6 @@ class MIPSGenerator(AstVisitor):
                 elif node.operator == ast.BinaryArithmetic.Operator.DIV:
                     self.builder.add_instruction(f"div.s {result_reg}, {left}, {right}")
 
-                # free the allocated registers for casting that was done
-                if free_left:
-                    self.module.register_manager.free(left)
-                else:
-                    self.module.register_manager.free(right)
                 ret = ExpressionEval(r_value=result_reg)
             else:
                 result_reg = self.module.register_manager.allocate('temp', Int())

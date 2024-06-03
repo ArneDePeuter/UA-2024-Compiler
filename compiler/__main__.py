@@ -24,7 +24,7 @@ def compile_file(input_file: str,
                  include_paths=None,):
 
     # preprocessor
-    with open(input_file, 'r') as file:
+    with open(input_file, 'r', encoding='utf-8') as file:
         input_code = file.read()
 
     preprocessor = Preprocessor()
